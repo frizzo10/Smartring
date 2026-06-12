@@ -393,13 +393,16 @@ function buildSignalsPanel(data, profile, goals) {
   const container = document.getElementById('signals-panel');
   if (!container) return;
 
-  // Load dismissed signals
-  const dismissed = JSON.parse(localStorage.getItem('sh_dismissed_signals') || '[]');
+  const testMode = localStorage.getItem('sh_signals_test') === '1';
+
+  // Load dismissed signals (ignored in test mode)
+  const dismissed = testMode ? [] : JSON.parse(localStorage.getItem('sh_dismissed_signals') || '[]');
   const acknowledged = JSON.parse(localStorage.getItem('sh_acknowledged_signals') || '{}');
 
-  // Run all detectors
+  // Run all detectors — test mode forces all to fire
   const fired = SIGNAL_PATTERNS.filter(p => {
     if (dismissed.includes(p.id)) return false;
+    if (testMode) return true;
     try { return p.detect(data, profile, goals); }
     catch(e) { return false; }
   });
@@ -422,8 +425,13 @@ function buildSignalsPanel(data, profile, goals) {
       <div class="signals-title">
         <span>🔍</span> SageHealth signals
         <span class="signals-badge ${badgeClass}">${badgeText}</span>
+        ${testMode ? '<span style="font-size:10px;font-weight:700;padding:2px 10px;border-radius:8px;background:rgba(155,114,245,.2);color:var(--purple);margin-left:4px;">TEST MODE</span>' : ''}
       </div>
-    </div>`;
+      <button onclick="toggleSignalTestMode()" style="font-size:11px;padding:4px 11px;border-radius:7px;border:1px solid var(--border2);background:${testMode ? 'rgba(155,114,245,.12)' : 'var(--panel2)'};color:${testMode ? 'var(--purple)' : 'var(--muted)'};cursor:pointer;">
+        ${testMode ? '✕ Exit test mode' : '🧪 Test signals'}
+      </button>
+    </div>
+    ${testMode ? '<div style="background:rgba(155,114,245,.07);border:1px solid rgba(155,114,245,.2);border-radius:9px;padding:9px 13px;margin-bottom:10px;font-size:12px;color:#c4b5fd;line-height:1.5;">🧪 <strong>Test mode on</strong> — all 8 signal patterns are showing regardless of your actual data. Buttons, chat links, and dismiss all work normally. Exit test mode to return to live detection.</div>' : ''}`;
 
   if (fired.length === 0) {
     html += `<div class="signals-all-clear">
@@ -525,6 +533,16 @@ function openSignalChat(sigId, question) {
       if (input) { input.value = question; input.focus(); }
     }, 400);
   }, 200);
+}
+
+/* ── TEST MODE TOGGLE ────────────────────────────── */
+function toggleSignalTestMode() {
+  const current = localStorage.getItem('sh_signals_test') === '1';
+  localStorage.setItem('sh_signals_test', current ? '0' : '1');
+  // Re-render signals panel with current data
+  if (typeof data !== 'undefined' && typeof profile !== 'undefined') {
+    buildSignalsPanel(data, profile, goals);
+  }
 }
 
 /* ── EXPIRE OLD DISMISSALS ────────────────────────── */
