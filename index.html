@@ -354,39 +354,25 @@
         <div class="page-sub" id="dashDate">Today's health overview</div>
       </div>
 
-      <!-- Rewards bar -->
-      <div id="rewardsBar">
-        <div class="rewards-row" id="rewardsRow"></div>
-      </div>
-
-      <!-- Dr. Sage walkthrough button -->
-      <button class="walkthrough-btn" onclick="startWalkthrough()">
-        <div style="display:flex;align-items:center;gap:14px;">
-          <span style="font-size:26px;">🎙️</span>
-          <div>
-            <div class="walkthrough-btn-title">Would you like Dr. Sage to walk you through your numbers?</div>
-            <div class="walkthrough-btn-sub">A personalized audio + guided tour of today's health data — tracks your progress and rewards real improvement</div>
+      <!-- Compact top bar: rewards + walkthrough + briefing -->
+      <div id="topBar" style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 18px;margin-bottom:20px;">
+        <!-- Row 1: streak + badges + walkthrough btn -->
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <div id="streakChip" style="display:none;align-items:center;gap:6px;background:var(--surface2);border-radius:20px;padding:5px 12px;flex-shrink:0;">
+            <span style="font-size:16px;">🔥</span>
+            <span style="font-size:15px;font-weight:700;color:var(--warn);" id="streakNum">0</span>
+            <span style="font-size:11px;color:var(--muted);">day streak</span>
           </div>
+          <div id="badgeChips" style="display:flex;gap:6px;flex-wrap:wrap;flex:1;"></div>
+          <button onclick="startWalkthrough()" style="display:flex;align-items:center;gap:7px;background:rgba(74,222,128,0.08);border:1px solid rgba(74,222,128,0.22);border-radius:20px;padding:7px 14px;cursor:pointer;color:var(--accent);font-size:12px;font-weight:600;white-space:nowrap;flex-shrink:0;" title="Dr. Sage walks you through your numbers with voice">
+            🎙️ Dr. Sage walkthrough
+          </button>
         </div>
-        <div style="font-size:22px;color:var(--accent);">→</div>
-      </button>
-
-      <!-- Dr. Sage weekly button -->
-      <button class="weekly-btn" onclick="openWeeklyReport()">
-        <div style="display:flex;align-items:center;gap:14px;">
-          <span style="font-size:28px;">🧠</span>
-          <div>
-            <div class="weekly-btn-title">Start weekly consult with Dr. Sage</div>
-            <div class="weekly-btn-sub">Your 7-day report is ready — click to begin your clinical review</div>
-          </div>
+        <!-- Row 2: daily briefing inline -->
+        <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);">
+          <span style="font-size:10px;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted);font-weight:600;">Dr. Sage's daily briefing · </span>
+          <span style="font-size:13px;line-height:1.6;" id="dailySummary">Loading...</span>
         </div>
-        <div class="weekly-btn-arrow">→</div>
-      </button>
-
-      <!-- Today's plain-English summary -->
-      <div class="summary-panel">
-        <div class="summary-title">Dr. Sage's daily briefing</div>
-        <div class="summary-text" id="dailySummary">Loading your health summary...</div>
       </div>
 
       <!-- Score cards with interpretation -->
@@ -1176,30 +1162,22 @@ function calcStreak() {
 function buildRewardsBar() {
   const { earned, newlyEarned } = checkAndAwardBadges();
   const streak = calcStreak();
-  const bar = document.getElementById('rewardsBar');
-  const row = document.getElementById('rewardsRow');
-  if (earned.length === 0 && streak === 0) { bar.style.display = 'none'; return; }
-  bar.style.display = 'block';
 
+  // Streak chip
+  const sc = document.getElementById('streakChip');
+  if (streak > 0) { sc.style.display='flex'; document.getElementById('streakNum').textContent=streak; }
+  else sc.style.display='none';
+
+  // Badge chips — compact pill style, max 5 shown
   const earnedBadges = BADGES.filter(b => earned.includes(b.id));
-  row.innerHTML = `
-    <div class="streak-chip">
-      <span class="streak-fire">🔥</span>
-      <span class="streak-val">${streak}</span>
-      <span class="streak-label">day step streak</span>
-    </div>
-    ${earnedBadges.slice(0,4).map(b => `
-      <div class="badge-earned">
-        <span class="badge-icon">${b.icon}</span>
-        <div class="badge-info">
-          <div class="badge-name">${b.name}</div>
-          <div class="badge-desc">${b.desc}</div>
-        </div>
-      </div>`).join('')}
-    ${earned.length > 4 ? `<div style="font-size:12px;color:var(--muted);">+${earned.length-4} more badges</div>` : ''}
-  `;
+  const bc = document.getElementById('badgeChips');
+  if (bc) {
+    bc.innerHTML = earnedBadges.slice(0,5).map(b =>
+      `<span style="display:inline-flex;align-items:center;gap:4px;background:var(--surface2);border-radius:20px;padding:4px 10px;font-size:11px;color:var(--muted);" title="${b.desc}">${b.icon} ${b.name}</span>`
+    ).join('') + (earnedBadges.length > 5 ? `<span style="font-size:11px;color:var(--muted);padding:4px 6px;">+${earnedBadges.length-5} more</span>` : '');
+  }
 
-  // Show toast for newly earned badges
+  // Toast for newly earned
   if (newlyEarned.length > 0) {
     const b = newlyEarned[0];
     showRewardToast(`${b.icon} ${b.name} unlocked!`, b.desc + (newlyEarned.length > 1 ? ` (+${newlyEarned.length-1} more)` : ''));
@@ -1229,11 +1207,20 @@ closeWalkthrough = function() {
   }
 };
 
-// ── PATCH initApp to call rewards ────────────────────
+// ── PATCH initApp to call rewards + Monday auto-open ─
 const _origInitApp = initApp;
 initApp = function() {
   _origInitApp();
   buildRewardsBar();
+  // Auto-open newsletter on Mondays (once per week)
+  const today = new Date();
+  const isMonday = today.getDay() === 1;
+  const lastOpen = localStorage.getItem('sh_newsletter_opened');
+  const thisWeek = today.toISOString().slice(0,10);
+  if (isMonday && lastOpen !== thisWeek) {
+    localStorage.setItem('sh_newsletter_opened', thisWeek);
+    setTimeout(() => openWeeklyReport(), 1200);
+  }
 };
 
 // ── PATCH sendChat to speak replies ──────────────────
