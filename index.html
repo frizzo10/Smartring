@@ -285,6 +285,52 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
 .toast-title{font-size:13px;font-weight:600;color:var(--green);margin-bottom:2px;}
 .toast-body{font-size:12px;color:var(--muted);line-height:1.4;}
 
+/* ── CLINICAL ENCOUNTER ── */
+.encounter-card{background:var(--panel2);border:1px solid var(--border2);border-radius:12px;padding:20px 22px;margin-bottom:12px;}
+.enc-section{margin-bottom:18px;}
+.enc-section:last-child{margin-bottom:0;}
+.enc-label{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:7px;}
+.enc-label-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.enc-finding{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);}
+.enc-finding:last-child{border-bottom:none;}
+.enc-finding-icon{font-size:15px;margin-top:1px;flex-shrink:0;}
+.enc-finding-body{font-size:13px;line-height:1.6;}
+.enc-finding-body strong{color:var(--text);}
+.enc-finding-body .enc-sub{display:block;font-size:11px;color:var(--muted);margin-top:2px;}
+.test-order{display:flex;align-items:flex-start;gap:12px;background:var(--panel);border:1px solid var(--border2);border-radius:10px;padding:12px 14px;margin-bottom:8px;}
+.test-priority{font-size:10px;font-weight:700;padding:2px 8px;border-radius:8px;flex-shrink:0;margin-top:2px;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap;}
+.pri-urgent{background:rgba(240,82,82,.15);color:var(--red);}
+.pri-routine{background:rgba(59,130,246,.12);color:var(--blue);}
+.pri-optional{background:rgba(107,122,150,.12);color:var(--muted);}
+.test-info{flex:1;}
+.test-name{font-size:13px;font-weight:600;margin-bottom:3px;}
+.test-reason{font-size:12px;color:var(--muted);line-height:1.5;}
+.test-how{font-size:11px;margin-top:6px;padding:5px 9px;background:rgba(0,184,217,.06);border-radius:6px;color:var(--cyan);line-height:1.5;}
+.test-done{margin-left:auto;flex-shrink:0;padding-top:2px;}
+.test-done input{width:16px;height:16px;cursor:pointer;accent-color:var(--green);}
+.plan-item{display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);}
+.plan-item:last-child{border-bottom:none;}
+.plan-num{width:22px;height:22px;border-radius:50%;background:rgba(0,214,143,.08);border:1px solid rgba(0,214,143,.2);color:var(--green);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;}
+.plan-text{font-size:13px;line-height:1.65;}
+.plan-text strong{color:var(--green);}
+.plan-text .plan-timeframe{font-size:11px;color:var(--muted);display:block;margin-top:2px;}
+.enc-disclaimer{background:rgba(240,82,82,.05);border:1px solid rgba(240,82,82,.15);border-radius:9px;padding:10px 13px;font-size:12px;color:#f87171;line-height:1.6;margin-top:14px;}
+.enc-generating{display:flex;align-items:center;gap:10px;padding:18px 0;color:var(--muted);font-size:13px;}
+.enc-spinner{width:16px;height:16px;border-radius:50%;border:2px solid var(--border2);border-top-color:var(--green);animation:spin .8s linear infinite;flex-shrink:0;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.enc-tab-bar{display:flex;gap:0;margin-bottom:16px;border-bottom:1px solid var(--border);}
+.enc-tab{background:transparent;border:none;color:var(--muted);font-size:12px;font-weight:500;padding:8px 16px;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s;}
+.enc-tab:hover{color:var(--text);}
+.enc-tab.active{color:var(--green);border-bottom-color:var(--green);font-weight:600;}
+.enc-panel{display:none;} .enc-panel.active{display:block;}
+.history-encounter{background:var(--panel);border:1px solid rgba(0,214,143,.15);border-radius:12px;padding:18px 20px;margin-bottom:10px;}
+.he-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.he-date{font-size:12px;color:var(--muted);}
+.he-title{font-size:14px;font-weight:600;}
+.he-expand{background:transparent;border:1px solid var(--border2);color:var(--muted);font-size:11px;border-radius:7px;padding:4px 10px;cursor:pointer;}
+.he-body{display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);}
+.he-body.open{display:block;}
+
 @media(max-width:900px){
   .sidebar{width:56px;padding:16px 8px;}
   .nav-item span,.logo span,.u-name,.u-sub{display:none;}
@@ -490,10 +536,12 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
   <div class="page-header"><div class="page-title">Dr. Sage — records</div><div class="page-sub">Action items, full transcripts, and weekly assessments</div></div>
   <div class="tab-bar">
     <button class="tab-btn active" id="tab-actions" onclick="switchTab('actions')">Action items</button>
+    <button class="tab-btn" id="tab-encounters" onclick="switchTab('encounters')">Encounters</button>
     <button class="tab-btn" id="tab-transcripts" onclick="switchTab('transcripts')">Transcripts</button>
     <button class="tab-btn" id="tab-assessments" onclick="switchTab('assessments')">Assessments</button>
   </div>
   <div id="historyTab-actions"><div id="action-items-list"></div><div id="action-empty" style="display:none;color:var(--muted);font-size:13px;padding:16px 0;">No action items yet. Complete a consultation with Dr. Sage to generate your first action plan.</div></div>
+  <div id="historyTab-encounters" style="display:none;"><div id="encounter-list"></div><div id="encounter-empty" style="display:none;color:var(--muted);font-size:13px;padding:16px 0;">No clinical encounters on record yet. Complete a weekly report to generate your first encounter document.</div></div>
   <div id="historyTab-transcripts" style="display:none;"><div id="transcript-list"></div><div id="transcript-empty" style="display:none;color:var(--muted);font-size:13px;padding:16px 0;">No transcripts yet.</div></div>
   <div id="historyTab-assessments" style="display:none;"><div id="history-list"></div><div id="assessment-empty" style="display:none;color:var(--muted);font-size:13px;padding:16px 0;">No assessments yet.</div></div>
 </div>
@@ -533,19 +581,40 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
     <button class="modal-close" onclick="closeWeekly()">✕</button>
   </div>
   <div class="modal-body">
-    <div class="m-section"><div class="m-label">This week at a glance</div><div class="week-stats" id="week-stats"></div></div>
-    <div class="m-section"><div class="m-label">What Dr. Sage found in your data</div><div id="week-insights"></div></div>
-    <div class="m-section"><div class="m-label">Goal scorecard</div><div id="week-goals"></div></div>
-    <div class="m-section">
-      <div class="m-label">Dr. Sage — clinical consultation</div>
+    <!-- Tab bar -->
+    <div class="enc-tab-bar">
+      <button class="enc-tab active" id="etab-brief" onclick="encTab('brief')">Briefing</button>
+      <button class="enc-tab" id="etab-encounter" onclick="encTab('encounter')">Clinical encounter</button>
+      <button class="enc-tab" id="etab-chat" onclick="encTab('chat')">Talk to Dr. Sage</button>
+    </div>
+
+    <!-- BRIEFING PANEL -->
+    <div class="enc-panel active" id="epanel-brief">
+      <div class="m-section"><div class="m-label">This week at a glance</div><div class="week-stats" id="week-stats"></div></div>
+      <div class="m-section"><div class="m-label">What Dr. Sage found in your data</div><div id="week-insights"></div></div>
+      <div class="m-section"><div class="m-label">Goal scorecard</div><div id="week-goals"></div></div>
+      <div style="text-align:center;margin-top:8px;">
+        <button onclick="encTab('encounter')" style="background:rgba(0,214,143,.08);border:1px solid rgba(0,214,143,.25);color:var(--green);font-size:13px;font-weight:600;border-radius:10px;padding:10px 22px;cursor:pointer;">Continue to clinical encounter →</button>
+      </div>
+    </div>
+
+    <!-- CLINICAL ENCOUNTER PANEL -->
+    <div class="enc-panel" id="epanel-encounter">
+      <div id="encounter-content">
+        <div class="enc-generating"><div class="enc-spinner"></div>Dr. Sage is reviewing your complete history and generating your clinical encounter...</div>
+      </div>
+    </div>
+
+    <!-- CHAT PANEL -->
+    <div class="enc-panel" id="epanel-chat">
       <div class="sage-head">
         <div class="sage-av">🧠</div>
         <div><div class="sage-name">Dr. Sage</div><div class="sage-cred">AI Clinical Advisor · SageHealth</div><div class="sage-online"><div class="online-dot"></div>Ready for your consultation</div></div>
-        <div style="margin-left:auto;font-size:11px;color:var(--muted);max-width:160px;text-align:right;line-height:1.5;">AI advisor. Not a substitute for a licensed physician.</div>
+        <div style="margin-left:auto;font-size:11px;color:var(--muted);max-width:150px;text-align:right;line-height:1.5;">AI advisor. Not a licensed physician.</div>
       </div>
       <div class="chat-area" id="chatArea"></div>
       <div class="chat-row">
-        <input class="chat-input" id="chatInput" placeholder="Talk to Dr. Sage..." onkeydown="if(event.key==='Enter')sendChat()">
+        <input class="chat-input" id="chatInput" placeholder="Ask Dr. Sage about your findings, tests, or plan..." onkeydown="if(event.key==='Enter')sendChat()">
         <button class="voice-btn" id="chatVoiceBtn" onclick="toggleChatVoice()">🔇 Voice</button>
         <button class="chat-send" id="chatSendBtn" onclick="sendChat()">Send</button>
       </div>
@@ -926,19 +995,203 @@ function openWeeklyReport(){
     return`<div class="goal-row"><div class="goal-label">${it.l}</div><div class="goal-bar-wrap"><div class="goal-bar-fill" style="width:${Math.round(pct)}%;background:${col};"></div></div><div class="goal-vals">${it.f(it.v)} / ${it.f(it.g)}</div></div>`;
   }).join('');
 
-  initSageChat();
+  // Reset encounter generation so it reruns each weekly open
+  const ec=document.getElementById('encounter-content');
+  if(ec) ec.dataset.generated='';
+  // Start on briefing tab
+  encTab('brief');
   document.getElementById('weeklyModal').classList.add('open');
 }
 function closeWeekly(){document.getElementById('weeklyModal').classList.remove('open');}
 
-// ── DR SAGE CHAT ──
+// ── ENCOUNTER TABS ──
+function encTab(tab){
+  ['brief','encounter','chat'].forEach(t=>{
+    document.getElementById('epanel-'+t).classList.toggle('active',t===tab);
+    document.getElementById('etab-'+t).classList.toggle('active',t===tab);
+  });
+  if(tab==='encounter') generateEncounter();
+  if(tab==='chat') initSageChat();
+}
+
+// ── CLINICAL ENCOUNTER GENERATOR ──
+async function generateEncounter(){
+  const el=document.getElementById('encounter-content');
+  // Don't regenerate if already done this session
+  if(el.dataset.generated==='1') return;
+  el.innerHTML='<div class="enc-generating"><div class="enc-spinner"></div>Dr. Sage is reviewing your complete history and generating your clinical encounter document...</div>';
+
+  const t=healthData[healthData.length-1];
+  const age=profile.age||48;
+  const prevEncounters=JSON.parse(localStorage.getItem('sh_encounters')||'[]');
+  const prevActions=JSON.parse(localStorage.getItem('sh_actions')||'[]');
+  const completedActions=prevActions.filter(a=>a.done).map(a=>a.title);
+  const openActions=prevActions.filter(a=>!a.done).map(a=>a.title);
+
+  const prompt=`You are Dr. Sage, a clinical AI physician conducting a formal weekly health encounter. Generate a structured clinical encounter document in JSON. Be specific, evidence-based, and clinically precise.
+
+Patient: ${profile.name||'Frank'}, ${age}yo ${profile.sex||'Male'}, ${profile.weight||185}lbs. Known conditions: ${profile.conditions||'None reported'}.
+
+Current biometrics:
+- Readiness: ${avg(healthData,'readiness')}/100 | HRV: ${avg(healthData,'hrv')}ms | RHR: ${avg(healthData,'rhr')} BPM
+- Sleep avg: ${avgF(healthData,'sleep')}h | Deep sleep: ${t.deep}h | REM: ${t.rem}h
+- SpO₂: ${t.spo2}% | Apnea events this week: ${healthData.reduce((s,d)=>s+d.apnea,0)} total
+- Steps avg: ${avg(healthData,'steps').toLocaleString()}/day | BP trend: ${bp(t.rhr,t.hrv)} (algorithm estimate)
+- Cardio age estimate: ${cardioAge(t.rhr,t.hrv,t.spo2,age)} years
+
+Prior encounters: ${prevEncounters.length} on record.
+Previously completed action items: ${completedActions.join(', ')||'None'}.
+Open action items not yet completed: ${openActions.join(', ')||'None'}.
+Prior discussion topics: ${prevEncounters.length>0?prevEncounters[0].chiefConcerns||'None':'No prior encounters'}.
+
+Generate a JSON object with exactly this structure:
+{
+  "chiefConcerns": ["string", ...],
+  "findings": [{"icon":"emoji","label":"metric name","value":"reading","status":"normal|borderline|abnormal","interpretation":"1-2 sentence clinical interpretation"},...],
+  "impression": "2-3 sentence overall clinical impression paragraph",
+  "differentials": [{"condition":"name","likelihood":"low|possible|likely","rationale":"brief reason"},...],
+  "orderedTests": [
+    {"name":"test name","priority":"urgent|routine|optional","reason":"why ordered based on data","how":"exactly how the patient orders or gets this test — be specific (e.g. 'Request a lipid panel at any Quest Diagnostics or LabCorp walk-in. No fasting required for basic panel.')","category":"lab|imaging|wearable|referral"}
+  ],
+  "plan": [
+    {"step":"action item","timeframe":"now|this week|this month|ongoing","rationale":"clinical reason"}
+  ],
+  "followUp": "specific follow-up instruction",
+  "priorActionReview": "1-2 sentences reviewing what was completed vs still open from prior action items"
+}
+
+Be specific. For orderedTests, include real actionable guidance — how to actually order the test (telehealth, walk-in lab, pharmacy, their doctor). Include 3-6 tests based on what the data actually warrants. Only include urgent tests if genuinely clinically indicated.`;
+
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:2000,messages:[{role:'user',content:prompt}]})});
+    const data=await res.json();
+    let text=data.content?.[0]?.text||'{}';
+    text=text.replace(/```json|```/g,'').trim();
+    const enc=JSON.parse(text);
+    renderEncounter(enc, el);
+    saveEncounter(enc);
+    el.dataset.generated='1';
+  }catch(e){
+    el.innerHTML=`<div style="color:var(--muted);font-size:13px;padding:16px 0;">Unable to generate clinical encounter — please check your API configuration. Error: ${e.message}</div>`;
+  }
+}
+
+function renderEncounter(enc, el){
+  const orderedTests=JSON.parse(localStorage.getItem('sh_test_status')||'{}');
+
+  let html=`<div class="encounter-card">`;
+
+  // Chief concerns
+  if(enc.chiefConcerns?.length){
+    html+=`<div class="enc-section"><div class="enc-label"><div class="enc-label-dot" style="background:var(--cyan)"></div>Chief concerns</div>`;
+    html+=enc.chiefConcerns.map(c=>`<div class="enc-finding"><div class="enc-finding-icon">◉</div><div class="enc-finding-body">${c}</div></div>`).join('');
+    html+=`</div>`;
+  }
+
+  // Findings
+  if(enc.findings?.length){
+    html+=`<div class="enc-section"><div class="enc-label"><div class="enc-label-dot" style="background:var(--green)"></div>Clinical findings</div>`;
+    html+=enc.findings.map(f=>{
+      const col=f.status==='normal'?'var(--green)':f.status==='borderline'?'var(--amber)':'var(--red)';
+      return`<div class="enc-finding"><div class="enc-finding-icon">${f.icon}</div><div class="enc-finding-body"><strong>${f.label}: <span style="color:${col}">${f.value}</span></strong><span class="enc-sub">${f.interpretation}</span></div></div>`;
+    }).join('');
+    html+=`</div>`;
+  }
+
+  // Impression
+  if(enc.impression){
+    html+=`<div class="enc-section"><div class="enc-label"><div class="enc-label-dot" style="background:var(--purple)"></div>Clinical impression</div><div style="font-size:13px;line-height:1.7;color:#bcc8e0;background:rgba(155,114,245,.05);border-left:2px solid var(--purple);padding:10px 14px;border-radius:0 8px 8px 0;">${enc.impression}</div></div>`;
+  }
+
+  // Differentials
+  if(enc.differentials?.length){
+    html+=`<div class="enc-section"><div class="enc-label"><div class="enc-label-dot" style="background:var(--amber)"></div>Differential considerations</div>`;
+    html+=enc.differentials.map(d=>{
+      const col=d.likelihood==='likely'?'var(--amber)':d.likelihood==='possible'?'var(--cyan)':'var(--muted)';
+      return`<div class="enc-finding"><div class="enc-finding-icon">◈</div><div class="enc-finding-body"><strong>${d.condition}</strong> <span style="color:${col};font-size:11px;font-weight:600;">[${d.likelihood}]</span><span class="enc-sub">${d.rationale}</span></div></div>`;
+    }).join('');
+    html+=`</div>`;
+  }
+
+  html+=`</div>`;
+
+  // Tests ordered
+  if(enc.orderedTests?.length){
+    html+=`<div style="margin-bottom:16px;"><div class="enc-label" style="margin-bottom:10px;"><div class="enc-label-dot" style="background:var(--red)"></div>Tests & referrals ordered</div>`;
+    html+=enc.orderedTests.map((test,i)=>{
+      const key=`test_${i}_${test.name.replace(/\s/g,'_')}`;
+      const done=orderedTests[key]||false;
+      return`<div class="test-order" style="${done?'opacity:.5':''}">
+        <span class="test-priority pri-${test.priority}">${test.priority}</span>
+        <div class="test-info">
+          <div class="test-name" style="${done?'text-decoration:line-through;color:var(--muted)':''}">${test.name}</div>
+          <div class="test-reason">${test.reason}</div>
+          <div class="test-how">📋 How to order: ${test.how}</div>
+        </div>
+        <div class="test-done"><input type="checkbox" ${done?'checked':''} onchange="markTestDone('${key}',this.checked)" title="Mark as ordered/completed"></div>
+      </div>`;
+    }).join('');
+    html+=`</div>`;
+  }
+
+  // Plan
+  if(enc.plan?.length){
+    html+=`<div class="encounter-card" style="margin-bottom:12px;"><div class="enc-label"><div class="enc-label-dot" style="background:var(--green)"></div>Treatment & management plan</div>`;
+    html+=enc.plan.map((p,i)=>`<div class="plan-item"><div class="plan-num">${i+1}</div><div class="plan-text"><strong>${p.step}</strong><span class="plan-timeframe">⏱ ${p.timeframe} · ${p.rationale}</span></div></div>`).join('');
+    html+=`</div>`;
+  }
+
+  // Prior action review
+  if(enc.priorActionReview){
+    html+=`<div style="background:rgba(0,184,217,.05);border:1px solid rgba(0,184,217,.15);border-radius:9px;padding:11px 14px;font-size:12px;color:#a5f3fc;line-height:1.6;margin-bottom:12px;">📂 <strong>Prior action review:</strong> ${enc.priorActionReview}</div>`;
+  }
+
+  // Follow-up
+  if(enc.followUp){
+    html+=`<div style="background:rgba(0,214,143,.05);border:1px solid rgba(0,214,143,.15);border-radius:9px;padding:11px 14px;font-size:12px;color:var(--green);line-height:1.6;margin-bottom:12px;">📅 <strong>Follow-up:</strong> ${enc.followUp}</div>`;
+  }
+
+  // Disclaimer
+  html+=`<div class="enc-disclaimer">⚠ This clinical encounter document is generated by an AI wellness system using wearable sensor data. It is not a medical diagnosis, does not constitute medical advice, and does not replace evaluation by a licensed physician. Tests and referrals listed are suggestions based on biometric patterns — please discuss with your doctor before ordering. In an emergency, call 911 or go to your nearest ER.</div>`;
+
+  el.innerHTML=html;
+}
+
+function markTestDone(key, checked){
+  const ts=JSON.parse(localStorage.getItem('sh_test_status')||'{}');
+  ts[key]=checked;
+  localStorage.setItem('sh_test_status',JSON.stringify(ts));
+}
+
+function saveEncounter(enc){
+  const encounters=JSON.parse(localStorage.getItem('sh_encounters')||'[]');
+  encounters.unshift({
+    date:new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}),
+    enc,
+    scores:{readiness:avg(healthData,'readiness'),hrv:avg(healthData,'hrv'),rhr:avg(healthData,'rhr'),sleep:avgF(healthData,'sleep')}
+  });
+  localStorage.setItem('sh_encounters',JSON.stringify(encounters.slice(0,20)));
+  populateHistory();
+  // Also extract plan items as action items
+  if(enc.plan?.length){
+    const existing=JSON.parse(localStorage.getItem('sh_actions')||'[]');
+    const date=new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+    const newItems=enc.plan.map(p=>({id:Date.now()+Math.random(),title:p.step,desc:p.rationale+' ('+p.timeframe+')',tag:'general',metric:null,target:null,done:false,autoCheck:false,evidence:null,dateAssigned:date,weekData:{...healthData[healthData.length-1]}}));
+    localStorage.setItem('sh_actions',JSON.stringify([...newItems,...existing]));
+  }
+}
+
 function initSageChat(){
   chatMessages=[]; document.getElementById('chatArea').innerHTML='';
   const t=healthData[healthData.length-1], name=profile.name||'Frank';
-  const opening=`Good ${new Date().getHours()<12?'morning':'afternoon'}, ${name}. I've reviewed your biometric data for the past 7 days. Your average readiness was ${avg(healthData,'readiness')}/100, HRV averaged ${avg(healthData,'hrv')}ms, and resting heart rate was ${avg(healthData,'rhr')} BPM. Last night you had ${t.sleep}h of sleep — ${t.deep}h deep, ${t.rem}h REM — and ${t.apnea} airway events were logged. ${t.apnea>2?'I want to discuss the overnight airway events — they appeared on multiple nights this week. ':'Breathing was stable overnight. '}What has been on your mind health-wise this week?`;
+  const prevEnc=JSON.parse(localStorage.getItem('sh_encounters')||'[]');
+  const openActions=JSON.parse(localStorage.getItem('sh_actions')||'[]').filter(a=>!a.done).map(a=>a.title);
+  const histCtx=prevEnc.length>0?`You have ${prevEnc.length} prior encounter(s). Last visit (${prevEnc[0].date}): "${prevEnc[0].enc?.impression||'see records'}". Open items: ${openActions.slice(0,3).join(', ')||'none'}.`:'First encounter on record.';
+  const opening=`Good ${new Date().getHours()<12?'morning':'afternoon'}, ${name}. I've reviewed your data and generated your clinical encounter. ${histCtx} Readiness averaged ${avg(healthData,'readiness')}/100, HRV ${avg(healthData,'hrv')}ms, resting HR ${avg(healthData,'rhr')} BPM this week. ${t.apnea>2?`I flagged ${t.apnea} airway events last night — that warrants discussion. `:''}What questions do you have about your findings, the ordered tests, or your plan?`;
   chatMessages.push({role:'assistant',content:opening});
   addBubble('sage',opening);
 }
+
 
 function addBubble(who,text){
   const a=document.getElementById('chatArea');
@@ -953,26 +1206,24 @@ async function sendChat(){
   const inp=document.getElementById('chatInput'), msg=inp.value.trim(); if(!msg)return;
   inp.value=''; document.getElementById('chatSendBtn').disabled=true;
   addBubble('user',msg); chatMessages.push({role:'user',content:msg}); showTyping();
-  const t=healthData[healthData.length-1];
-  const sys=`You are Dr. Sage, a clinical AI health advisor in SageHealth. Tone: precise, evidence-based, direct — like a good internist. Not cold, but clinically focused.
+  const prevEnc=JSON.parse(localStorage.getItem('sh_encounters')||'[]');
+  const openActs=JSON.parse(localStorage.getItem('sh_actions')||'[]').filter(a=>!a.done).map(a=>a.title);
+  const encCtx=prevEnc.length>0?`Prior encounters: ${prevEnc.length}. Last encounter (${prevEnc[0].date}) impression: "${prevEnc[0].enc?.impression||''}". Tests previously ordered: ${prevEnc[0].enc?.orderedTests?.map(x=>x.name).join(', ')||'none'}.`:'No prior encounters.';
+  const sys=`You are Dr. Sage, a clinical AI physician in SageHealth. Precise, evidence-based, direct. You have full access to the patient's history and encounter records.
 
-You NEVER diagnose or prescribe. You interpret biometric trends and wellness patterns. You always refer to a real physician for anything clinically significant.
+You do NOT diagnose or prescribe. You interpret biometric trends, explain clinical findings, help the patient understand their tests and plan, and refer to a real physician when appropriate.
 
-Patient: ${profile.name||'Frank'}, age ${profile.age||48}, ${profile.sex||'Male'}, ${profile.weight||185}lbs. Conditions: ${profile.conditions||'none reported'}.
+Patient: ${profile.name||'Frank'}, ${profile.age||48}yo ${profile.sex||'Male'}, ${profile.weight||185}lbs. Conditions: ${profile.conditions||'None'}.
+${encCtx}
+Open action items: ${openActs.join(', ')||'None'}.
 
 This week's biometrics:
-- Readiness avg: ${avg(healthData,'readiness')}/100
-- HRV avg: ${avg(healthData,'hrv')}ms RMSSD
-- Resting HR avg: ${avg(healthData,'rhr')} BPM
-- Sleep avg: ${avgF(healthData,'sleep')}h/night
-- Deep sleep last night: ${t.deep}h | REM: ${t.rem}h
-- SpO₂: ${t.spo2}% | Apnea events this week: ${healthData.reduce((s,d)=>s+d.apnea,0)}
-- Avg steps: ${avg(healthData,'steps').toLocaleString()}/day | Airway score: ${avg(healthData,'airway')}/100
-- CV age estimate: ${cardioAge(t.rhr,t.hrv,t.spo2,profile.age||48)} years | BP trend: ${bp(t.rhr,t.hrv)} (algorithm estimate)
+- Readiness: ${avg(healthData,'readiness')}/100 | HRV: ${avg(healthData,'hrv')}ms | RHR: ${avg(healthData,'rhr')} BPM
+- Sleep: ${avgF(healthData,'sleep')}h avg | Deep: ${t.deep}h | REM: ${t.rem}h
+- SpO₂: ${t.spo2}% | Apnea events: ${healthData.reduce((s,d)=>s+d.apnea,0)} this week
+- Steps: ${avg(healthData,'steps').toLocaleString()}/day | CV age est: ${cardioAge(t.rhr,t.hrv,t.spo2,profile.age||48)}
 
-Rules: Interpret before you advise. Plain English — explain what each metric means before telling them what it means for them. 4–6 sentences max. Ask one targeted follow-up question. Flag anything clinically significant clearly and recommend a physician.
-
-Add this disclaimer once: "Note: I am an AI wellness advisor, not a licensed physician."`;
+Rules: Reference specific findings and history. If patient asks about a test, explain what it measures and why it was ordered. Keep responses to 4-6 sentences. Ask one targeted follow-up. Refer to real physician when clinically indicated. Add disclaimer on first response.`;
 
   try{
     const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,system:sys,messages:chatMessages})});
@@ -1072,12 +1323,13 @@ function toggleAction(id){
   if(i>=0&&!items[i].autoCheck){items[i].done=!items[i].done;localStorage.setItem('sh_actions',JSON.stringify(items));populateHistory();}
 }
 function switchTab(tab){
-  ['actions','transcripts','assessments'].forEach(t=>{
+  ['actions','encounters','transcripts','assessments'].forEach(t=>{
     document.getElementById('historyTab-'+t).style.display=t===tab?'block':'none';
-    const b=document.getElementById('tab-'+t);b.classList.toggle('active',t===tab);
+    const b=document.getElementById('tab-'+t);if(b)b.classList.toggle('active',t===tab);
   });
 }
 function toggleTranscript(i){const b=document.getElementById('tb'+i);const a=document.getElementById('ta'+i);if(b){const o=b.classList.toggle('open');if(a)a.textContent=o?'▲':'▼';}}
+function toggleEncounter(i){const b=document.getElementById('henc'+i);const btn=b?.previousElementSibling?.querySelector('.he-expand');if(b){const o=b.classList.toggle('open');if(btn)btn.textContent=o?'▲ collapse':'▼ expand';}}
 function populateHistory(){
   const stored=localStorage.getItem('sh_history'); if(stored)consultHistory=JSON.parse(stored);
   let actions=JSON.parse(localStorage.getItem('sh_actions')||'[]');
@@ -1096,7 +1348,26 @@ function populateHistory(){
   const tl=document.getElementById('transcript-list'),te=document.getElementById('transcript-empty');
   if(!tr.length){if(tl)tl.innerHTML='';if(te)te.style.display='block';}
   else{if(te)te.style.display='none';if(tl)tl.innerHTML=tr.map((t,i)=>`<div class="transcript-card"><div class="tc-header" onclick="toggleTranscript(${i})"><div><div class="tc-date">Consultation · ${t.date}</div><div class="tc-prev">${t.messages.length} messages · Readiness ${t.scores.readiness}/100 · HRV ${t.scores.hrv}ms</div></div><span id="ta${i}">▼</span></div><div class="tc-body" id="tb${i}">${t.messages.map(m=>`<div class="t-msg ${m.role==='user'?'user':''}"><div class="t-av ${m.role==='user'?'you':'sage'}">${m.role==='user'?(profile.name||'F')[0].toUpperCase():'🧠'}</div><div class="t-bubble">${m.content}</div></div>`).join('')}</div></div>`).join('');}
-  const hl=document.getElementById('history-list'),he=document.getElementById('assessment-empty');
+  // Encounters
+  const encounters=JSON.parse(localStorage.getItem('sh_encounters')||'[]');
+  const enl=document.getElementById('encounter-list'), ene=document.getElementById('encounter-empty');
+  if(!encounters.length){if(enl)enl.innerHTML='';if(ene)ene.style.display='block';}
+  else{
+    if(ene)ene.style.display='none';
+    if(enl)enl.innerHTML=encounters.map((e,i)=>`
+      <div class="history-encounter">
+        <div class="he-header">
+          <div><div class="he-date">${e.date}</div><div class="he-title">Clinical encounter · Readiness ${e.scores.readiness}/100 · HRV ${e.scores.hrv}ms</div></div>
+          <button class="he-expand" onclick="toggleEncounter(${i})">▼ expand</button>
+        </div>
+        <div class="he-body" id="henc${i}">
+          <div style="font-size:13px;color:#bcc8e0;line-height:1.7;margin-bottom:10px;">${e.enc?.impression||''}</div>
+          ${e.enc?.orderedTests?.length?`<div style="font-size:11px;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em;font-weight:600;">Tests ordered</div>`+e.enc.orderedTests.map(t=>`<div style="font-size:12px;padding:5px 0;border-bottom:1px solid var(--border);"><span class="test-priority pri-${t.priority}" style="margin-right:8px;">${t.priority}</span>${t.name}</div>`).join(''):''}
+          ${e.enc?.plan?.length?`<div style="font-size:11px;color:var(--muted);margin:10px 0 6px;text-transform:uppercase;letter-spacing:.06em;font-weight:600;">Plan</div>`+e.enc.plan.map((p,j)=>`<div style="font-size:12px;padding:5px 0;border-bottom:1px solid var(--border);">${j+1}. ${p.step} <span style="color:var(--muted);">(${p.timeframe})</span></div>`).join(''):''}
+        </div>
+      </div>`).join('');
+  }
+
   if(!consultHistory.length){if(hl)hl.innerHTML='';if(he)he.style.display='block';}
   else{if(he)he.style.display='none';if(hl)hl.innerHTML=consultHistory.map(h=>`<div class="history-card"><div class="hc-date">${h.date}</div><div style="font-size:14px;font-weight:600;">Weekly clinical assessment</div><div class="hc-body">${h.assessment}</div><div class="hc-scores"><span class="hc-score" style="color:var(--green)">Readiness ${h.scores.readiness}</span><span class="hc-score" style="color:var(--purple)">Sleep ${h.scores.sleep}h</span><span class="hc-score" style="color:var(--cyan)">HRV ${h.scores.hrv}ms</span><span class="hc-score" style="color:var(--amber)">Airway ${h.scores.airway}</span></div></div>`).join('');}
 }
