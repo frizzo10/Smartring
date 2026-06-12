@@ -50,7 +50,7 @@ function bpSt(s){return s<120?'great':s<130?'good':s<140?'watch':'alert';}
 function tempSt(dev){return Math.abs(dev)<=0.3?'great':Math.abs(dev)<=0.5?'good':Math.abs(dev)<=0.8?'watch':'alert';}
 function ssSt(v){return v>=85?'great':v>=70?'good':v>=55?'watch':'alert';}
 function slLabel(s){return{great:'Excellent',good:'Good',watch:'Watch',alert:'Alert'}[s];}
-function chipCss(s){return{great:{bg:'rgba(0,214,143,.1)',c:'var(--green)'},good:{bg:'rgba(0,184,217,.1)',c:'var(--cyan)'},watch:{bg:'rgba(245,158,11,.1)',c:'var(--amber)'},alert:{bg:'rgba(240,82,82,.1)',c:'var(--red)'}}[s];}
+function chipCss(s){return{great:{bg:'var(--green-bg)',c:'var(--green)'},good:{bg:'var(--cyan-bg)',c:'var(--cyan)'},watch:{bg:'var(--amber-bg)',c:'var(--amber)'},alert:{bg:'var(--red-bg)',c:'var(--red)'}}[s];}
 
 /* ─── INTERPRETATIONS ───────────────────────────── */
 function iRHR(v){if(v<60)return`Resting HR of ${v} BPM is in the athletic range — your heart pumps more per beat and works less hard at rest.`;if(v<70)return`Resting HR of ${v} BPM is healthy. Your heart is pumping efficiently.`;if(v<80)return`Resting HR of ${v} BPM is mildly elevated. Common causes: dehydration, caffeine, stress, or reduced sleep quality.`;return`Resting HR of ${v} BPM is elevated. Consistently above 80 warrants monitoring.`;}
@@ -62,7 +62,7 @@ function iSleep(score,h,deep,rem){if(score>=85)return`${h}h sleep with ${deep}h 
 function iSteps(v,goal){const p=Math.round(v/goal*100);if(p>=100)return`Goal achieved: ${v.toLocaleString()} steps. Research links 8,000+ daily steps to significantly lower all-cause mortality.`;if(p>=75)return`${v.toLocaleString()} steps — ${p}% of goal. A 15-minute walk closes the gap.`;return`${v.toLocaleString()} steps — below target. Prolonged sitting independently raises cardiovascular risk.`;}
 
 /* ─── CHART CONFIG ──────────────────────────────── */
-const chartOpts=(min,max)=>({responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#5a6a85',font:{size:10}},grid:{display:false}},y:{ticks:{color:'#5a6a85',font:{size:10}},grid:{color:'rgba(255,255,255,.04)'},min,max}}});
+const chartOpts=(min,max)=>({responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#6b7f96',font:{size:10}},grid:{display:false}},y:{ticks:{color:'#6b7f96',font:{size:10}},grid:{color:'rgba(0,0,0,.05)'},min,max}}});
 
 /* ─── INIT ──────────────────────────────────────── */
 function initApp(){
@@ -148,7 +148,7 @@ function buildDashboard(){
 
     document.getElementById('dd-r3').innerHTML=
       ddCard({name:'Heart rate variability (HRV)',value:t.hrv,unit:'ms',status:hrvSt(t.hrv),what:'Tiny gaps between heartbeats. More variation = healthier nervous system.',why:iHRV(t.hrv,age),extra:scale(t.hrv,10,100,[{from:0,to:30,c:'#f05252'},{from:30,to:50,c:'#f59e0b'},{from:50,to:60,c:'#00b8d9'},{from:60,to:40,c:'#00d68f'}]),cid:'dd-hrv',bottom:stat3([avg(data,'hrv')+' ms','7-day avg','var(--green)'],[Math.max(...data.map(d=>d.hrv))+' ms','Best','var(--green)'],[Math.round(65-age*.5)+' ms','Age norm','var(--muted)'])})+
-      ddCard({name:'Sleep last night',value:t.sleep+'h',unit:'',status:ssSt(t.sleepScore),what:'Total sleep and the quality of your sleep stages.',why:iSleep(t.sleepScore,t.sleep,t.deep,t.rem),extra:`<div class="sleep-bar">${[{c:'#4c35a8',f:t.deep*.5},{c:'#6b52c4',f:t.light*.4},{c:'#4c35a8',f:t.deep*.5},{c:'#00b8d9',f:t.rem*.6},{c:'#1a2535',f:.25},{c:'#00b8d9',f:t.rem*.4},{c:'#6b52c4',f:t.light*.6}].map(s=>`<div style="flex:${s.f};background:${s.c};border-radius:3px;"></div>`).join('')}</div><div class="sleep-leg">${[['#4c35a8','Deep'],['#6b52c4','Light'],['#00b8d9','REM'],['#1a2535','Awake']].map(([c,l])=>`<div class="sl-i"><div class="sl-d" style="background:${c};"></div>${l}</div>`).join('')}</div>`,cid:'dd-sleep',bottom:stat3([t.deep+'h','Deep','#7c5ddb'],[t.rem+'h','REM','var(--cyan)'],[avgF(data,'sleep')+'h','7-day avg','var(--muted)'])});
+      ddCard({name:'Sleep last night',value:t.sleep+'h',unit:'',status:ssSt(t.sleepScore),what:'Total sleep and the quality of your sleep stages.',why:iSleep(t.sleepScore,t.sleep,t.deep,t.rem),extra:`<div class="sleep-bar">${[{c:'#6d5bd0',f:t.deep*.5},{c:'#a78bfa',f:t.light*.4},{c:'#6d5bd0',f:t.deep*.5},{c:'#00b8d9',f:t.rem*.6},{c:'#e2e8f0',f:.25},{c:'#00b8d9',f:t.rem*.4},{c:'#a78bfa',f:t.light*.6}].map(s=>`<div style="flex:${s.f};background:${s.c};border-radius:3px;"></div>`).join('')}</div><div class="sleep-leg">${[['#6d5bd0','Deep'],['#a78bfa','Light'],['#00b8d9','REM'],['#e2e8f0','Awake']].map(([c,l])=>`<div class="sl-i"><div class="sl-d" style="background:${c};"></div>${l}</div>`).join('')}</div>`,cid:'dd-sleep',bottom:stat3([t.deep+'h','Deep','#7c5ddb'],[t.rem+'h','REM','var(--cyan)'],[avgF(data,'sleep')+'h','7-day avg','var(--muted)'])});
 
     const mk=(id,vals,color,type,min,max)=>{const el=document.getElementById(id);if(!el)return;new Chart(el,{type:type||'line',data:{labels,datasets:[{data:vals,borderColor:color,backgroundColor:color+'18',tension:.4,pointBackgroundColor:color,pointRadius:3,fill:true,borderRadius:type==='bar'?4:0}]},options:chartOpts(min,max)});};
     mk('dd-bp',data.map(d=>d.bpSys),'#ec4899','line',90,160);
@@ -218,10 +218,10 @@ function startECGOnCanvas(canvasId,animVar,onStop){
     const speed=w/3,dx=speed*dt/1000;
     if(dx>=1){const img=ctx.getImageData(Math.ceil(dx),0,w-Math.ceil(dx),h);ctx.clearRect(0,0,w,h);ctx.putImageData(img,0,0);}
     ctx.clearRect(w-Math.ceil(dx)-1,0,Math.ceil(dx)+3,h);
-    ctx.strokeStyle='rgba(0,214,143,.06)'; ctx.lineWidth=.5;
+    ctx.strokeStyle='rgba(14,159,110,.08)'; ctx.lineWidth=.5;
     for(let gx=w%20;gx<w;gx+=20){ctx.beginPath();ctx.moveTo(gx,0);ctx.lineTo(gx,h);ctx.stroke();}
     for(let gy=0;gy<h;gy+=18){ctx.beginPath();ctx.moveTo(0,gy);ctx.lineTo(w,gy);ctx.stroke();}
-    ctx.strokeStyle='#00d68f'; ctx.lineWidth=2; ctx.lineJoin='round'; ctx.lineCap='round';
+    ctx.strokeStyle='#0e9f6e'; ctx.lineWidth=2; ctx.lineJoin='round'; ctx.lineCap='round';
     ctx.beginPath();
     const steps=Math.ceil(dx)+2;
     for(let i=0;i<=steps;i++){const px=w-steps+i;const ph=(phase+i/speed/(period/1000))%1;const y=mid-ecgY(ph)*(mid*.8/25);if(i===0)ctx.moveTo(px,y);else ctx.lineTo(px,y);}

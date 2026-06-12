@@ -427,7 +427,7 @@ function buildSignalsPanel(data, profile, goals) {
         <span class="signals-badge ${badgeClass}">${badgeText}</span>
         ${testMode ? '<span style="font-size:10px;font-weight:700;padding:2px 10px;border-radius:8px;background:rgba(155,114,245,.2);color:var(--purple);margin-left:4px;">TEST MODE</span>' : ''}
       </div>
-      <button onclick="toggleSignalTestMode()" style="font-size:11px;padding:4px 11px;border-radius:7px;border:1px solid var(--border2);background:${testMode ? 'rgba(155,114,245,.12)' : 'var(--panel2)'};color:${testMode ? 'var(--purple)' : 'var(--muted)'};cursor:pointer;">
+      <button onclick="toggleSignalTestMode()" style="font-size:11px;padding:5px 12px;border-radius:7px;border:1px solid ${testMode ? 'rgba(109,91,208,.35)' : 'var(--border2)'};background:${testMode ? 'var(--purple-bg)' : 'var(--panel)'};color:${testMode ? 'var(--purple)' : 'var(--muted)'};cursor:pointer;font-weight:500;box-shadow:0 1px 3px rgba(0,0,0,.07);">
         ${testMode ? '✕ Exit test mode' : '🧪 Test signals'}
       </button>
     </div>
