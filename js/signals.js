@@ -259,7 +259,7 @@ const SIGNAL_PATTERNS = [
     },
     action: 'Talk to someone — and take one full rest day this week',
     actionHow: `<strong>This week:</strong> Take one completely unscheduled day — no obligations, no performance. Your HRV will tell us within 48 hours if it helped. <strong>Longer term:</strong> Chronic HRV suppression with adequate sleep is often associated with anxiety or burnout. A few sessions with a therapist or counselor have stronger evidence for HRV recovery than almost any other intervention. If cost is a barrier, BetterHelp and similar services start at $65/week. Your ring will show us if things shift.`,
-    askSage: 'My HRV has been suppressed all week even though I\'m sleeping. What\'s happening?',
+    askSage: 'My HRV has been suppressed all week even though I am sleeping. What is happening?',
     disclaimer: 'HRV suppression has many causes. This is an observation, not a mental health diagnosis.'
   },
 
@@ -279,7 +279,7 @@ const SIGNAL_PATTERNS = [
       const readiness = avg(data, 'readiness');
       return steps > 10000 && hrv < hrvNorm - 10 && rhr > 68 && readiness < 65;
     },
-    watchingFor: 'Steps vs HRV recovery — are you working harder than you\'re recovering?',
+    watchingFor: 'Steps vs HRV recovery — are you working harder than you are recovering?',
     narrative(data) {
       const steps = avg(data, 'steps').toLocaleString();
       const hrv = avg(data, 'hrv');
@@ -296,7 +296,7 @@ const SIGNAL_PATTERNS = [
     },
     action: 'Take 2 rest days. Reduce intensity by 40% this week.',
     actionHow: `<strong>Today and tomorrow:</strong> Walk only — no runs, no hard workouts. Prioritize sleep over training. <strong>This week:</strong> Drop workout intensity by 40%. Elite athletes monitor HRV daily for exactly this reason — they know that training through suppressed HRV makes you slower and increases injury risk. Watch your HRV in SageHealth — if it's back above your baseline within 5 days, resume normal training. If not, extend the recovery window.`,
-    askSage: 'My HRV is dropping even though I\'m training hard. Am I overtraining?',
+    askSage: 'My HRV is dropping even though I am training hard. Am I overtraining?',
     disclaimer: 'This is a recovery signal based on HRV and activity patterns. Individual training needs vary.'
   },
 
@@ -378,7 +378,7 @@ const SIGNAL_PATTERNS = [
     },
     action: 'Three specific changes — pick one to start tonight',
     actionHow: `<strong>1. Temperature:</strong> Drop your bedroom to 65–68°F. Deep sleep requires core body cooling — this is the single highest-impact physical change. <strong>2. Timing:</strong> Move your bedtime 30 minutes earlier for one week. Deep sleep is concentrated in the first half of the night — going to bed later cuts into it disproportionately. <strong>3. Alcohol:</strong> If you drink, stop 3 hours before bed. Alcohol fragments sleep architecture and almost eliminates deep sleep even at low doses. Pick one. We'll check your numbers next week.`,
-    askSage: 'I\'m getting enough sleep but my deep sleep is low — what can I do?',
+    askSage: 'I am getting enough sleep but my deep sleep is low. What can I do?',
     disclaimer: 'Sleep stage data from ring sensors is an estimate. Clinical sleep studies provide the most accurate staging.'
   },
 
@@ -467,7 +467,7 @@ function buildSignalsPanel(data, profile, goals) {
 
           <div class="sig-btns">
             <button class="sig-btn-did" onclick="acknowledgeSignal('${sig.id}')">
-              ${isAck ? '✓ Acknowledged' : 'I\'m on it'}
+              ${isAck ? '✓ Acknowledged' : 'I am on it'}
             </button>
             <button class="sig-btn-sage" onclick="openSignalChat('${sig.id}', \`${sig.askSage.replace(/`/g,"'")}\`)">
               🧠 Ask Dr. Sage
@@ -496,12 +496,13 @@ function buildSignalsPanel(data, profile, goals) {
 
 /* ── SIGNAL ACTIONS ───────────────────────────────── */
 function acknowledgeSignal(id) {
+  if(typeof showToast==='undefined') return setTimeout(()=>acknowledgeSignal(id),200);
   const ack = JSON.parse(localStorage.getItem('sh_acknowledged_signals') || '{}');
   ack[id] = new Date().toISOString();
   localStorage.setItem('sh_acknowledged_signals', JSON.stringify(ack));
   const btn = document.querySelector(`#sigcard-${id} .sig-btn-did`);
   if (btn) { btn.textContent = '✓ On it'; btn.style.opacity = '.6'; }
-  showToast('✓ Noted', 'We\'ll track whether this changes your numbers.');
+  showToast('✓ Noted', 'We will track whether this changes your numbers.');
 }
 
 function dismissSignal(id) {
