@@ -384,9 +384,7 @@ const SIGNAL_PATTERNS = [
 
 ];
 
-/* ── HELPERS (mirror from app.js) ─────────────────── */
-function avg(arr, k) { return Math.round(arr.reduce((s, d) => s + d[k], 0) / arr.length); }
-function avgF(arr, k) { return +(arr.reduce((s, d) => s + d[k], 0) / arr.length).toFixed(1); }
+/* ── HELPERS: avg and avgF defined in app.js ── */
 
 /* ── MAIN RENDER FUNCTION ─────────────────────────── */
 /* ── BUILD SIGNALS PANEL ─────────────────────────── */
