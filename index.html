@@ -392,25 +392,19 @@
         <div class="page-sub" id="dashDate">Today's health overview</div>
       </div>
 
-      <!-- Compact top bar: rewards + walkthrough + briefing -->
+      <!-- Compact top bar: briefing + walkthrough -->
       <div id="topBar" style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 18px;margin-bottom:20px;">
-        <!-- Row 1: streak + badges + walkthrough btn -->
-        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-          <div id="streakChip" style="display:none;align-items:center;gap:6px;background:var(--surface2);border-radius:20px;padding:5px 12px;flex-shrink:0;">
-            <span style="font-size:16px;">🔥</span>
-            <span style="font-size:15px;font-weight:700;color:var(--warn);" id="streakNum">0</span>
-            <span style="font-size:11px;color:var(--muted);">day streak</span>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;">
+          <div style="flex:1;min-width:0;">
+            <span style="font-size:10px;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted);font-weight:600;">Dr. Sage's daily briefing · </span>
+            <span style="font-size:13px;line-height:1.6;" id="dailySummary">Loading...</span>
           </div>
-          <div id="badgeChips" style="display:flex;gap:6px;flex-wrap:wrap;flex:1;"></div>
-          <button onclick="startWalkthrough()" style="display:flex;align-items:center;gap:7px;background:rgba(74,222,128,0.08);border:1px solid rgba(74,222,128,0.22);border-radius:20px;padding:7px 14px;cursor:pointer;color:var(--accent);font-size:12px;font-weight:600;white-space:nowrap;flex-shrink:0;" title="Dr. Sage walks you through your numbers with voice">
+          <button onclick="startWalkthrough()" style="display:flex;align-items:center;gap:7px;background:rgba(74,222,128,0.08);border:1px solid rgba(74,222,128,0.22);border-radius:20px;padding:7px 14px;cursor:pointer;color:var(--accent);font-size:12px;font-weight:600;white-space:nowrap;flex-shrink:0;">
             🎙️ Dr. Sage walkthrough
           </button>
         </div>
-        <!-- Row 2: daily briefing inline -->
-        <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);">
-          <span style="font-size:10px;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted);font-weight:600;">Dr. Sage's daily briefing · </span>
-          <span style="font-size:13px;line-height:1.6;" id="dailySummary">Loading...</span>
-        </div>
+        <!-- Rewards row — hidden until something is earned -->
+        <div id="rewardsRow" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-wrap:wrap;"></div>
       </div>
 
       <!-- Score cards with interpretation -->
@@ -1297,17 +1291,10 @@ function getEarnedBadges() {
 }
 
 function checkAndAwardBadges() {
-  const today = healthData[healthData.length-1];
+  // Badges are ONLY awarded through explicit actions (walkthrough completion, manual triggers)
+  // Never auto-awarded from demo data
   const earned = getEarnedBadges();
-  const newlyEarned = [];
-  BADGES.forEach(b => {
-    if (!earned.includes(b.id) && b.check(healthData, today)) {
-      earned.push(b.id);
-      newlyEarned.push(b);
-    }
-  });
-  localStorage.setItem('sh_badges', JSON.stringify(earned));
-  return { earned, newlyEarned };
+  return { earned, newlyEarned: [] };
 }
 
 function calcStreak() {
@@ -1323,37 +1310,29 @@ function calcStreak() {
 function buildRewardsBar() {
   const { earned, newlyEarned } = checkAndAwardBadges();
   const streak = calcStreak();
+  const earnedBadges = BADGES.filter(b => earned.includes(b.id));
+  const row = document.getElementById('rewardsRow');
+  if (!row) return;
 
-  // Streak chip
-  const sc = document.getElementById('streakChip');
-  if (streak > 0) { sc.style.display='flex'; document.getElementById('streakNum').textContent=streak; }
-  else sc.style.display='none';
-
-  // Badge chips — only show if any earned via real interaction (not demo auto-awards)
-  const realEarned = earned.filter(id => id !== 'step_goal' && id !== 'deep_sleep' && id !== 'hrv_high' && id !== 'clean_airway' && id !== 'readiness_90' && id !== 'week_steps' && id !== 'consistent_sleep');
-  // Auto-metric badges only show after user has completed a walkthrough (first_steps earned)
-  const showAll = earned.includes('first_steps');
-  const displayBadges = showAll ? BADGES.filter(b => earned.includes(b.id)) : BADGES.filter(b => realEarned.includes(b.id));
-
-  const bc = document.getElementById('badgeChips');
-  if (bc) {
-    if (displayBadges.length > 0) {
-      bc.innerHTML = `<span style="font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);padding:4px 4px 4px 2px;font-weight:600;">Your achievements</span>` +
-        displayBadges.slice(0,4).map(b =>
-          `<span style="display:inline-flex;align-items:center;gap:4px;background:var(--surface2);border-radius:20px;padding:4px 10px;font-size:11px;color:var(--muted);" title="${b.desc}">${b.icon} ${b.name}</span>`
-        ).join('') + (displayBadges.length > 4 ? `<span style="font-size:11px;color:var(--muted);padding:4px 6px;">+${displayBadges.length-4} more</span>` : '');
-    } else {
-      bc.innerHTML = '';
-    }
+  if (earnedBadges.length === 0 && streak === 0) {
+    row.style.display = 'none';
+    return;
   }
 
-  // Toast for newly earned
+  row.style.display = 'flex';
+  row.innerHTML =
+    (streak > 0 ? `<span style="display:inline-flex;align-items:center;gap:5px;background:var(--surface2);border-radius:20px;padding:4px 12px;font-size:12px;"><span>🔥</span><strong style="color:var(--warn);">${streak}</strong><span style="color:var(--muted);">day streak</span></span>` : '') +
+    `<span style="font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);padding:0 4px;font-weight:600;">Achievements</span>` +
+    earnedBadges.slice(0,4).map(b => `<span style="display:inline-flex;align-items:center;gap:4px;background:var(--surface2);border-radius:20px;padding:4px 10px;font-size:11px;color:var(--muted);" title="${b.desc}">${b.icon} ${b.name}</span>`).join('') +
+    (earnedBadges.length > 4 ? `<span style="font-size:11px;color:var(--muted);">+${earnedBadges.length-4} more</span>` : '');
+
   if (newlyEarned.length > 0) {
     const b = newlyEarned[0];
-    showRewardToast(`${b.icon} ${b.name} unlocked!`, b.desc + (newlyEarned.length > 1 ? ` (+${newlyEarned.length-1} more)` : ''));
-    speak(`Congratulations, ${profile.name||'Frank'}! You just earned the ${b.name} badge. ${b.desc}.`);
+    showRewardToast(`${b.icon} ${b.name} unlocked!`, b.desc);
+    speak(`Congratulations, ${profile.name||'Frank'}! You just earned the ${b.name} badge.`);
   }
 }
+
 
 function showRewardToast(title, body) {
   const t = document.getElementById('rewardToast');
