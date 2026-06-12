@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SageHealth — Wosheng TK30</title>
+<title>SageHealth</title>
 <style>
 :root{
   --bg:#07090f;--panel:#0d1320;--panel2:#121b2b;
@@ -11,13 +11,13 @@
   --text:#e4eeff;--muted:#5a6a85;
   --green:#00d68f;--cyan:#00b8d9;--purple:#9b72f5;
   --amber:#f59e0b;--red:#f05252;--blue:#3b82f6;--pink:#ec4899;
-  --font:-apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI',sans-serif;
-  --mono:'SF Mono','Fira Code',monospace;
+  --font:-apple-system,BlinkMacSystemFont,\'SF Pro Display\',\'Segoe UI\',sans-serif;
+  --mono:\'SF Mono\',\'Fira Code\',monospace;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
 body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;}
 
-/* ── ONBOARDING ─────────────────────────────────── */
+/* ── ONBOARDING ── */
 #onboarding{position:fixed;inset:0;background:var(--bg);z-index:1000;display:flex;align-items:center;justify-content:center;padding:24px;}
 .ob{background:var(--panel);border:1px solid var(--border2);border-radius:20px;padding:38px;max-width:500px;width:100%;}
 .ob-logo{font-size:21px;font-weight:700;color:var(--green);margin-bottom:6px;}
@@ -43,7 +43,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
 .btn-go:hover{opacity:.88;}
 .btn-skip{background:transparent;color:var(--muted);font-size:12px;border:none;cursor:pointer;margin-top:10px;display:block;text-align:center;width:100%;}
 
-/* ── APP SHELL ──────────────────────────────────── */
+/* ── LAYOUT ── */
 #app{display:none;}
 .sidebar{position:fixed;left:0;top:0;bottom:0;width:195px;background:var(--panel);border-right:1px solid var(--border);padding:20px 13px;display:flex;flex-direction:column;z-index:100;}
 .logo{font-size:17px;font-weight:700;color:var(--green);letter-spacing:-.5px;margin-bottom:26px;padding:0 6px;}
@@ -61,33 +61,57 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
 .main{margin-left:195px;padding:28px 30px;min-height:100vh;}
 .page{display:none;}.page.active{display:block;}
 
-/* ── DASHBOARD ──────────────────────────────────── */
+/* ── DASHBOARD HEADER ── */
 .dash-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px;gap:12px;}
 .dash-title{font-size:21px;font-weight:600;margin-bottom:2px;}
 .dash-sub{font-size:12px;color:var(--muted);}
 .hdr-btns{display:flex;gap:8px;flex-shrink:0;}
 .btn-sm{display:flex;align-items:center;gap:6px;border:1px solid var(--border2);background:var(--panel);color:var(--muted);font-size:12px;border-radius:8px;padding:7px 12px;cursor:pointer;white-space:nowrap;transition:all .15s;}
 .btn-sm:hover{border-color:var(--green);color:var(--green);}
+.btn-dr{background:rgba(155,114,245,.08);border-color:rgba(155,114,245,.3);color:var(--purple);}
+.btn-dr:hover{background:rgba(155,114,245,.15);border-color:var(--purple);color:var(--purple);}
 
-.ring-banner{display:flex;align-items:center;gap:8px;background:rgba(0,214,143,.04);border:1px solid rgba(0,214,143,.1);border-radius:10px;padding:9px 14px;margin-bottom:14px;flex-wrap:wrap;}
-.rs{font-size:11px;font-weight:600;padding:3px 9px;border-radius:7px;background:var(--panel2);}
-
-.briefing{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:13px 17px;margin-bottom:14px;display:flex;align-items:flex-start;gap:13px;}
+/* ── BRIEFING ── */
+.briefing{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:13px 17px;margin-bottom:16px;display:flex;align-items:flex-start;gap:13px;}
 .briefing-av{background:rgba(0,214,143,.08);border:1px solid rgba(0,214,143,.15);border-radius:8px;padding:7px 10px;text-align:center;flex-shrink:0;}
 .briefing-text{font-size:13px;line-height:1.75;flex:1;}
 .briefing-text strong{color:var(--green);}
 .briefing-text .warn{color:var(--amber);}
 
-/* ── TOP STAT CARDS ─────────────────────────────── */
-.top-stats{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:14px;}
-.sc{background:var(--panel);border:1px solid var(--border);border-radius:11px;padding:13px 14px;cursor:pointer;transition:border-color .15s;}
-.sc:hover{border-color:var(--border2);}
-.sc-label{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:600;margin-bottom:5px;}
-.sc-val{font-size:22px;font-weight:700;font-family:var(--mono);line-height:1;margin-bottom:3px;}
-.sc-sub{font-size:10px;color:var(--muted);}
-.sc-status{font-size:10px;font-weight:600;margin-top:4px;}
+/* ── TOP METRICS ROW ── */
+.metrics-row{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px;}
+.mc{background:var(--panel);border:1px solid var(--border);border-radius:11px;padding:14px 15px;cursor:pointer;transition:border-color .15s;}
+.mc:hover{border-color:var(--border2);}
+.mc-label{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:600;margin-bottom:5px;}
+.mc-val{font-size:26px;font-weight:700;font-family:var(--mono);line-height:1;margin-bottom:3px;}
+.mc-sub{font-size:11px;color:var(--muted);}
+.mc-status{font-size:10px;font-weight:600;margin-top:5px;}
 
-/* ── DEEP DIVE CARDS ────────────────────────────── */
+/* ── ECG HERO ── */
+.ecg-hero{background:var(--panel);border:1px solid rgba(240,82,82,.2);border-radius:14px;padding:20px 24px;margin-bottom:16px;}
+.ecg-hero-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;gap:16px;}
+.ecg-hero-left{flex:1;}
+.ecg-hero-title{font-size:16px;font-weight:700;color:var(--text);margin-bottom:4px;display:flex;align-items:center;gap:8px;}
+.ecg-live-dot{width:8px;height:8px;border-radius:50%;background:var(--green);animation:ecgp 1s infinite;flex-shrink:0;}
+@keyframes ecgp{0%,100%{opacity:1}50%{opacity:.25}}
+.ecg-hero-sub{font-size:12px;color:var(--muted);line-height:1.5;margin-bottom:12px;}
+.ecg-hero-vitals{display:flex;gap:16px;flex-wrap:wrap;}
+.ecg-hv{background:var(--panel2);border-radius:9px;padding:8px 14px;text-align:center;}
+.ecg-hv-val{font-size:22px;font-weight:700;font-family:var(--mono);}
+.ecg-hv-label{font-size:10px;color:var(--muted);margin-top:2px;}
+.ecg-hero-btns{display:flex;gap:9px;flex-shrink:0;}
+.ecg-btn-primary{background:rgba(240,82,82,.1);border:1px solid rgba(240,82,82,.3);color:var(--red);font-size:13px;font-weight:700;border-radius:10px;padding:10px 18px;cursor:pointer;white-space:nowrap;transition:all .15s;}
+.ecg-btn-primary:hover{background:rgba(240,82,82,.18);}
+.ecg-btn-sage{background:rgba(155,114,245,.1);border:1px solid rgba(155,114,245,.3);color:var(--purple);font-size:13px;font-weight:700;border-radius:10px;padding:10px 18px;cursor:pointer;white-space:nowrap;transition:all .15s;}
+.ecg-btn-sage:hover{background:rgba(155,114,245,.18);}
+.ecg-canvas-wrap{background:rgba(0,214,143,.015);border-radius:8px;overflow:hidden;margin-bottom:10px;}
+.ecg-foot-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.ecg-rhythm-label{font-size:12px;color:var(--muted);}
+.ecg-anatomy-inline{display:flex;gap:18px;flex-wrap:wrap;margin-left:auto;}
+.ecg-anat-item{font-size:11px;color:var(--muted);}
+.ecg-anat-item strong{color:var(--text);}
+
+/* ── DEEP DIVE ── */
 .dd{background:var(--panel);border:1px solid var(--border);border-radius:13px;padding:19px 21px;margin-bottom:13px;}
 .dd-head{display:flex;gap:16px;align-items:flex-start;margin-bottom:13px;}
 .dd-left{flex:1;min-width:0;}
@@ -108,13 +132,12 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
 .dd-scale-track{display:flex;height:7px;border-radius:4px;overflow:hidden;}
 .dd-scale-marker{position:absolute;top:-3px;width:3px;height:13px;border-radius:2px;background:white;box-shadow:0 0 5px rgba(255,255,255,.5);transform:translateX(-50%);}
 .dd-scale-labels{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:3px;}
-
 .sleep-bar{display:flex;height:22px;border-radius:6px;overflow:hidden;gap:2px;margin:10px 0 6px;}
 .sleep-leg{display:flex;gap:12px;flex-wrap:wrap;}
 .sl-i{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--muted);}
 .sl-d{width:7px;height:7px;border-radius:2px;}
 
-/* ── GRID HELPERS ───────────────────────────────── */
+/* ── GRID HELPERS ── */
 .two-col{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-bottom:13px;}
 .vitals-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:11px;margin-bottom:13px;}
 .page-hdr{margin-bottom:18px;}
@@ -124,25 +147,23 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
 .cp-title{font-size:13px;font-weight:600;margin-bottom:4px;}
 .cp-sub{font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.5;}
 
-/* ── ECG MODAL ──────────────────────────────────── */
-#ecgModal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:800;align-items:center;justify-content:center;padding:20px;}
-.ecg-card{background:var(--panel);border:1px solid var(--border2);border-radius:16px;width:100%;max-width:780px;}
+/* ── ECG FULL PAGE MODAL ── */
+#ecgModal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:800;align-items:center;justify-content:center;padding:20px;}
+.ecg-card{background:var(--panel);border:1px solid var(--border2);border-radius:16px;width:100%;max-width:820px;}
 .ecg-card-head{padding:17px 21px 0;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
 .ecg-vital-val{font-size:25px;font-weight:700;font-family:var(--mono);}
 .ecg-vital-label{font-size:10px;color:var(--muted);}
 .ecg-body{padding:13px 21px 0;}
-.ecg-canvas-wrap{background:rgba(0,214,143,.015);border-radius:8px;overflow:hidden;}
+.ecg-canvas-wrap-modal{background:rgba(0,214,143,.015);border-radius:8px;overflow:hidden;}
 .ecg-foot{border-top:1px solid var(--border);padding:14px 21px 17px;}
 .ecg-reading{font-size:13px;color:#7a92b5;line-height:1.75;min-height:32px;margin-bottom:12px;}
 .ecg-anatomy{display:grid;grid-template-columns:repeat(3,1fr);gap:13px;padding-top:11px;border-top:1px solid var(--border);}
 .ecg-anat-title{font-size:11px;font-weight:600;color:var(--text);margin-bottom:3px;}
 .ecg-anat-body{font-size:11px;color:var(--muted);line-height:1.6;}
-.ecg-dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:ecgp 1s infinite;}
-@keyframes ecgp{0%,100%{opacity:1}50%{opacity:.25}}
 
-/* ── WEEKLY MODAL ───────────────────────────────── */
+/* ── WEEKLY MODAL ── */
 #weeklyModal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:500;align-items:center;justify-content:center;padding:20px;}
-.wm-card{background:var(--panel);border:1px solid var(--border2);border-radius:18px;width:100%;max-width:700px;max-height:90vh;overflow-y:auto;}
+.wm-card{background:var(--panel);border:1px solid var(--border2);border-radius:18px;width:100%;max-width:720px;max-height:90vh;overflow-y:auto;}
 .wm-head{padding:21px 25px 17px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;}
 .wm-title{font-size:17px;font-weight:600;}
 .wm-sub{font-size:12px;color:var(--muted);margin-top:2px;}
@@ -166,7 +187,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
 .goal-fill{height:100%;border-radius:3px;}
 .goal-vals{font-size:11px;color:var(--muted);min-width:80px;text-align:right;}
 
-/* ── DR SAGE CHAT ───────────────────────────────── */
+/* ── DR SAGE CHAT ── */
 .sage-head{display:flex;align-items:center;gap:10px;background:var(--panel2);border-radius:10px;padding:11px 13px;margin-bottom:14px;}
 .sage-av{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#9b72f5,#3b82f6);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;}
 .sage-name{font-weight:600;font-size:13px;}
@@ -193,7 +214,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
 .td:nth-child(2){animation-delay:.15s;}.td:nth-child(3){animation-delay:.3s;}
 @keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-5px)}}
 
-/* ── ENCOUNTER TABS ─────────────────────────────── */
+/* ── ENCOUNTER TABS ── */
 .enc-tab-bar{display:flex;border-bottom:1px solid var(--border);margin-bottom:15px;}
 .enc-tab{background:transparent;border:none;color:var(--muted);font-size:12px;font-weight:500;padding:8px 15px;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;}
 .enc-tab.active{color:var(--green);border-bottom-color:var(--green);font-weight:600;}
@@ -225,15 +246,73 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
 .plan-timeframe{font-size:11px;color:var(--muted);display:block;margin-top:2px;}
 .enc-disclaimer{background:rgba(240,82,82,.05);border:1px solid rgba(240,82,82,.14);border-radius:8px;padding:9px 12px;font-size:11px;color:#f87171;line-height:1.6;margin-top:12px;}
 
-/* ── RECORDS ────────────────────────────────────── */
+/* ── DR REPORT MODAL ── */
+#reportModal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:600;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;}
+.report-card{background:var(--panel);border:1px solid var(--border2);border-radius:18px;width:100%;max-width:720px;margin:auto;}
+.report-head{padding:22px 26px 18px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;gap:12px;}
+.report-title{font-size:17px;font-weight:700;}
+.report-sub{font-size:12px;color:var(--muted);margin-top:3px;line-height:1.5;}
+.report-body{padding:22px 26px;}
+.report-section{margin-bottom:22px;}
+.report-section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border);}
+.trend-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);}
+.trend-row:last-child{border-bottom:none;}
+.trend-metric{font-size:12px;font-weight:600;flex:1;}
+.trend-now{font-size:14px;font-weight:700;font-family:var(--mono);}
+.trend-arrow{font-size:14px;}
+.trend-was{font-size:12px;color:var(--muted);}
+.trend-note{font-size:11px;color:var(--muted);flex:2;line-height:1.4;}
+.report-narrative{font-size:13px;line-height:1.8;color:#8296b8;background:var(--panel2);border-radius:10px;padding:14px 16px;margin-bottom:14px;}
+.report-narrative strong{color:var(--text);}
+.report-upload{background:var(--panel2);border:2px dashed var(--border2);border-radius:10px;padding:18px;text-align:center;cursor:pointer;margin-bottom:14px;transition:border-color .2s;}
+.report-upload:hover{border-color:var(--green);}
+.report-upload-icon{font-size:22px;margin-bottom:6px;}
+.report-upload-text{font-size:13px;font-weight:600;margin-bottom:3px;}
+.report-upload-sub{font-size:11px;color:var(--muted);}
+.report-upload input{display:none;}
+.btn-report-send{background:var(--purple);color:white;border:none;border-radius:10px;padding:12px 22px;font-size:14px;font-weight:700;cursor:pointer;width:100%;margin-top:8px;}
+.btn-report-send:hover{opacity:.88;}
+.btn-report-dl{background:rgba(0,214,143,.08);border:1px solid rgba(0,214,143,.22);color:var(--green);font-size:13px;font-weight:600;border-radius:9px;padding:10px 18px;cursor:pointer;margin-top:8px;width:100%;}
+.dr-result-input{background:var(--panel2);border:1px solid var(--border2);border-radius:9px;color:var(--text);font-family:var(--font);font-size:13px;padding:10px 13px;outline:none;width:100%;margin-top:8px;resize:none;min-height:80px;}
+.dr-result-input:focus{border-color:var(--purple);}
+.dr-feedback-card{background:rgba(155,114,245,.06);border:1px solid rgba(155,114,245,.2);border-radius:10px;padding:13px 15px;margin-top:10px;font-size:13px;line-height:1.7;color:#c4b5fd;}
+.followup-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:8px;padding:4px 10px;font-size:11px;font-weight:600;color:var(--amber);margin-bottom:10px;}
+
+/* ── CONTACT DR MODAL ── */
+#contactDrModal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:700;align-items:center;justify-content:center;padding:20px;}
+.cdr-card{background:var(--panel);border:1px solid var(--border2);border-radius:18px;width:100%;max-width:560px;}
+.cdr-head{padding:22px 26px 18px;border-bottom:1px solid var(--border);}
+.cdr-title{font-size:17px;font-weight:700;}
+.cdr-sub{font-size:12px;color:var(--muted);margin-top:3px;}
+.cdr-body{padding:22px 26px;}
+.cdr-urgency{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px;margin-bottom:18px;}
+.cdr-u-btn{border:1px solid var(--border2);background:var(--panel2);border-radius:10px;padding:10px 12px;cursor:pointer;text-align:center;transition:all .15s;}
+.cdr-u-btn.selected-routine{border-color:var(--green);background:rgba(0,214,143,.07);}
+.cdr-u-btn.selected-soon{border-color:var(--amber);background:rgba(245,158,11,.07);}
+.cdr-u-btn.selected-urgent{border-color:var(--red);background:rgba(240,82,82,.07);}
+.cdr-u-icon{font-size:18px;margin-bottom:4px;}
+.cdr-u-label{font-size:12px;font-weight:600;}
+.cdr-u-sub{font-size:10px;color:var(--muted);}
+.cdr-f{display:flex;flex-direction:column;gap:5px;margin-bottom:12px;}
+.cdr-f label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;}
+.cdr-f input,.cdr-f textarea,.cdr-f select{background:var(--panel2);border:1px solid var(--border2);border-radius:9px;color:var(--text);font-family:var(--font);font-size:13px;padding:9px 13px;outline:none;width:100%;}
+.cdr-f input:focus,.cdr-f textarea:focus,.cdr-f select:focus{border-color:var(--purple);}
+.cdr-f textarea{resize:none;height:80px;}
+.cdr-f select option{background:#121b2b;}
+.cdr-summary-box{background:rgba(155,114,245,.06);border:1px solid rgba(155,114,245,.2);border-radius:9px;padding:12px 14px;font-size:12px;color:#c4b5fd;line-height:1.6;margin-bottom:14px;}
+.cdr-summary-label{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--purple);font-weight:600;margin-bottom:6px;}
+.btn-cdr-send{background:var(--purple);color:white;border:none;border-radius:10px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;width:100%;}
+.btn-cdr-copy{background:var(--panel2);border:1px solid var(--border2);color:var(--muted);font-size:13px;border-radius:9px;padding:10px;cursor:pointer;width:100%;margin-top:8px;}
+
+/* ── RECORDS ── */
 .tab-bar{display:flex;gap:3px;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:3px;width:fit-content;margin-bottom:15px;}
 .tab-btn{background:transparent;border:none;color:var(--muted);font-size:12px;font-weight:500;border-radius:7px;padding:7px 15px;cursor:pointer;}
 .tab-btn.active{background:var(--panel2);color:var(--text);font-weight:600;}
 .action-card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:13px 15px;margin-bottom:7px;display:flex;gap:10px;}
 .action-card.done{opacity:.5;}
 .ac-check{width:19px;height:19px;border-radius:50%;border:1.5px solid var(--border2);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;margin-top:1px;cursor:pointer;}
-.ac-check.checked{background:var(--green);border-color:var(--green);color:#020f08;}
-.ac-check.auto{background:var(--cyan);border-color:var(--cyan);color:#020f08;}
+.ac-check.checked,.ac-check.auto{background:var(--green);border-color:var(--green);color:#020f08;}
+.ac-check.auto{background:var(--cyan);border-color:var(--cyan);}
 .ac-title{font-size:13px;font-weight:600;margin-bottom:3px;}
 .action-card.done .ac-title{text-decoration:line-through;color:var(--muted);}
 .ac-desc{font-size:12px;color:var(--muted);line-height:1.5;margin-bottom:5px;}
@@ -273,7 +352,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
 .he-body{display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);}
 .he-body.open{display:block;}
 
-/* ── SETTINGS ───────────────────────────────────── */
+/* ── SETTINGS ── */
 .settings-panel{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:19px;}
 .settings-title{font-size:13px;font-weight:600;margin-bottom:10px;padding-bottom:9px;border-bottom:1px solid var(--border);}
 .settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px;}
@@ -285,7 +364,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
 .sf select option{background:#121b2b;}
 .btn-save{background:var(--green);color:#020f08;font-weight:700;font-size:13px;border:none;border-radius:9px;padding:10px 24px;cursor:pointer;margin-top:14px;}
 
-/* ── WALKTHROUGH ────────────────────────────────── */
+/* ── WALKTHROUGH ── */
 #wtOverlay{display:none;position:fixed;inset:0;z-index:900;pointer-events:none;}
 #wtOverlay.open{display:block;}
 #wtPanel{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);width:530px;max-width:calc(100vw - 28px);background:var(--panel);border:1px solid var(--border2);border-radius:15px;padding:18px 20px;pointer-events:all;box-shadow:0 10px 50px rgba(0,0,0,.6);}
@@ -301,51 +380,50 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
 .wt-voice{background:var(--panel2);border:1px solid var(--border2);border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px;}
 .wt-voice.speaking{border-color:var(--green);background:rgba(0,214,143,.1);}
 
-/* ── TOAST ──────────────────────────────────────── */
+/* ── TOAST ── */
 #toast{position:fixed;top:18px;right:18px;background:var(--panel);border:1px solid var(--green);border-radius:11px;padding:12px 16px;z-index:9999;transform:translateX(200%);transition:transform .4s cubic-bezier(.34,1.56,.64,1);max-width:270px;}
 #toast.show{transform:translateX(0);}
 .toast-title{font-size:13px;font-weight:600;color:var(--green);margin-bottom:2px;}
 .toast-body{font-size:12px;color:var(--muted);line-height:1.4;}
 
-/* ── RESPONSIVE ─────────────────────────────────── */
+/* ── RESPONSIVE ── */
 @media(max-width:900px){
   .sidebar{width:52px;padding:14px 7px;}
   .nav-item span,.logo span,.u-name,.u-sub{display:none;}
   .logo{font-size:13px;padding:0;}
   .main{margin-left:52px;padding:14px;}
-  .top-stats{grid-template-columns:repeat(3,1fr);}
+  .metrics-row{grid-template-columns:repeat(3,1fr);}
   .dd-head{flex-direction:column;}
   .dd-chart{min-width:unset;max-width:100%;}
   .two-col{grid-template-columns:1fr;}
   .settings-grid{grid-template-columns:1fr;}
   .ecg-anatomy{grid-template-columns:1fr;}
   .wk-stats{grid-template-columns:1fr 1fr;}
+  .cdr-urgency{grid-template-columns:1fr;}
+  .ecg-hero-head{flex-direction:column;}
+  .ecg-hero-btns{flex-direction:row;}
 }
 </style>
 </head>
 <body>
 
-<!-- ═══════════════ ONBOARDING ═══════════════ -->
+<!-- ════ ONBOARDING ════ -->
 <div id="onboarding">
 <div class="ob">
-  <div class="ob-logo">SageHealth <span>powered by Wosheng TK30</span></div>
-  <div class="ob-prog">
-    <div class="ob-pip on" id="p0"></div><div class="ob-pip" id="p1"></div>
-    <div class="ob-pip" id="p2"></div><div class="ob-pip" id="p3"></div>
-  </div>
-
+  <div class="ob-logo">SageHealth <span>your health coach + clinical monitor</span></div>
+  <div class="ob-prog"><div class="ob-pip on" id="p0"></div><div class="ob-pip" id="p1"></div><div class="ob-pip" id="p2"></div><div class="ob-pip" id="p3"></div></div>
   <div class="ob-step on" id="s0">
-    <div class="ob-h">Your medical-grade health command center</div>
-    <div class="ob-s">Your Wosheng TK30 ring measures ECG, blood pressure, body temperature, SpO₂, HRV, sleep stages, and activity. SageHealth turns all of it into a clinical dashboard with Dr. Sage as your AI physician.</div>
-    <div class="ob-row"><div class="ob-row-icon">💍</div><div class="ob-row-text"><strong>Wosheng TK30 — 7 active sensors</strong><span>ECG · Blood pressure · Temperature · SpO₂ · HRV · Sleep · Activity</span></div></div>
-    <div class="ob-row"><div class="ob-row-icon">🧠</div><div class="ob-row-text"><strong>Dr. Sage — your AI physician</strong><span>Reads every metric, weekly clinical encounters, orders tests</span></div></div>
-    <div class="ob-row"><div class="ob-row-icon">📈</div><div class="ob-row-text"><strong>Graphs + plain English</strong><span>Every number explained the way your doctor never does</span></div></div>
+    <div class="ob-h">The gap between your health coach and your doctor</div>
+    <div class="ob-s">Most people see their doctor once a year — and arrive with nothing. SageHealth monitors your health daily, tracks trends over time, and generates a clinical report you can send your doctor before every appointment.</div>
+    <div class="ob-row"><div class="ob-row-icon">📊</div><div class="ob-row-text"><strong>Daily health monitoring</strong><span>ECG, BP, temperature, SpO₂, HRV, sleep, activity — all tracked</span></div></div>
+    <div class="ob-row"><div class="ob-row-icon">📋</div><div class="ob-row-text"><strong>Doctor-ready reports</strong><span>Trend analysis and findings — formatted for your physician</span></div></div>
+    <div class="ob-row"><div class="ob-row-icon">🔁</div><div class="ob-row-text"><strong>Closed-loop follow-up</strong><span>We ask what your doctor said and update your health picture</span></div></div>
+    <div class="ob-row"><div class="ob-row-icon">📁</div><div class="ob-row-text"><strong>Upload your own results</strong><span>Labs, imaging, notes — we analyze everything and keep the full picture</span></div></div>
     <button class="btn-go" onclick="nextOb(1)">Get started →</button>
   </div>
-
   <div class="ob-step" id="s1">
     <div class="ob-h">Your health profile</div>
-    <div class="ob-s">Dr. Sage calibrates every reading to your age, weight, sex, and conditions.</div>
+    <div class="ob-s">SageHealth calibrates every reading to your age, weight, sex, and conditions.</div>
     <div class="ob-g">
       <div class="ob-f"><label>First name</label><input id="ob_name" placeholder="Frank" type="text"></div>
       <div class="ob-f"><label>Age</label><input id="ob_age" placeholder="48" type="number"></div>
@@ -356,10 +434,9 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
     <div class="ob-f"><label>Known conditions (optional)</label><textarea id="ob_conditions" placeholder="e.g. hypertension, sleep apnea history..."></textarea></div>
     <button class="btn-go" onclick="nextOb(2)">Continue →</button>
   </div>
-
   <div class="ob-step" id="s2">
-    <div class="ob-h">Set your weekly targets</div>
-    <div class="ob-s">Dr. Sage tracks progress and flags when you drift off course.</div>
+    <div class="ob-h">Your weekly targets</div>
+    <div class="ob-s">We track progress and flag when you drift off course.</div>
     <div class="ob-g">
       <div class="ob-f"><label>Daily steps</label><input id="ob_steps" placeholder="8000" type="number"></div>
       <div class="ob-f"><label>Sleep goal (hrs)</label><input id="ob_sleep" placeholder="7.5" type="number" step="0.5"></div>
@@ -368,74 +445,84 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
     </div>
     <button class="btn-go" onclick="nextOb(3)">Continue →</button>
   </div>
-
   <div class="ob-step" id="s3">
     <div class="ob-h">Connect your TK30 ring</div>
     <div class="ob-s">Once your ring arrives. Skip now to explore with demo data.</div>
-    <div class="ob-row"><div class="ob-row-icon">1️⃣</div><div class="ob-row-text"><strong>Find the companion app</strong><span>Check the manual for the app name — enable Apple Health sync</span></div></div>
+    <div class="ob-row"><div class="ob-row-icon">1️⃣</div><div class="ob-row-text"><strong>Find the companion app</strong><span>Check the manual — enable Apple Health sync</span></div></div>
     <div class="ob-row"><div class="ob-row-icon">2️⃣</div><div class="ob-row-text"><strong>Install Health Auto Export</strong><span>App Store — pushes Apple Health data to SageHealth hourly</span></div></div>
-    <div class="ob-row"><div class="ob-row-icon">3️⃣</div><div class="ob-row-text"><strong>Optional: SnoreLab</strong><span>iPhone mic for apnea audio fusion with ring SpO₂</span></div></div>
+    <div class="ob-row"><div class="ob-row-icon">3️⃣</div><div class="ob-row-text"><strong>Optional: SnoreLab</strong><span>iPhone mic for apnea audio fusion</span></div></div>
     <button class="btn-go" onclick="finishOb()">Enter dashboard →</button>
     <button class="btn-skip" onclick="finishOb()">Skip — use demo data</button>
   </div>
 </div>
 </div>
 
-<!-- ═══════════════ APP ═══════════════ -->
+<!-- ════ APP ════ -->
 <div id="app">
-
 <div class="sidebar">
   <div class="logo">Sage<span>Health</span></div>
   <nav>
-    <div class="nav-item active" onclick="showPage('dashboard',this)"><div class="nav-dot"></div><span>Dashboard</span></div>
-    <div class="nav-item" onclick="showPage('heart',this)"><div class="nav-dot"></div><span>Heart &amp; ECG</span></div>
-    <div class="nav-item" onclick="showPage('sleep',this)"><div class="nav-dot"></div><span>Sleep</span></div>
-    <div class="nav-item" onclick="showPage('vitals',this)"><div class="nav-dot"></div><span>Vitals</span></div>
-    <div class="nav-item" onclick="showPage('activity',this)"><div class="nav-dot"></div><span>Activity</span></div>
-    <div class="nav-item" onclick="showPage('records',this)"><div class="nav-dot"></div><span>Records</span></div>
-    <div class="nav-item" onclick="showPage('settings',this)"><div class="nav-dot"></div><span>Settings</span></div>
+    <div class="nav-item active" onclick="showPage(\'dashboard\',this)"><div class="nav-dot"></div><span>Dashboard</span></div>
+    <div class="nav-item" onclick="showPage(\'heart\',this)"><div class="nav-dot"></div><span>Heart &amp; ECG</span></div>
+    <div class="nav-item" onclick="showPage(\'sleep\',this)"><div class="nav-dot"></div><span>Sleep</span></div>
+    <div class="nav-item" onclick="showPage(\'vitals\',this)"><div class="nav-dot"></div><span>Vitals</span></div>
+    <div class="nav-item" onclick="showPage(\'activity\',this)"><div class="nav-dot"></div><span>Activity</span></div>
+    <div class="nav-item" onclick="showPage(\'records\',this)"><div class="nav-dot"></div><span>Records</span></div>
+    <div class="nav-item" onclick="showPage(\'settings\',this)"><div class="nav-dot"></div><span>Settings</span></div>
   </nav>
   <div class="sidebar-bottom">
-    <div class="u-chip">
-      <div class="u-av" id="sav">F</div>
-      <div><div class="u-name" id="sname">Frank</div><div class="u-sub">TK30 · SageHealth</div></div>
-    </div>
+    <div class="u-chip"><div class="u-av" id="sav">F</div><div><div class="u-name" id="sname">Frank</div><div class="u-sub">TK30 · SageHealth</div></div></div>
   </div>
 </div>
-
 <div class="main">
 
 <!-- DASHBOARD -->
 <div class="page active" id="page-dashboard">
   <div class="dash-header">
-    <div>
-      <div class="dash-title" id="dashGreet">Good afternoon</div>
-      <div class="dash-sub" id="dashDate">Friday, June 12, 2026</div>
-    </div>
+    <div><div class="dash-title" id="dashGreet">Good afternoon</div><div class="dash-sub" id="dashDate">Friday, June 12, 2026</div></div>
     <div class="hdr-btns">
       <button class="btn-sm" onclick="startWt()">🎙️ Walkthrough</button>
-      <button class="btn-sm" onclick="openECG()">❤️ ECG rhythm</button>
       <button class="btn-sm" onclick="openWeekly()">📋 Weekly report</button>
+      <button class="btn-sm btn-dr" onclick="openContactDr()">🩺 Contact doctor</button>
     </div>
   </div>
-  <div class="ring-banner">
-    <span style="font-size:11px;color:var(--muted);font-weight:600;margin-right:4px;">TK30 sensors:</span>
-    <span class="rs" style="color:var(--red);">❤️ ECG</span>
-    <span class="rs" style="color:var(--pink);">🩸 Blood pressure</span>
-    <span class="rs" style="color:var(--amber);">🌡️ Temperature</span>
-    <span class="rs" style="color:var(--cyan);">💧 SpO₂</span>
-    <span class="rs" style="color:var(--green);">📊 HRV</span>
-    <span class="rs" style="color:var(--purple);">🌙 Sleep</span>
-    <span class="rs" style="color:var(--blue);">🏃 Activity</span>
-  </div>
+  <!-- Briefing -->
   <div class="briefing">
-    <div class="briefing-av">
-      <div style="font-size:9px;text-transform:uppercase;letter-spacing:.07em;color:var(--green);font-weight:700;">Dr. Sage</div>
-      <div style="font-size:18px;margin:3px 0;">🧠</div>
-    </div>
-    <div class="briefing-text" id="dailySummary">Loading clinical briefing...</div>
+    <div class="briefing-av"><div style="font-size:9px;text-transform:uppercase;letter-spacing:.07em;color:var(--green);font-weight:700;">SageHealth</div><div style="font-size:18px;margin:3px 0;">🧠</div></div>
+    <div class="briefing-text" id="dailySummary">Loading daily briefing...</div>
   </div>
-  <div class="top-stats" id="top-stats"></div>
+  <!-- 5 metric cards: steps, BP, SpO2, temp°F, HR+HRV -->
+  <div class="metrics-row" id="metrics-row"></div>
+  <!-- ECG HERO -->
+  <div class="ecg-hero">
+    <div class="ecg-hero-head">
+      <div class="ecg-hero-left">
+        <div class="ecg-hero-title"><div class="ecg-live-dot"></div>ECG rhythm monitoring<span style="font-size:11px;color:var(--muted);font-weight:400;margin-left:4px;">· Wosheng TK30 single-lead · Simulated until ring data live</span></div>
+        <div class="ecg-hero-sub">Your cardiac electrical activity — Lead II waveform. Detects rate, rhythm, and early arrhythmia signals including atrial fibrillation and PVCs.</div>
+        <div class="ecg-hero-vitals">
+          <div class="ecg-hv"><div class="ecg-hv-val" id="hero-hr" style="color:var(--green);">--</div><div class="ecg-hv-label">BPM</div></div>
+          <div class="ecg-hv"><div class="ecg-hv-val" id="hero-hrv" style="color:var(--cyan);">--</div><div class="ecg-hv-label">HRV ms</div></div>
+          <div class="ecg-hv"><div class="ecg-hv-val" id="hero-rhythm" style="color:var(--text);font-size:13px;font-weight:600;padding-top:5px;">Loading...</div><div class="ecg-hv-label">Rhythm</div></div>
+        </div>
+      </div>
+      <div class="ecg-hero-btns">
+        <button class="ecg-btn-sage" onclick="sageReadsECG()">🧠 Dr. Sage reads</button>
+        <button class="ecg-btn-primary" onclick="openECG()">⛶ Full screen</button>
+      </div>
+    </div>
+    <div class="ecg-canvas-wrap" style="margin-bottom:10px;"><canvas id="ecgCanvasHero" style="display:block;"></canvas></div>
+    <div class="ecg-foot-row">
+      <div class="ecg-live-dot" style="flex-shrink:0;"></div>
+      <div class="ecg-rhythm-label" id="ecg-hero-status">Normal sinus rhythm</div>
+      <div class="ecg-anatomy-inline">
+        <div class="ecg-anat-item"><strong>P wave</strong> — atria load</div>
+        <div class="ecg-anat-item"><strong>QRS</strong> — ventricles fire</div>
+        <div class="ecg-anat-item"><strong>T wave</strong> — heart resets</div>
+      </div>
+    </div>
+    <div id="heroEcgReading" style="font-size:13px;color:#7a92b5;line-height:1.7;margin-top:10px;min-height:0;"></div>
+  </div>
+  <!-- Deep dive cards -->
   <div id="dash-metrics"></div>
 </div>
 
@@ -444,7 +531,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
   <div class="page-hdr"><div class="page-title">Heart &amp; ECG</div><div class="page-sub">Cardiovascular health — every metric explained</div></div>
   <button onclick="openECG()" style="display:flex;align-items:center;gap:9px;background:rgba(240,82,82,.06);border:1px solid rgba(240,82,82,.18);border-radius:11px;padding:13px 18px;cursor:pointer;margin-bottom:16px;width:100%;text-align:left;">
     <span style="font-size:22px;">❤️</span>
-    <div><div style="font-size:14px;font-weight:600;color:var(--text);">Run ECG rhythm analysis</div><div style="font-size:12px;color:var(--muted);margin-top:2px;">Simulated Lead II from TK30 ECG sensor · Dr. Sage reads results aloud</div></div>
+    <div><div style="font-size:14px;font-weight:600;color:var(--text);">Full-screen ECG rhythm analysis</div><div style="font-size:12px;color:var(--muted);margin-top:2px;">Expanded view · Dr. Sage narration · Anatomy panel</div></div>
     <span style="margin-left:auto;font-size:18px;color:var(--red);">→</span>
   </button>
   <div class="vitals-row" id="heart-vitals"></div>
@@ -452,7 +539,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
     <div class="chart-panel"><div class="cp-title">HRV — 7 days</div><div class="cp-sub" id="hrv7-sub"></div><div style="position:relative;height:150px;"><canvas id="hrv7Chart"></canvas></div></div>
     <div class="chart-panel"><div class="cp-title">Resting heart rate — 7 days</div><div class="cp-sub" id="rhr7-sub"></div><div style="position:relative;height:150px;"><canvas id="rhr7Chart"></canvas></div></div>
   </div>
-  <div class="chart-panel"><div class="cp-title">Blood pressure trend — 7 days</div><div class="cp-sub" id="bp7-sub"></div><div style="position:relative;height:130px;"><canvas id="bp7Chart"></canvas></div></div>
+  <div class="chart-panel"><div class="cp-title">Blood pressure — 7 days</div><div class="cp-sub" id="bp7-sub"></div><div style="position:relative;height:130px;"><canvas id="bp7Chart"></canvas></div></div>
 </div>
 
 <!-- SLEEP PAGE -->
@@ -461,14 +548,14 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
   <div class="vitals-row" id="sleep-vitals"></div>
   <div class="chart-panel"><div class="cp-title">7-night sleep duration</div><div class="cp-sub" id="sleep7-sub"></div><div style="position:relative;height:160px;"><canvas id="sleep7Chart"></canvas></div></div>
   <div class="two-col">
-    <div class="chart-panel"><div class="cp-title">SpO₂ overnight — 7 nights</div><div class="cp-sub" id="spo2-7-sub"></div><div style="position:relative;height:120px;"><canvas id="spo27Chart"></canvas></div></div>
+    <div class="chart-panel"><div class="cp-title">SpO₂ overnight</div><div class="cp-sub" id="spo2-7-sub"></div><div style="position:relative;height:120px;"><canvas id="spo27Chart"></canvas></div></div>
     <div class="chart-panel"><div class="cp-title">Body temperature overnight</div><div class="cp-sub" id="temp7-sub"></div><div style="position:relative;height:120px;"><canvas id="temp7Chart"></canvas></div></div>
   </div>
 </div>
 
 <!-- VITALS PAGE -->
 <div class="page" id="page-vitals">
-  <div class="page-hdr"><div class="page-title">Vitals monitoring</div><div class="page-sub">BP, temperature, SpO₂, respiratory rate — tracked daily by TK30</div></div>
+  <div class="page-hdr"><div class="page-title">Vitals monitoring</div><div class="page-sub">BP, temperature, SpO₂, respiratory rate — tracked daily</div></div>
   <div class="vitals-row" id="vitals-row"></div>
   <div class="two-col">
     <div class="chart-panel"><div class="cp-title">Blood pressure systolic — 7 days</div><div class="cp-sub" id="bpsys-sub"></div><div style="position:relative;height:130px;"><canvas id="bpSysChart"></canvas></div></div>
@@ -485,29 +572,19 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
 
 <!-- RECORDS PAGE -->
 <div class="page" id="page-records">
-  <div class="page-hdr"><div class="page-title">Dr. Sage — records</div><div class="page-sub">Action items, clinical encounters, transcripts, and assessments</div></div>
+  <div class="page-hdr"><div class="page-title">Records</div><div class="page-sub">Action items, clinical encounters, transcripts, doctor reports</div></div>
   <div class="tab-bar">
-    <button class="tab-btn active" id="tab-actions" onclick="switchTab('actions')">Action items</button>
-    <button class="tab-btn" id="tab-encounters" onclick="switchTab('encounters')">Encounters</button>
-    <button class="tab-btn" id="tab-transcripts" onclick="switchTab('transcripts')">Transcripts</button>
-    <button class="tab-btn" id="tab-assessments" onclick="switchTab('assessments')">Assessments</button>
+    <button class="tab-btn active" id="tab-actions" onclick="switchTab(\'actions\')">Action items</button>
+    <button class="tab-btn" id="tab-encounters" onclick="switchTab(\'encounters\')">Encounters</button>
+    <button class="tab-btn" id="tab-transcripts" onclick="switchTab(\'transcripts\')">Transcripts</button>
+    <button class="tab-btn" id="tab-assessments" onclick="switchTab(\'assessments\')">Assessments</button>
+    <button class="tab-btn" id="tab-drreports" onclick="switchTab(\'drreports\')">Doctor reports</button>
   </div>
-  <div id="historyTab-actions">
-    <div id="action-items-list"></div>
-    <div id="action-empty" style="display:none;color:var(--muted);font-size:13px;padding:13px 0;">No action items yet. Complete a Dr. Sage consultation to generate your first action plan.</div>
-  </div>
-  <div id="historyTab-encounters" style="display:none;">
-    <div id="encounter-list"></div>
-    <div id="encounter-empty" style="display:none;color:var(--muted);font-size:13px;padding:13px 0;">No encounters yet.</div>
-  </div>
-  <div id="historyTab-transcripts" style="display:none;">
-    <div id="transcript-list"></div>
-    <div id="transcript-empty" style="display:none;color:var(--muted);font-size:13px;padding:13px 0;">No transcripts yet.</div>
-  </div>
-  <div id="historyTab-assessments" style="display:none;">
-    <div id="history-list"></div>
-    <div id="assessment-empty" style="display:none;color:var(--muted);font-size:13px;padding:13px 0;">No assessments yet.</div>
-  </div>
+  <div id="historyTab-actions"><div id="action-items-list"></div><div id="action-empty" style="display:none;color:var(--muted);font-size:13px;padding:13px 0;">No action items yet.</div></div>
+  <div id="historyTab-encounters" style="display:none;"><div id="encounter-list"></div><div id="encounter-empty" style="display:none;color:var(--muted);font-size:13px;padding:13px 0;">No encounters yet.</div></div>
+  <div id="historyTab-transcripts" style="display:none;"><div id="transcript-list"></div><div id="transcript-empty" style="display:none;color:var(--muted);font-size:13px;padding:13px 0;">No transcripts yet.</div></div>
+  <div id="historyTab-assessments" style="display:none;"><div id="history-list"></div><div id="assessment-empty" style="display:none;color:var(--muted);font-size:13px;padding:13px 0;">No assessments yet.</div></div>
+  <div id="historyTab-drreports" style="display:none;"><div id="drreport-list"></div><div id="drreport-empty" style="display:none;color:var(--muted);font-size:13px;padding:13px 0;">No doctor reports yet. Use "Contact doctor" to generate your first one.</div></div>
 </div>
 
 <!-- SETTINGS PAGE -->
@@ -521,6 +598,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
       <div class="sf"><label>Weight (lbs)</label><input id="s_weight" type="number"></div>
       <div class="sf"><label>Height (ft)</label><input id="s_height" type="number" step="0.1"></div>
       <div class="sf"><label>Biological sex</label><select id="s_sex"><option>Male</option><option>Female</option><option>Other</option></select></div>
+      <div class="sf"><label>Doctor\'s name (optional)</label><input id="s_drname" type="text" placeholder="Dr. Smith"></div>
     </div>
     <div class="sf" style="margin-top:11px;"><label>Known conditions</label><textarea id="s_conditions"></textarea></div>
     <div class="settings-title" style="margin-top:17px;">Weekly goals</div>
@@ -534,17 +612,13 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
   </div>
 </div>
 
-</div><!-- /main -->
-</div><!-- /app -->
+</div></div>
 
-<!-- ═══════════════ ECG MODAL ═══════════════ -->
+<!-- ════ ECG FULL MODAL ════ -->
 <div id="ecgModal">
 <div class="ecg-card">
   <div class="ecg-card-head">
-    <div>
-      <div style="font-size:15px;font-weight:600;">ECG rhythm analysis</div>
-      <div style="font-size:12px;color:var(--muted);margin-top:2px;">Lead II · TK30 ECG sensor · Simulated until ring data live</div>
-    </div>
+    <div><div style="font-size:15px;font-weight:600;">ECG rhythm — full screen</div><div style="font-size:12px;color:var(--muted);margin-top:2px;">Lead II · TK30 ECG sensor · Simulated until ring data live</div></div>
     <div style="display:flex;align-items:center;gap:10px;">
       <div><div class="ecg-vital-val" id="ecg-hr" style="color:var(--green);">--</div><div class="ecg-vital-label">BPM</div></div>
       <div style="margin-left:8px;"><div class="ecg-vital-val" id="ecg-hrv" style="color:var(--cyan);">--</div><div class="ecg-vital-label">HRV ms</div></div>
@@ -552,18 +626,12 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
     </div>
   </div>
   <div class="ecg-body">
-    <div class="ecg-canvas-wrap"><canvas id="ecgCanvas" style="display:block;"></canvas></div>
-    <div style="display:flex;align-items:center;gap:7px;margin-top:8px;">
-      <div class="ecg-dot"></div>
-      <div style="font-size:12px;color:var(--muted);" id="ecg-status">Normal sinus rhythm</div>
-    </div>
+    <div class="ecg-canvas-wrap-modal"><canvas id="ecgCanvas" style="display:block;"></canvas></div>
+    <div style="display:flex;align-items:center;gap:7px;margin-top:8px;"><div class="ecg-live-dot"></div><div style="font-size:12px;color:var(--muted);" id="ecg-status">Normal sinus rhythm</div></div>
   </div>
   <div class="ecg-foot">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-      <div style="display:flex;align-items:center;gap:8px;">
-        <div style="width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#9b72f5,#3b82f6);display:flex;align-items:center;justify-content:center;font-size:13px;">🧠</div>
-        <div style="font-size:13px;font-weight:600;">Dr. Sage reads your rhythm</div>
-      </div>
+      <div style="display:flex;align-items:center;gap:8px;"><div style="width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#9b72f5,#3b82f6);display:flex;align-items:center;justify-content:center;font-size:13px;">🧠</div><div style="font-size:13px;font-weight:600;">Dr. Sage reads your rhythm</div></div>
       <button onclick="sageReadsECG()" id="ecgReadBtn" style="background:rgba(155,114,245,.1);border:1px solid rgba(155,114,245,.25);color:var(--purple);font-size:12px;font-weight:600;border-radius:8px;padding:6px 14px;cursor:pointer;">▶ Read aloud</button>
     </div>
     <div class="ecg-reading" id="ecgReading"></div>
@@ -576,43 +644,31 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
 </div>
 </div>
 
-<!-- ═══════════════ WEEKLY MODAL ═══════════════ -->
+<!-- ════ WEEKLY MODAL ════ -->
 <div id="weeklyModal">
 <div class="wm-card">
-  <div class="wm-head">
-    <div><div class="wm-title">Weekly health report</div><div class="wm-sub" id="wm-week-label"></div></div>
-    <button class="wm-close" onclick="closeWeekly()">✕</button>
-  </div>
+  <div class="wm-head"><div><div class="wm-title">Weekly health report</div><div class="wm-sub" id="wm-week-label"></div></div><button class="wm-close" onclick="closeWeekly()">✕</button></div>
   <div class="wm-body">
     <div class="enc-tab-bar">
-      <button class="enc-tab active" id="etab-brief" onclick="encTab('brief')">Briefing</button>
-      <button class="enc-tab" id="etab-encounter" onclick="encTab('encounter')">Clinical encounter</button>
-      <button class="enc-tab" id="etab-chat" onclick="encTab('chat')">Talk to Dr. Sage</button>
+      <button class="enc-tab active" id="etab-brief" onclick="encTab(\'brief\')">Briefing</button>
+      <button class="enc-tab" id="etab-encounter" onclick="encTab(\'encounter\')">Clinical encounter</button>
+      <button class="enc-tab" id="etab-chat" onclick="encTab(\'chat\')">Talk to Dr. Sage</button>
     </div>
     <div class="enc-panel active" id="epanel-brief">
       <div class="wm-section"><div class="wm-label">This week at a glance</div><div class="wk-stats" id="wk-stats"></div></div>
-      <div class="wm-section"><div class="wm-label">What Dr. Sage found</div><div id="wk-insights"></div></div>
+      <div class="wm-section"><div class="wm-label">What SageHealth found</div><div id="wk-insights"></div></div>
       <div class="wm-section"><div class="wm-label">Goal scorecard</div><div id="wk-goals"></div></div>
-      <div style="text-align:center;margin-top:8px;">
-        <button onclick="encTab('encounter')" style="background:rgba(0,214,143,.08);border:1px solid rgba(0,214,143,.22);color:var(--green);font-size:13px;font-weight:600;border-radius:9px;padding:9px 20px;cursor:pointer;">Continue to clinical encounter →</button>
+      <div style="display:flex;gap:9px;margin-top:8px;">
+        <button onclick="encTab(\'encounter\')" style="flex:1;background:rgba(0,214,143,.08);border:1px solid rgba(0,214,143,.22);color:var(--green);font-size:13px;font-weight:600;border-radius:9px;padding:9px 16px;cursor:pointer;">Clinical encounter →</button>
+        <button onclick="closeWeekly();openReportModal();" style="flex:1;background:rgba(155,114,245,.08);border:1px solid rgba(155,114,245,.22);color:var(--purple);font-size:13px;font-weight:600;border-radius:9px;padding:9px 16px;cursor:pointer;">📋 Doctor report →</button>
       </div>
     </div>
-    <div class="enc-panel" id="epanel-encounter">
-      <div id="encounter-content"><div class="enc-generating"><div class="enc-spinner"></div>Dr. Sage is reviewing your complete history...</div></div>
-    </div>
+    <div class="enc-panel" id="epanel-encounter"><div id="encounter-content"><div class="enc-generating"><div class="enc-spinner"></div>Generating clinical encounter...</div></div></div>
     <div class="enc-panel" id="epanel-chat">
-      <div class="sage-head">
-        <div class="sage-av">🧠</div>
-        <div>
-          <div class="sage-name">Dr. Sage</div>
-          <div class="sage-cred">AI Clinical Advisor · SageHealth</div>
-          <div class="sage-online"><div class="online-dot"></div>Ready</div>
-        </div>
-        <div style="margin-left:auto;font-size:11px;color:var(--muted);max-width:140px;text-align:right;line-height:1.4;">AI advisor. Not a licensed physician.</div>
-      </div>
+      <div class="sage-head"><div class="sage-av">🧠</div><div><div class="sage-name">Dr. Sage</div><div class="sage-cred">AI Clinical Advisor · SageHealth</div><div class="sage-online"><div class="online-dot"></div>Ready</div></div><div style="margin-left:auto;font-size:11px;color:var(--muted);max-width:140px;text-align:right;line-height:1.4;">AI advisor. Not a licensed physician.</div></div>
       <div class="chat-area" id="chatArea"></div>
       <div class="chat-row">
-        <input class="chat-input" id="chatInput" placeholder="Ask Dr. Sage about your results..." onkeydown="if(event.key==='Enter')sendChat()">
+        <input class="chat-input" id="chatInput" placeholder="Ask about your results..." onkeydown="if(event.key===\'Enter\')sendChat()">
         <button class="voice-btn" id="chatVoiceBtn" onclick="toggleVoice()">🔇</button>
         <button class="chat-send" id="chatSendBtn" onclick="sendChat()">Send</button>
       </div>
@@ -621,29 +677,82 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
 </div>
 </div>
 
-<!-- ═══════════════ WALKTHROUGH ═══════════════ -->
+<!-- ════ DOCTOR REPORT MODAL ════ -->
+<div id="reportModal">
+<div class="report-card">
+  <div class="report-head">
+    <div>
+      <div class="report-title">📋 Doctor report</div>
+      <div class="report-sub">Trend analysis and findings — formatted to send to your physician before your next appointment.</div>
+    </div>
+    <button onclick="closeReportModal()" style="background:var(--panel2);border:1px solid var(--border2);color:var(--muted);border-radius:50%;width:28px;height:28px;cursor:pointer;flex-shrink:0;font-size:14px;">✕</button>
+  </div>
+  <div class="report-body">
+    <div id="report-generating" style="display:none;"><div class="enc-generating"><div class="enc-spinner"></div>Generating your doctor report...</div></div>
+    <div id="report-content"></div>
+
+    <!-- Upload prior results -->
+    <div class="report-section">
+      <div class="report-section-title">📁 Upload prior test results</div>
+      <div class="report-upload" onclick="document.getElementById(\'resultFile\').click()">
+        <div class="report-upload-icon">📄</div>
+        <div class="report-upload-text">Upload lab results, imaging reports, or doctor notes</div>
+        <div class="report-upload-sub">PDF, image, or text — we analyze and add to your health picture</div>
+        <input type="file" id="resultFile" accept=".pdf,.jpg,.jpeg,.png,.txt" onchange="handleResultUpload(event)">
+      </div>
+      <div id="upload-analysis" style="display:none;"></div>
+    </div>
+
+    <!-- What did your doctor say? -->
+    <div class="report-section" id="dr-followup-section">
+      <div class="report-section-title">🔁 Doctor follow-up</div>
+      <div id="followup-status"></div>
+      <textarea class="dr-result-input" id="drResultText" placeholder="What did your doctor say? Paste notes, diagnosis, or recommendations here..."></textarea>
+      <button onclick="saveDrResult()" style="background:rgba(155,114,245,.1);border:1px solid rgba(155,114,245,.3);color:var(--purple);font-size:13px;font-weight:600;border-radius:9px;padding:9px 18px;cursor:pointer;margin-top:8px;width:100%;">Save doctor\'s response</button>
+      <div id="dr-sage-analysis" style="display:none;"></div>
+    </div>
+
+    <div id="report-actions" style="display:none;">
+      <button class="btn-report-dl" onclick="copyReport()">📋 Copy report text</button>
+    </div>
+    <div style="font-size:11px;color:var(--muted);line-height:1.6;margin-top:14px;padding:9px 12px;background:rgba(90,106,133,.06);border-radius:8px;">
+      ⚠ SageHealth is a health monitoring tool. This report is informational and does not constitute medical advice. Share with your licensed physician and follow their guidance.
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ════ CONTACT DOCTOR MODAL ════ -->
+<div id="contactDrModal">
+<div class="cdr-card">
+  <div class="cdr-head"><div class="cdr-title">🩺 Contact your doctor</div><div class="cdr-sub">SageHealth composes a message with your current health summary attached.</div></div>
+  <div class="cdr-body">
+    <div class="wm-label">Urgency</div>
+    <div class="cdr-urgency">
+      <div class="cdr-u-btn" id="urgency-routine" onclick="selectUrgency(\'routine\')"><div class="cdr-u-icon">📅</div><div class="cdr-u-label">Routine</div><div class="cdr-u-sub">Next available</div></div>
+      <div class="cdr-u-btn" id="urgency-soon" onclick="selectUrgency(\'soon\')"><div class="cdr-u-icon">⚡</div><div class="cdr-u-label">Soon</div><div class="cdr-u-sub">This week</div></div>
+      <div class="cdr-u-btn" id="urgency-urgent" onclick="selectUrgency(\'urgent\')"><div class="cdr-u-icon">🚨</div><div class="cdr-u-label">Urgent</div><div class="cdr-u-sub">Today / ER if needed</div></div>
+    </div>
+    <div class="cdr-f"><label>Doctor\'s name</label><input id="cdr_drname" placeholder="Dr. Smith" type="text"></div>
+    <div class="cdr-f"><label>Reason for contact</label><textarea id="cdr_reason" placeholder="e.g. elevated BP this week, unusual fatigue, want to review ECG findings..."></textarea></div>
+    <div class="cdr-summary-label">Health summary (auto-generated)</div>
+    <div class="cdr-summary-box" id="cdr-summary">Loading...</div>
+    <button class="btn-cdr-send" onclick="sendToDr()">Generate message to doctor</button>
+    <button class="btn-cdr-copy" onclick="closeCDR()">Cancel</button>
+  </div>
+</div>
+</div>
+
+<!-- ════ WALKTHROUGH ════ -->
 <div id="wtOverlay">
 <div id="wtPanel">
-  <div class="wt-head">
-    <div class="wt-av">🧠</div>
-    <div style="flex:1;">
-      <div style="font-size:13px;font-weight:600;">Dr. Sage</div>
-      <div style="font-size:11px;color:var(--muted);" id="wtStep">Step 1 of 7</div>
-    </div>
-    <button class="wt-voice" id="wtVoiceBtn" onclick="toggleWtVoice()">🔊</button>
-    <button onclick="closeWt()" style="background:var(--panel2);border:1px solid var(--border2);color:var(--muted);border-radius:50%;width:27px;height:27px;cursor:pointer;margin-left:7px;font-size:13px;">✕</button>
-  </div>
+  <div class="wt-head"><div class="wt-av">🧠</div><div style="flex:1;"><div style="font-size:13px;font-weight:600;">SageHealth</div><div style="font-size:11px;color:var(--muted);" id="wtStep">Step 1 of 7</div></div><button class="wt-voice" id="wtVoiceBtn" onclick="toggleWtVoice()">🔊</button><button onclick="closeWt()" style="background:var(--panel2);border:1px solid var(--border2);color:var(--muted);border-radius:50%;width:27px;height:27px;cursor:pointer;margin-left:7px;font-size:13px;">✕</button></div>
   <div class="wt-body" id="wtBody"></div>
-  <div class="wt-controls">
-    <button class="wt-btn" id="wtPrev" onclick="wtNav(-1)">← Back</button>
-    <button class="wt-btn wt-btn-go" id="wtNext" onclick="wtNav(1)">Next →</button>
-    <div class="wt-pips" id="wtPips"></div>
-  </div>
+  <div class="wt-controls"><button class="wt-btn" id="wtPrev" onclick="wtNav(-1)">← Back</button><button class="wt-btn wt-btn-go" id="wtNext" onclick="wtNav(1)">Next →</button><div class="wt-pips" id="wtPips"></div></div>
 </div>
 </div>
 
 <div id="toast"><div class="toast-title" id="toastTitle"></div><div class="toast-body" id="toastBody"></div></div>
-
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script src="/js/app.js"></script>
 </body>
