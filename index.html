@@ -448,52 +448,67 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
     </div>
   </div>
 
-  <!-- Clinical briefing -->
-  <div class="briefing-panel">
-    <div class="briefing-badge">
-      <div class="briefing-badge-title">Dr. Sage</div>
-      <div style="font-size:22px;margin:4px 0;">🧠</div>
-      <div class="briefing-date" id="briefing-date">Daily briefing</div>
+  <!-- TOP ROW: Movement quick stats -->
+  <div id="dash-top-row" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;"></div>
+
+  <!-- Dr. Sage briefing + ECG button -->
+  <div style="background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin-bottom:16px;display:flex;align-items:flex-start;gap:14px;">
+    <div style="background:rgba(0,214,143,.08);border:1px solid rgba(0,214,143,.15);border-radius:9px;padding:8px 12px;text-align:center;flex-shrink:0;">
+      <div style="font-size:9px;text-transform:uppercase;letter-spacing:.07em;color:var(--green);font-weight:700;">Dr. Sage</div>
+      <div style="font-size:18px;margin:3px 0;">🧠</div>
     </div>
-    <div class="briefing-text" id="dailySummary">Loading clinical briefing...</div>
+    <div class="briefing-text" id="dailySummary" style="font-size:13px;line-height:1.7;flex:1;">Loading...</div>
+    <button onclick="openECG()" style="flex-shrink:0;display:flex;align-items:center;gap:7px;background:rgba(0,214,143,.06);border:1px solid rgba(0,214,143,.18);border-radius:9px;padding:9px 14px;cursor:pointer;color:var(--green);font-size:12px;font-weight:600;white-space:nowrap;">
+      ❤️ ECG rhythm
+    </button>
   </div>
 
-  <!-- ECG strip -->
-  <div class="ecg-panel">
-    <div class="ecg-header">
-      <div class="ecg-title">Lead II ECG simulation — rhythm analysis</div>
-      <div class="ecg-vitals">
-        <div class="ecg-vital"><div class="ecg-vital-val" id="ecg-hr">--</div><div class="ecg-vital-label">BPM</div></div>
-        <div class="ecg-vital"><div class="ecg-vital-val" id="ecg-hrv" style="color:var(--cyan)">--</div><div class="ecg-vital-label">HRV ms</div></div>
-      </div>
-    </div>
-    <div class="ecg-canvas-wrap">
-      <canvas id="ecgCanvas" style="width:100%;height:90px;display:block;"></canvas>
-    </div>
-    <div class="ecg-status">
-      <div class="ecg-dot"></div>
-      <div class="ecg-status-text" id="ecg-status-text">Normal sinus rhythm · Regular rate and rhythm</div>
-      <div class="ecg-note">⚠️ Simulated from PPG data — not a medical ECG</div>
-    </div>
-    <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
-      <div>
-        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">What you're seeing</div>
-        <div style="font-size:12px;color:#8fa3c4;line-height:1.6;">A simulated cardiac rhythm trace built from your actual resting heart rate and HRV data. Each spike is one heartbeat — the tall peak is your ventricles contracting to push blood out.</div>
-      </div>
-      <div>
-        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">The waveform shapes</div>
-        <div style="font-size:12px;color:#8fa3c4;line-height:1.6;">Small bump = P wave (atria filling). Tall spike = QRS complex (ventricles firing). Rounded hill = T wave (heart resetting). Spacing between spikes = your HRV.</div>
-      </div>
-      <div>
-        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">Why it's not a real ECG</div>
-        <div style="font-size:12px;color:#8fa3c4;line-height:1.6;">A real ECG needs metal electrodes on your skin. Your ring uses light pulses (PPG). The shape here is mathematically modeled from your HR and HRV — useful for visualization, not medical diagnosis.</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- METRIC DEEP-DIVES — graph + plain English for every vital -->
+  <!-- METRIC DEEP-DIVES -->
   <div id="dash-metrics"></div>
 
+</div>
+
+<!-- ECG MODAL -->
+<div id="ecgModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:800;align-items:center;justify-content:center;padding:24px;">
+  <div style="background:var(--panel);border:1px solid var(--border2);border-radius:16px;width:100%;max-width:760px;">
+    <div style="padding:18px 22px 0;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+      <div>
+        <div style="font-size:15px;font-weight:600;">Cardiac rhythm simulation</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px;">Lead II waveform · Simulated from PPG data · Not a medical ECG</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="font-size:24px;font-weight:700;font-family:var(--mono);color:var(--green);" id="ecg-hr">--</span>
+        <span style="font-size:10px;color:var(--muted);">BPM</span>
+        <span style="font-size:24px;font-weight:700;font-family:var(--mono);color:var(--cyan);margin-left:10px;" id="ecg-hrv">--</span>
+        <span style="font-size:10px;color:var(--muted);">HRV ms</span>
+        <button onclick="closeECG()" style="background:var(--panel2);border:1px solid var(--border2);color:var(--muted);border-radius:50%;width:28px;height:28px;cursor:pointer;margin-left:8px;font-size:14px;">✕</button>
+      </div>
+    </div>
+    <div style="padding:14px 22px 0;">
+      <div style="background:rgba(0,214,143,.02);border-radius:8px;overflow:hidden;position:relative;">
+        <canvas id="ecgCanvas" style="display:block;"></canvas>
+      </div>
+      <div style="display:flex;align-items:center;gap:7px;margin-top:8px;">
+        <div class="ecg-dot"></div>
+        <div style="font-size:12px;color:var(--muted);" id="ecg-status-text">Normal sinus rhythm</div>
+      </div>
+    </div>
+    <div style="border-top:1px solid var(--border);padding:16px 22px;margin-top:14px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <div style="display:flex;align-items:center;gap:9px;">
+          <div style="width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#9b72f5,#3b82f6);display:flex;align-items:center;justify-content:center;font-size:13px;">🧠</div>
+          <div style="font-size:13px;font-weight:600;">Dr. Sage reads your rhythm</div>
+        </div>
+        <button onclick="sageReadsECG()" id="ecgReadBtn" style="background:rgba(155,114,245,.1);border:1px solid rgba(155,114,245,.25);color:var(--purple);font-size:12px;font-weight:600;border-radius:8px;padding:7px 16px;cursor:pointer;">▶ Read results aloud</button>
+      </div>
+      <div id="ecgReading" style="font-size:13px;color:#8fa3c4;line-height:1.75;min-height:36px;margin-bottom:14px;"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;padding-top:12px;border-top:1px solid var(--border);">
+        <div><div style="font-size:11px;font-weight:600;color:var(--text);margin-bottom:3px;">P wave — atria contract</div><div style="font-size:11px;color:var(--muted);line-height:1.6;">The small bump. Your atria squeeze blood down into the ventricles, loading them up for the main pump.</div></div>
+        <div><div style="font-size:11px;font-weight:600;color:var(--text);margin-bottom:3px;">QRS spike — ventricles fire</div><div style="font-size:11px;color:var(--muted);line-height:1.6;">The tall spike — this IS your heartbeat. Both ventricles contract simultaneously, pumping blood to your lungs and body.</div></div>
+        <div><div style="font-size:11px;font-weight:600;color:var(--text);margin-bottom:3px;">T wave — heart resets</div><div style="font-size:11px;color:var(--muted);line-height:1.6;">The rounded hill. The heart muscle relaxes and recharges electrically, ready for the next beat.</div></div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- SLEEP PAGE -->
@@ -754,7 +769,6 @@ function initApp(){
   populateHistory();
   populateSettings();
   setGreeting();
-  setTimeout(()=>startECG(), 200);
   // Monday auto-open
   const today=new Date(), isM=today.getDay()===1, lw=localStorage.getItem('sh_nl_opened'), tw=today.toISOString().slice(0,10);
   if(isM&&lw!==tw){localStorage.setItem('sh_nl_opened',tw);setTimeout(()=>openWeeklyReport(),1400);}
@@ -775,6 +789,26 @@ function buildDashboard(){
   const ca=cardioAge(t.rhr,t.hrv,t.spo2,age);
   const labels=healthData.map(d=>d.date.toLocaleDateString('en-US',{weekday:'short'}));
   const co=(min,max,color)=>({responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#6b7a96',font:{size:10}},grid:{display:false}},y:{ticks:{color:'#6b7a96',font:{size:10}},grid:{color:'rgba(255,255,255,0.04)'},min,max}}});
+
+  // TOP ROW — movement first
+  const tr = document.getElementById('dash-top-row');
+  const stepsGoal = goals.steps||8000;
+  const stepsPct = Math.min(100,Math.round(t.steps/stepsGoal*100));
+  const stepCol = t.steps>=stepsGoal?'var(--green)':t.steps>=stepsGoal*.75?'var(--cyan)':'var(--amber)';
+  tr.innerHTML = [
+    {label:'Steps today', value:t.steps.toLocaleString(), sub:`${stepsPct}% of ${stepsGoal.toLocaleString()} goal`, color:stepCol, icon:'🏃', note: t.steps>=stepsGoal?'Goal achieved':''+Math.max(0,stepsGoal-t.steps).toLocaleString()+' to go'},
+    {label:'Readiness', value:t.readiness+'/100', sub:t.readiness>=85?'Excellent':t.readiness>=70?'Good':t.readiness>=55?'Moderate':'Low', color:t.readiness>=85?'var(--green)':t.readiness>=70?'var(--cyan)':'var(--amber)', icon:'⚡', note:'HRV + sleep driven'},
+    {label:'Sleep last night', value:t.sleep+'h', sub:`${t.deep}h deep · ${t.rem}h REM`, color:t.sleepScore>=80?'var(--purple)':'var(--amber)', icon:'🌙', note:t.sleepScore>=80?'Good architecture':'Below target'},
+    {label:'Heart rate', value:t.rhr+' BPM', sub:`HRV: ${t.hrv}ms`, color:rhrS(t.rhr)==='great'?'var(--green)':rhrS(t.rhr)==='good'?'var(--cyan)':'var(--amber)', icon:'❤️', note:t.rhr<60?'Athletic range':t.rhr<70?'Healthy range':'Mildly elevated'},
+  ].map(s=>`<div style="background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px 16px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+      <div style="font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:600;">${s.label}</div>
+      <span style="font-size:16px;">${s.icon}</span>
+    </div>
+    <div style="font-size:28px;font-weight:700;font-family:var(--mono);color:${s.color};line-height:1;margin-bottom:4px;">${s.value}</div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:3px;">${s.sub}</div>
+    <div style="font-size:11px;color:${s.color};font-weight:500;">${s.note}</div>
+  </div>`).join('');
 
   // ECG values
   document.getElementById('ecg-hr').textContent=t.rhr;
@@ -896,15 +930,15 @@ function buildDashboard(){
 
   // ── STEPS ──
   const hr=new Date().getHours();
-  const stepsGoal=goals.steps||8000;
-  const stepsPct=Math.min(100,Math.round(t.steps/stepsGoal*100));
+  const stepsGoalMdv=goals.steps||8000;
+  const stepsPctMdv=Math.min(100,Math.round(t.steps/stepsGoalMdv*100));
   const stepsBarHtml=`<div style="height:60px;display:flex;align-items:flex-end;gap:2px;margin:10px 0 4px;">${Array.from({length:24},(_,i)=>{const v=i<hr?Math.round(t.steps/hr*(0.4+Math.random()*.8)):0;return`<div style="flex:1;border-radius:2px 2px 0 0;background:${v>0?'var(--green)':'rgba(255,255,255,.06)'};opacity:${v>0?.8:.4};height:${Math.max(2,Math.round(v/(t.steps/hr||1)*52))}px;"></div>`;}).join('')}</div><div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);"><span>12am</span><span>6am</span><span>12pm</span><span>6pm</span><span>Now</span></div>`;
   el.innerHTML += mdvCard({
     name:'Daily movement',
-    value:t.steps.toLocaleString(), unit:'steps', status:t.steps>=stepsGoal?'great':t.steps>=stepsGoal*.75?'good':t.steps>=stepsGoal*.5?'watch':'alert',
-    what:`Your total steps today. Goal: ${stepsGoal.toLocaleString()} steps — ${stepsPct}% complete.`,
-    why: t.steps>=stepsGoal?`Goal achieved at ${t.steps.toLocaleString()} steps. Here's why this matters: a 2020 JAMA study found that people who take 8,000+ steps per day have a 51% lower risk of dying from any cause compared to those who take 4,000. And you don't need to do it in one workout — accumulated steps throughout the day count the same.`:
-         t.steps>=stepsGoal*.75?`${t.steps.toLocaleString()} steps — you're close. ${(stepsGoal-t.steps).toLocaleString()} to go. Even a 10-minute walk adds roughly 1,000 steps. The research is clear: there's no lower threshold where additional steps stop being beneficial. Each 1,000 steps beyond 4,000 reduces cardiovascular risk by another 6%.`:
+    value:t.steps.toLocaleString(), unit:'steps', status:t.steps>=stepsGoalMdv?'great':t.steps>=stepsGoalMdv*.75?'good':t.steps>=stepsGoalMdv*.5?'watch':'alert',
+    what:`Your total steps today. Goal: ${stepsGoalMdv.toLocaleString()} steps — ${stepsPctMdv}% complete.`,
+    why: t.steps>=stepsGoalMdv?`Goal achieved at ${t.steps.toLocaleString()} steps. Here's why this matters: a 2020 JAMA study found that people who take 8,000+ steps per day have a 51% lower risk of dying from any cause compared to those who take 4,000. And you don't need to do it in one workout — accumulated steps throughout the day count the same.`:
+         t.steps>=stepsGoalMdv*.75?`${t.steps.toLocaleString()} steps — you're close. ${(stepsGoalMdv-t.steps).toLocaleString()} to go. Even a 10-minute walk adds roughly 1,000 steps. The research is clear: there's no lower threshold where additional steps stop being beneficial. Each 1,000 steps beyond 4,000 reduces cardiovascular risk by another 6%.`:
          `${t.steps.toLocaleString()} steps — below target. Prolonged sitting has its own independent health risks, separate from exercise. Even if you work out, sitting for 8+ hours raises blood sugar, stiffens arteries, and compresses spinal discs. Breaking up sedentary time with short walks every hour is the fix.`,
     scale:'',
     chart:`${stepsBarHtml}${canvasCard('dash-steps-chart',80)}`,
@@ -922,26 +956,43 @@ function buildDashboard(){
   },50);
 }
 
+// ── ECG MODAL ──
+function openECG(){
+  const modal=document.getElementById('ecgModal');
+  modal.style.display='flex';
+  document.getElementById('ecgReading').textContent='';
+  setTimeout(()=>startECG(),80);
+}
+function closeECG(){
+  document.getElementById('ecgModal').style.display='none';
+  if(ecgAnimId){cancelAnimationFrame(ecgAnimId);ecgAnimId=null;}
+  stopSpeech();
+}
+function sageReadsECG(){
+  const t=healthData[healthData.length-1], age=profile.age||48, name=profile.name||'Frank';
+  const btn=document.getElementById('ecgReadBtn');
+  btn.disabled=true; btn.textContent='Reading...';
+  const rhythm=t.rhr<60?'sinus bradycardia — your heart rate is below 60, which is common in athletic or well-conditioned individuals':t.rhr>100?'elevated heart rate — your resting rate is above 100, which warrants monitoring':'normal sinus rhythm — regular rate and regular spacing between beats';
+  const hrvNote=t.hrv>=60?`Your HRV of ${t.hrv} milliseconds is above average, indicating excellent autonomic recovery. The spacing between beats is healthily variable, which is exactly what you want to see.`:t.hrv>=45?`Your HRV of ${t.hrv} milliseconds is within the normal range. The beat-to-beat variation looks healthy.`:`Your HRV of ${t.hrv} milliseconds is slightly below the optimal range for your age. This suggests your nervous system is carrying some load — worth tracking over the coming days.`;
+  const reading=`Good afternoon, ${name}. Looking at your cardiac rhythm simulation. I'm seeing ${rhythm}. Your heart is beating at ${t.rhr} beats per minute. ${hrvNote} The QRS complex — that's the tall spike you see on the trace — looks clean and regular, which is what we want. The T wave recovery looks normal. ${t.rhr<70?'Overall, your cardiac profile today is reassuring.':'I would encourage you to stay well hydrated and check in again tomorrow.'} Remember, this is a simulation from your ring's PPG sensor — it models your rhythm from timing data, not electrical signals. For a real cardiac evaluation, a KardiaMobile or a visit to your doctor would give you a true ECG.`;
+  document.getElementById('ecgReading').textContent=reading;
+  speak(reading, ()=>{btn.disabled=false; btn.textContent='▶ Read results aloud';});
+}
+
+
 // ── ECG SIMULATION ──
 function startECG(){
   const canvas=document.getElementById('ecgCanvas');
   if(!canvas)return;
+  const parent=canvas.parentElement;
+  const w=parent.clientWidth||700;
+  canvas.width=w; canvas.height=100;
+  canvas.style.width=w+'px'; canvas.style.height='100px';
+
   const ctx=canvas.getContext('2d');
   const today=healthData[healthData.length-1];
   const bpm=today.rhr, period=60000/bpm;
   let t2=0, lastTime=null;
-
-  function setSize(){
-    const w=canvas.parentElement.clientWidth||canvas.parentElement.offsetWidth||800;
-    canvas.width=w;
-    canvas.height=90;
-  }
-  setSize();
-
-  // Use ResizeObserver so canvas always matches its container
-  if(window.ResizeObserver){
-    new ResizeObserver(()=>setSize()).observe(canvas.parentElement);
-  }
 
   function ecgY(p){
     p=p%1;
@@ -962,40 +1013,32 @@ function startECG(){
     const w=canvas.width, h=canvas.height, mid=h/2;
     if(!w||!h){ecgAnimId=requestAnimationFrame(draw);return;}
     const speed=w/3, dx=speed*dt/1000;
-
-    // Scroll existing pixels left
     if(dx>=1){
       const img=ctx.getImageData(Math.ceil(dx),0,w-Math.ceil(dx),h);
       ctx.clearRect(0,0,w,h);
       ctx.putImageData(img,0,0);
     }
-
-    // Clear the new right strip
-    ctx.clearRect(w-Math.ceil(dx)-1,0,Math.ceil(dx)+2,h);
-
-    // Grid
+    ctx.clearRect(w-Math.ceil(dx)-1,0,Math.ceil(dx)+3,h);
     ctx.strokeStyle='rgba(0,214,143,.06)'; ctx.lineWidth=.5;
     for(let gx=w%20;gx<w;gx+=20){ctx.beginPath();ctx.moveTo(gx,0);ctx.lineTo(gx,h);ctx.stroke();}
     for(let gy=0;gy<h;gy+=18){ctx.beginPath();ctx.moveTo(0,gy);ctx.lineTo(w,gy);ctx.stroke();}
-
-    // New trace segment on the right
     ctx.strokeStyle='#00d68f'; ctx.lineWidth=2; ctx.lineJoin='round'; ctx.lineCap='round';
     ctx.beginPath();
     const steps=Math.ceil(dx)+2;
     for(let i=0;i<=steps;i++){
       const px=w-steps+i;
       const phase=(t2+i/speed/(period/1000))%1;
-      const y=mid-ecgY(phase)*(mid*.75/25);
+      const y=mid-ecgY(phase)*(mid*.78/25);
       if(i===0)ctx.moveTo(px,y); else ctx.lineTo(px,y);
     }
     ctx.stroke();
-
     t2+=dt/1000/(period/1000);
     ecgAnimId=requestAnimationFrame(draw);
   }
   if(ecgAnimId)cancelAnimationFrame(ecgAnimId);
   ecgAnimId=requestAnimationFrame(draw);
 }
+
 
 // ── SUBPAGES ──
 function buildSubpages(){
