@@ -475,6 +475,20 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
       <div class="ecg-status-text" id="ecg-status-text">Normal sinus rhythm · Regular rate and rhythm</div>
       <div class="ecg-note">⚠️ Simulated from PPG data — not a medical ECG</div>
     </div>
+    <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
+      <div>
+        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">What you're seeing</div>
+        <div style="font-size:12px;color:#8fa3c4;line-height:1.6;">A simulated cardiac rhythm trace built from your actual resting heart rate and HRV data. Each spike is one heartbeat — the tall peak is your ventricles contracting to push blood out.</div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">The waveform shapes</div>
+        <div style="font-size:12px;color:#8fa3c4;line-height:1.6;">Small bump = P wave (atria filling). Tall spike = QRS complex (ventricles firing). Rounded hill = T wave (heart resetting). Spacing between spikes = your HRV.</div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">Why it's not a real ECG</div>
+        <div style="font-size:12px;color:#8fa3c4;line-height:1.6;">A real ECG needs metal electrodes on your skin. Your ring uses light pulses (PPG). The shape here is mathematically modeled from your HR and HRV — useful for visualization, not medical diagnosis.</div>
+      </div>
+    </div>
   </div>
 
   <!-- METRIC DEEP-DIVES — graph + plain English for every vital -->
@@ -912,61 +926,72 @@ function buildDashboard(){
 function startECG(){
   const canvas=document.getElementById('ecgCanvas');
   if(!canvas)return;
+
+  // Size canvas to its actual rendered pixel width
+  function sizeCanvas(){
+    const rect=canvas.getBoundingClientRect();
+    canvas.width=Math.round(rect.width)||canvas.parentElement.offsetWidth||900;
+    canvas.height=90;
+  }
+  sizeCanvas();
+  // Resize on window resize
+  window.addEventListener('resize',()=>{sizeCanvas();});
+
   const ctx=canvas.getContext('2d');
-  canvas.width=canvas.offsetWidth||900; canvas.height=90;
   const today=healthData[healthData.length-1];
   const bpm=today.rhr, period=60000/bpm;
-  let x=0, t2=0, lastTime=null;
+  let t2=0, lastTime=null;
 
   function ecgY(phase){
-    // Simulated Lead II morphology: P wave, PR, QRS complex, ST, T wave
     const p=phase%1;
-    if(p<0.04)return 5*Math.sin(p/0.04*Math.PI); // P wave
-    if(p<0.12)return 0; // PR segment
-    if(p<0.13)return -8*(p-0.12)/0.01; // Q
-    if(p<0.15)return -8+50*(p-0.13)/0.02; // R upstroke
-    if(p<0.17)return 42-45*(p-0.15)/0.02; // R downstroke
-    if(p<0.19)return -3+3*(p-0.17)/0.02; // S
-    if(p<0.32)return 0; // ST segment
-    if(p<0.50)return 10*Math.sin((p-0.32)/0.18*Math.PI); // T wave
+    if(p<0.04)return 5*Math.sin(p/0.04*Math.PI);
+    if(p<0.12)return 0;
+    if(p<0.13)return -8*(p-0.12)/0.01;
+    if(p<0.15)return -8+50*(p-0.13)/0.02;
+    if(p<0.17)return 42-45*(p-0.15)/0.02;
+    if(p<0.19)return -3+3*(p-0.17)/0.02;
+    if(p<0.32)return 0;
+    if(p<0.50)return 10*Math.sin((p-0.32)/0.18*Math.PI);
     return 0;
   }
 
   function draw(ts){
     if(!lastTime)lastTime=ts;
-    const dt=ts-lastTime; lastTime=ts;
+    const dt=Math.min(ts-lastTime,50); lastTime=ts;
     const w=canvas.width, h=canvas.height, mid=h/2;
-    const speed=w/3; // pixels per second
+    if(w===0){ecgAnimId=requestAnimationFrame(draw);return;}
+    const speed=w/3;
     const dx=speed*dt/1000;
 
-    // Scroll
-    const img=ctx.getImageData(dx,0,w-dx,h);
+    const img=ctx.getImageData(Math.ceil(dx),0,w-Math.ceil(dx),h);
+    ctx.clearRect(0,0,w,h);
     ctx.putImageData(img,0,0);
-    ctx.clearRect(w-dx,0,dx,h);
+    ctx.clearRect(w-Math.ceil(dx)-1,0,Math.ceil(dx)+2,h);
 
-    // Grid
-    ctx.strokeStyle='rgba(0,214,143,.06)';
-    ctx.lineWidth=.5;
+    // Grid lines
+    ctx.strokeStyle='rgba(0,214,143,.05)'; ctx.lineWidth=.5;
     for(let gx=0;gx<w;gx+=20){ctx.beginPath();ctx.moveTo(gx,0);ctx.lineTo(gx,h);ctx.stroke();}
-    for(let gy=0;gy<h;gy+=20){ctx.beginPath();ctx.moveTo(0,gy);ctx.lineTo(w,gy);ctx.stroke();}
+    for(let gy=0;gy<h;gy+=18){ctx.beginPath();ctx.moveTo(0,gy);ctx.lineTo(w,gy);ctx.stroke();}
 
-    // Trace
-    ctx.strokeStyle='#00d68f'; ctx.lineWidth=1.5; ctx.lineJoin='round';
+    // ECG trace
+    ctx.strokeStyle='#00d68f'; ctx.lineWidth=1.8; ctx.lineJoin='round'; ctx.lineCap='round';
     ctx.beginPath();
-    for(let px=w-dx;px<=w;px++){
-      const phase=(t2+(px-(w-dx))/speed/( period/1000))%(1);
-      const y=mid-ecgY(phase)*(mid*0.7/25);
-      if(px===w-dx)ctx.moveTo(px,y); else ctx.lineTo(px,y);
+    for(let px=w-Math.ceil(dx);px<=w;px++){
+      const phase=(t2+(px-(w-Math.ceil(dx)))/speed/(period/1000))%1;
+      const y=mid-ecgY(phase)*(mid*0.75/25);
+      if(px===w-Math.ceil(dx))ctx.moveTo(px,y); else ctx.lineTo(px,y);
     }
     ctx.stroke();
 
-    // Cursor glow
-    ctx.strokeStyle='rgba(0,214,143,.4)'; ctx.lineWidth=1;
+    // Leading cursor glow
+    ctx.strokeStyle='rgba(0,214,143,.25)'; ctx.lineWidth=1;
     ctx.beginPath(); ctx.moveTo(w,0); ctx.lineTo(w,h); ctx.stroke();
 
     t2+=dt/1000/(period/1000);
     ecgAnimId=requestAnimationFrame(draw);
   }
+
+  if(ecgAnimId)cancelAnimationFrame(ecgAnimId);
   ecgAnimId=requestAnimationFrame(draw);
 }
 
