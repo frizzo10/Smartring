@@ -389,160 +389,147 @@ function avg(arr, k) { return Math.round(arr.reduce((s, d) => s + d[k], 0) / arr
 function avgF(arr, k) { return +(arr.reduce((s, d) => s + d[k], 0) / arr.length).toFixed(1); }
 
 /* ── MAIN RENDER FUNCTION ─────────────────────────── */
+/* ── BUILD SIGNALS PANEL ─────────────────────────── */
 function buildSignalsPanel(data, profile, goals) {
   const container = document.getElementById('signals-panel');
   if (!container) return;
 
-  const testMode = localStorage.getItem('sh_signals_test') === '1';
-
-  // Load dismissed signals (ignored in test mode)
-  const dismissed = testMode ? [] : JSON.parse(localStorage.getItem('sh_dismissed_signals') || '[]');
+  const testStates = JSON.parse(localStorage.getItem('sh_signal_toggles') || '{}');
   const acknowledged = JSON.parse(localStorage.getItem('sh_acknowledged_signals') || '{}');
 
-  // Run all detectors — test mode forces all to fire
-  const fired = SIGNAL_PATTERNS.filter(p => {
-    if (dismissed.includes(p.id)) return false;
-    if (testMode) return true;
-    try { return p.detect(data, profile, goals); }
-    catch(e) { return false; }
-  });
+  // Live detection — which signals actually fired
+  const liveFired = new Set(SIGNAL_PATTERNS.filter(p => {
+    try { return p.detect(data, profile, goals); } catch(e) { return false; }
+  }).map(p => p.id));
 
-  // Sort: urgent first, then watch, then info
-  const order = { urgent: 0, watch: 1, info: 2 };
-  fired.sort((a, b) => order[a.level] - order[b.level]);
+  // What to render: live + any manually toggled on
+  const toShow = SIGNAL_PATTERNS.filter(p => testStates[p.id] || liveFired.has(p.id));
 
-  // Build header
-  const urgentCount = fired.filter(s => s.level === 'urgent').length;
-  const watchCount = fired.filter(s => s.level === 'watch').length;
+  // Header badge
+  const urgentCount = toShow.filter(s => s.level === 'urgent').length;
+  const watchCount  = toShow.filter(s => s.level === 'watch').length;
+  let badgeText = 'All clear', badgeClass = 'clear';
+  if (urgentCount > 0) { badgeText = urgentCount + ' urgent'; badgeClass = ''; }
+  else if (watchCount > 0) { badgeText = watchCount + ' to watch'; badgeClass = ''; }
 
-  let badgeText = 'All clear';
-  let badgeClass = 'clear';
-  if (urgentCount > 0) { badgeText = `${urgentCount} urgent`; badgeClass = ''; }
-  else if (watchCount > 0) { badgeText = `${watchCount} to watch`; badgeClass = ''; }
-
-  let html = `
-    <div class="signals-header">
-      <div class="signals-title">
-        <span>🔍</span> SageHealth signals
-        <span class="signals-badge ${badgeClass}">${badgeText}</span>
-        ${testMode ? '<span style="font-size:10px;font-weight:700;padding:2px 10px;border-radius:8px;background:rgba(155,114,245,.2);color:var(--purple);margin-left:4px;">TEST MODE</span>' : ''}
-      </div>
-      <button onclick="toggleSignalTestMode()" style="font-size:11px;padding:5px 12px;border-radius:7px;border:1px solid ${testMode ? 'rgba(109,91,208,.35)' : 'var(--border2)'};background:${testMode ? 'var(--purple-bg)' : 'var(--panel)'};color:${testMode ? 'var(--purple)' : 'var(--muted)'};cursor:pointer;font-weight:500;box-shadow:0 1px 3px rgba(0,0,0,.07);">
-        ${testMode ? '✕ Exit test mode' : '🧪 Test signals'}
-      </button>
+  let html = `<div class="signals-header" style="margin-bottom:10px;">
+    <div class="signals-title">
+      <span>🔍</span> SageHealth signals
+      <span class="signals-badge ${badgeClass}">${badgeText}</span>
     </div>
-    ${testMode ? '<div style="background:rgba(155,114,245,.07);border:1px solid rgba(155,114,245,.2);border-radius:9px;padding:9px 13px;margin-bottom:10px;font-size:12px;color:#c4b5fd;line-height:1.5;">🧪 <strong>Test mode on</strong> — all 8 signal patterns are showing regardless of your actual data. Buttons, chat links, and dismiss all work normally. Exit test mode to return to live detection.</div>' : ''}`;
+  </div>`;
 
-  if (fired.length === 0) {
-    html += `<div class="signals-all-clear">
-      <span style="font-size:20px;">✅</span>
-      <div>No patterns flagged this week. Your metrics look stable — keep it up. SageHealth is watching.</div>
+  // Toggle rows — one per signal
+  html += `<div style="background:var(--panel);border:1px solid var(--border2);border-radius:12px;margin-bottom:12px;overflow:hidden;box-shadow:var(--shadow);">`;
+  SIGNAL_PATTERNS.forEach((sig, idx) => {
+    const isLive = liveFired.has(sig.id);
+    const isOn   = testStates[sig.id] || isLive;
+    const levelCol = sig.level === 'urgent' ? 'var(--red)' : sig.level === 'watch' ? 'var(--amber)' : 'var(--cyan)';
+    const border = idx > 0 ? 'border-top:1px solid var(--border);' : '';
+    html += `<div style="${border}display:flex;align-items:center;gap:12px;padding:11px 16px;">
+      <span style="font-size:16px;flex-shrink:0;">${sig.icon}</span>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:600;color:var(--text);">${sig.title}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:1px;">${sig.category}
+          ${isLive ? '<span style="margin-left:6px;font-size:10px;font-weight:700;padding:1px 7px;border-radius:8px;background:var(--green-bg);color:var(--green);border:1px solid rgba(14,159,110,.25);">LIVE</span>' : ''}
+        </div>
+      </div>
+      <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:7px;background:${sig.level==='urgent'?'var(--red-bg)':sig.level==='watch'?'var(--amber-bg)':'var(--cyan-bg)'};color:${levelCol};border:1px solid ${levelCol}22;">${sig.level}</span>
+      <label style="position:relative;display:inline-block;width:40px;height:22px;flex-shrink:0;cursor:pointer;">
+        <input type="checkbox" ${isOn?'checked':''} ${isLive?'disabled':''} onchange="toggleSignal('${sig.id}',this.checked)"
+          style="opacity:0;width:0;height:0;position:absolute;">
+        <span style="position:absolute;inset:0;border-radius:11px;background:${isOn?'var(--green)':'#d1d9e0'};transition:background .2s;"></span>
+        <span style="position:absolute;top:3px;left:${isOn?'21px':'3px'};width:16px;height:16px;border-radius:50%;background:white;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.2);"></span>
+      </label>
     </div>`;
+  });
+  html += `</div>`;
+
+  // Show expanded cards for any that are ON
+  if (toShow.length === 0) {
+    html += `<div class="signals-all-clear"><span style="font-size:20px;">✅</span><div>No patterns flagged. Toggle a signal above to preview how it looks.</div></div>`;
   } else {
-    fired.forEach(sig => {
-      const drivers = sig.drivers(data, profile);
+    const order = { urgent: 0, watch: 1, info: 2 };
+    const sorted = [...toShow].sort((a,b) => order[a.level] - order[b.level]);
+    sorted.forEach(sig => {
+      const drivers  = sig.drivers(data, profile);
       const narrative = sig.narrative(data, profile);
-      const isAck = acknowledged[sig.id];
-
+      const isAck   = acknowledged[sig.id];
       html += `
-        <div class="sig-card sig-${sig.level}" id="sigcard-${sig.id}">
-          <div class="sig-head">
-            <div>
-              <div class="sig-title-row">
-                <span class="sig-icon">${sig.icon}</span>
-                <span class="sig-title">${sig.title}</span>
-                <span class="sig-level ${sig.level}">${sig.level}</span>
-              </div>
-              <div class="sig-watching">👁 Watching: ${sig.watchingFor}</div>
+      <div class="sig-card sig-${sig.level}" id="sigcard-${sig.id}">
+        <div class="sig-head">
+          <div>
+            <div class="sig-title-row">
+              <span class="sig-icon">${sig.icon}</span>
+              <span class="sig-title">${sig.title}</span>
+              <span class="sig-level ${sig.level}">${sig.level}</span>
             </div>
+            <div class="sig-watching">👁 ${sig.watchingFor}</div>
           </div>
-
-          <div class="sig-body">${narrative}</div>
-
-          <div class="sig-drivers">
-            ${drivers.map(d => `<span class="sig-driver ${d.urgent ? 'red' : d.flagged ? 'flagged' : ''}">${d.label}</span>`).join('')}
-          </div>
-
-          <div class="sig-action">
-            <div class="sig-action-label">What to do</div>
-            <div class="sig-action-text"><strong>${sig.action}</strong></div>
-          </div>
-
-          <div class="sig-action" style="margin-top:8px;">
-            <div class="sig-action-label">Exactly how</div>
-            <div class="sig-action-text">${sig.actionHow}</div>
-          </div>
-
-          <div class="sig-btns">
-            <button class="sig-btn-did" onclick="acknowledgeSignal('${sig.id}')">
-              ${isAck ? '✓ Acknowledged' : 'I am on it'}
-            </button>
-            <button class="sig-btn-sage" onclick="openSignalChat('${sig.id}', \`${sig.askSage.replace(/`/g,"'")}\`)">
-              🧠 Ask Dr. Sage
-            </button>
-            <button class="sig-btn-dismiss" onclick="dismissSignal('${sig.id}')">
-              Dismiss this week
-            </button>
-          </div>
-
-          <div class="sig-disclaimer">⚠ ${sig.disclaimer}</div>
-        </div>`;
+        </div>
+        <div class="sig-body">${narrative}</div>
+        <div class="sig-drivers">
+          ${drivers.map(d=>`<span class="sig-driver ${d.urgent?'red':d.flagged?'flagged':''}">${d.label}</span>`).join('')}
+        </div>
+        <div class="sig-action">
+          <div class="sig-action-label">What to do</div>
+          <div class="sig-action-text"><strong>${sig.action}</strong></div>
+        </div>
+        <div class="sig-action" style="margin-top:8px;">
+          <div class="sig-action-label">Exactly how</div>
+          <div class="sig-action-text">${sig.actionHow}</div>
+        </div>
+        <div class="sig-btns">
+          <button class="sig-btn-did" onclick="acknowledgeSignal('${sig.id}')">${isAck ? '✓ On it' : 'I am on it'}</button>
+          <button class="sig-btn-sage" onclick="openSignalChat('${sig.id}', '${sig.askSage}')">🧠 Ask Dr. Sage</button>
+        </div>
+        <div class="sig-disclaimer">⚠ ${sig.disclaimer}</div>
+      </div>`;
     });
   }
 
   container.innerHTML = html;
 
-  // Save fired signals to localStorage for use in encounters + doctor reports
-  localStorage.setItem('sh_active_signals', JSON.stringify(fired.map(s => ({
-    id: s.id,
-    level: s.level,
-    title: s.title,
-    category: s.category,
-    action: s.action
-  }))));
-
-  // Update header signal badge
+  // Update header badge
   const badge = document.getElementById('signal-status-badge');
   if (badge) {
-    if (fired.length > 0) {
-      const urgentCount = fired.filter(s => s.level === 'urgent').length;
-      const label = urgentCount > 0
-        ? `🚨 ${urgentCount} urgent signal${urgentCount > 1 ? 's' : ''} — scroll down`
-        : `⚠ ${fired.length} signal${fired.length > 1 ? 's' : ''} detected — scroll down`;
-      badge.textContent = label;
+    if (toShow.length > 0) {
+      const u = toShow.filter(s => s.level === 'urgent').length;
+      badge.textContent = u > 0 ? '🚨 ' + u + ' urgent — scroll down' : '⚠ ' + toShow.length + ' signals — scroll down';
       badge.style.display = 'inline-flex';
-      badge.style.background = urgentCount > 0 ? 'var(--red-bg)' : 'var(--amber-bg)';
-      badge.style.color = urgentCount > 0 ? 'var(--red)' : 'var(--amber)';
-      badge.style.borderColor = urgentCount > 0 ? 'rgba(192,57,43,.25)' : 'rgba(180,83,9,.25)';
+      badge.style.background = u > 0 ? 'var(--red-bg)' : 'var(--amber-bg)';
+      badge.style.color = u > 0 ? 'var(--red)' : 'var(--amber)';
     } else {
       badge.style.display = 'none';
     }
   }
+
+  // Save for encounter/report
+  localStorage.setItem('sh_active_signals', JSON.stringify(toShow.map(s => ({
+    id: s.id, level: s.level, title: s.title, category: s.category, action: s.action
+  }))));
+}
+
+/* ── TOGGLE A SIGNAL ON/OFF ───────────────────────── */
+function toggleSignal(id, on) {
+  const states = JSON.parse(localStorage.getItem('sh_signal_toggles') || '{}');
+  states[id] = on;
+  localStorage.setItem('sh_signal_toggles', JSON.stringify(states));
+  if (typeof data !== 'undefined') buildSignalsPanel(data, profile, goals);
 }
 
 /* ── SIGNAL ACTIONS ───────────────────────────────── */
 function acknowledgeSignal(id) {
-  if(typeof showToast==='undefined') return setTimeout(()=>acknowledgeSignal(id),200);
+  if (typeof showToast === 'undefined') return setTimeout(() => acknowledgeSignal(id), 200);
   const ack = JSON.parse(localStorage.getItem('sh_acknowledged_signals') || '{}');
   ack[id] = new Date().toISOString();
   localStorage.setItem('sh_acknowledged_signals', JSON.stringify(ack));
-  const btn = document.querySelector(`#sigcard-${id} .sig-btn-did`);
+  const btn = document.querySelector('#sigcard-' + id + ' .sig-btn-did');
   if (btn) { btn.textContent = '✓ On it'; btn.style.opacity = '.6'; }
   showToast('✓ Noted', 'We will track whether this changes your numbers.');
 }
 
-function dismissSignal(id) {
-  const dismissed = JSON.parse(localStorage.getItem('sh_dismissed_signals') || '[]');
-  if (!dismissed.includes(id)) dismissed.push(id);
-  // Auto-expire dismissals after 7 days
-  localStorage.setItem('sh_dismissed_signals', JSON.stringify(dismissed));
-  localStorage.setItem('sh_dismissed_ts_' + id, Date.now().toString());
-  const card = document.getElementById('sigcard-' + id);
-  if (card) { card.style.opacity = '0'; card.style.transition = 'opacity .3s'; setTimeout(() => card.remove(), 300); }
-}
-
 function openSignalChat(sigId, question) {
-  // Open weekly modal on chat tab with pre-filled question
   openWeekly();
   setTimeout(() => {
     encTab('chat');
@@ -553,23 +540,6 @@ function openSignalChat(sigId, question) {
   }, 200);
 }
 
-/* ── TEST MODE TOGGLE ────────────────────────────── */
-function toggleSignalTestMode() {
-  const current = localStorage.getItem('sh_signals_test') === '1';
-  localStorage.setItem('sh_signals_test', current ? '0' : '1');
-  // Re-render signals panel with current data
-  if (typeof data !== 'undefined' && typeof profile !== 'undefined') {
-    buildSignalsPanel(data, profile, goals);
-  }
-}
-
-/* ── EXPIRE OLD DISMISSALS ────────────────────────── */
 function expireOldDismissals() {
-  const dismissed = JSON.parse(localStorage.getItem('sh_dismissed_signals') || '[]');
-  const weekMs = 7 * 24 * 60 * 60 * 1000;
-  const stillDismissed = dismissed.filter(id => {
-    const ts = parseInt(localStorage.getItem('sh_dismissed_ts_' + id) || '0');
-    return Date.now() - ts < weekMs;
-  });
-  localStorage.setItem('sh_dismissed_signals', JSON.stringify(stillDismissed));
+  // No-op — kept for compatibility
 }
