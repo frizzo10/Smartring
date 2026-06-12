@@ -202,7 +202,45 @@
   .settings-field select option { background: #1a2233; }
   .btn-save { background: var(--accent); color: #0a1a0f; font-weight: 600; font-size: 14px; border: none; border-radius: 10px; padding: 11px 28px; cursor: pointer; margin-top: 18px; }
 
-  /* SUBPAGE CHARTS */
+  /* ACTION ITEMS */
+  .action-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px 20px; margin-bottom: 10px; display: flex; align-items: flex-start; gap: 14px; }
+  .action-card.done { opacity: 0.55; }
+  .action-check { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--border2); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 13px; margin-top: 1px; cursor: pointer; transition: all 0.2s; }
+  .action-check.checked { background: var(--accent); border-color: var(--accent); color: #0a1a0f; }
+  .action-check.auto-checked { background: var(--accent2); border-color: var(--accent2); color: #0a1a0f; cursor: default; }
+  .action-body { flex: 1; }
+  .action-title { font-size: 14px; font-weight: 600; margin-bottom: 3px; }
+  .action-card.done .action-title { text-decoration: line-through; color: var(--muted); }
+  .action-desc { font-size: 12px; color: var(--muted); line-height: 1.5; margin-bottom: 6px; }
+  .action-meta { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .action-tag { font-size: 10px; padding: 2px 8px; border-radius: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+  .tag-sleep { background: rgba(167,139,250,0.12); color: var(--purple); }
+  .tag-heart { background: rgba(248,113,113,0.12); color: var(--danger); }
+  .tag-activity { background: rgba(74,222,128,0.12); color: var(--accent); }
+  .tag-airway { background: rgba(34,211,238,0.12); color: var(--accent2); }
+  .tag-general { background: rgba(138,149,176,0.12); color: var(--muted); }
+  .action-evidence { font-size: 11px; color: var(--accent2); margin-top: 4px; }
+  .action-date { font-size: 11px; color: var(--muted); }
+  .action-section-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); font-weight: 600; margin: 18px 0 10px; }
+
+  /* TRANSCRIPT */
+  .transcript-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; margin-bottom: 14px; overflow: hidden; }
+  .transcript-header { padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
+  .transcript-header:hover { background: var(--surface2); }
+  .transcript-date { font-size: 13px; font-weight: 600; }
+  .transcript-preview { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .transcript-toggle { font-size: 12px; color: var(--muted); }
+  .transcript-body { display: none; border-top: 1px solid var(--border); padding: 16px 20px; }
+  .transcript-body.open { display: block; }
+  .t-msg { display: flex; gap: 10px; margin-bottom: 14px; align-items: flex-start; }
+  .t-msg.user { flex-direction: row-reverse; }
+  .t-av { width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; }
+  .t-av.sage { background: linear-gradient(135deg,#a78bfa,#60a5fa); color:white; font-size:13px; }
+  .t-av.you { background: var(--surface2); border: 1px solid var(--border2); color: var(--muted); }
+  .t-bubble { max-width: 82%; background: var(--surface2); border-radius: 12px; padding: 9px 13px; font-size: 13px; line-height: 1.6; color: var(--text); }
+  .t-msg.user .t-bubble { background: rgba(74,222,128,0.08); border: 1px solid rgba(74,222,128,0.15); }
+
+
   .chart-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 22px; margin-bottom: 20px; }
   .chart-panel-title { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
   .chart-panel-sub { font-size: 13px; color: var(--muted); margin-bottom: 18px; line-height: 1.5; }
@@ -440,8 +478,35 @@
 
     <!-- HISTORY PAGE -->
     <div class="page" id="page-history">
-      <div class="page-header"><div class="page-title">Dr. Sage — consultation history</div><div class="page-sub">Your personal health record, built week by week</div></div>
-      <div id="history-list"></div>
+      <div class="page-header"><div class="page-title">Dr. Sage — records</div><div class="page-sub">Full consultation transcripts, action items, and follow-up tracking</div></div>
+
+      <!-- Tab bar -->
+      <div style="display:flex;gap:4px;margin-bottom:20px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:4px;width:fit-content;">
+        <button id="tab-actions" onclick="switchHistoryTab('actions')" style="background:var(--surface2);border:none;color:var(--text);font-size:13px;font-weight:600;border-radius:9px;padding:8px 18px;cursor:pointer;">Action items</button>
+        <button id="tab-transcripts" onclick="switchHistoryTab('transcripts')" style="background:transparent;border:none;color:var(--muted);font-size:13px;font-weight:500;border-radius:9px;padding:8px 18px;cursor:pointer;">Transcripts</button>
+        <button id="tab-assessments" onclick="switchHistoryTab('assessments')" style="background:transparent;border:none;color:var(--muted);font-size:13px;font-weight:500;border-radius:9px;padding:8px 18px;cursor:pointer;">Assessments</button>
+      </div>
+
+      <!-- Action items tab -->
+      <div id="historyTab-actions">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+          <div style="font-size:13px;color:var(--muted);">Tasks Dr. Sage assigned — checked off when your data shows evidence of change</div>
+        </div>
+        <div id="action-items-list"></div>
+        <div id="action-empty" style="display:none;color:var(--muted);font-size:14px;padding:20px 0;">No action items yet. Complete a consultation with Dr. Sage and say "wrap up" to generate your first action plan.</div>
+      </div>
+
+      <!-- Transcripts tab -->
+      <div id="historyTab-transcripts" style="display:none;">
+        <div id="transcript-list"></div>
+        <div id="transcript-empty" style="display:none;color:var(--muted);font-size:14px;padding:20px 0;">No transcripts yet. Your full consultation conversations will appear here.</div>
+      </div>
+
+      <!-- Assessments tab -->
+      <div id="historyTab-assessments" style="display:none;">
+        <div id="history-list"></div>
+        <div id="assessment-empty" style="display:none;color:var(--muted);font-size:14px;padding:20px 0;">No assessments yet. Complete your first weekly consult with Dr. Sage to begin building your health history.</div>
+      </div>
     </div>
 
     <!-- SETTINGS PAGE -->
@@ -947,18 +1012,114 @@ Always end your first message with: "Note: I am an AI wellness advisor — not a
   document.getElementById('chatSendBtn').disabled=false;
 }
 
+function extractActionItems(assessment, chatLog) {
+  const actionTemplates = [
+    { pattern: /side.?sleep|sleep.*side/i, title: 'Sleep on your side', desc: 'Reduces airway compression and apnea events. Use a pillow behind your back if needed.', tag: 'airway', metric: 'apnea', target: 'decrease' },
+    { pattern: /alcohol|drink/i, title: 'Reduce evening alcohol', desc: 'Alcohol suppresses deep sleep and relaxes the airway. Avoid within 3 hours of bed.', tag: 'sleep', metric: 'deep', target: 'increase' },
+    { pattern: /walk|step|movement|sedentary/i, title: 'Hit your daily step goal', desc: 'Aim for your step goal each day. Even a 15-minute walk after meals counts.', tag: 'activity', metric: 'steps', target: 'increase' },
+    { pattern: /bedtime|consistent.*sleep|sleep.*consistent/i, title: 'Keep a consistent bedtime', desc: 'Same bedtime within 30 minutes each night dramatically improves HRV and deep sleep.', tag: 'sleep', metric: 'sleepScore', target: 'increase' },
+    { pattern: /hrv|stress|nervous/i, title: 'Monitor HRV trend', desc: 'Check HRV each morning. Three consecutive days below your baseline warrants attention.', tag: 'heart', metric: 'hrv', target: 'increase' },
+    { pattern: /caffeine|coffee/i, title: 'Cut caffeine after 2pm', desc: 'Caffeine has a 6-hour half-life. Afternoon caffeine measurably reduces deep sleep.', tag: 'sleep', metric: 'deep', target: 'increase' },
+    { pattern: /doctor|physician|medical|consult/i, title: 'See your doctor', desc: 'Dr. Sage flagged something worth discussing with a licensed physician.', tag: 'general', metric: null, target: null },
+    { pattern: /hydrat/i, title: 'Improve daily hydration', desc: 'Dehydration elevates resting heart rate and reduces HRV. Aim for 8 glasses before 6pm.', tag: 'heart', metric: 'rhr', target: 'decrease' },
+  ];
+  const allText = chatLog.map(m => m.content).join(' ') + ' ' + assessment;
+  const date = new Date().toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'});
+  const found = [];
+  actionTemplates.forEach(t => {
+    if (t.pattern.test(allText)) {
+      found.push({ id: Date.now() + Math.random(), title: t.title, desc: t.desc, tag: t.tag, metric: t.metric, target: t.target, done: false, autoCheck: false, evidence: null, dateAssigned: date, weekData: { ...healthData[healthData.length-1] } });
+    }
+  });
+  found.push({ id: Date.now() + 0.5, title: 'Review next week with Dr. Sage', desc: 'Check in on these action items during your next Monday consultation.', tag: 'general', metric: null, target: null, done: false, autoCheck: false, evidence: null, dateAssigned: date, weekData: null });
+  return found;
+}
+
+function checkActionEvidence(item) {
+  if (!item.metric || item.done) return item;
+  const today = healthData[healthData.length-1];
+  const baseline = item.weekData;
+  if (!baseline) return item;
+  let evidenceText = null;
+  if (item.target === 'increase' && today[item.metric] > baseline[item.metric] * 1.05)
+    evidenceText = `Data confirms improvement: ${item.metric === 'steps' ? today[item.metric].toLocaleString() + ' steps vs ' + baseline[item.metric].toLocaleString() + ' baseline' : today[item.metric] + ' vs ' + baseline[item.metric] + ' baseline'}`;
+  else if (item.target === 'decrease' && today[item.metric] < baseline[item.metric] * 0.95)
+    evidenceText = `Data confirms improvement: ${today[item.metric]} vs ${baseline[item.metric]} at baseline`;
+  if (evidenceText) return { ...item, autoCheck: true, done: true, evidence: evidenceText };
+  return item;
+}
+
 function saveConsultation(assessment) {
-  const entry={date:new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}),assessment,scores:{readiness:avg(healthData,'readiness'),sleep:avgF(healthData,'sleep'),hrv:avg(healthData,'hrv'),airway:avg(healthData,'airway')}};
+  const entry = { date: new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}), assessment, scores: { readiness: avg(healthData,'readiness'), sleep: avgF(healthData,'sleep'), hrv: avg(healthData,'hrv'), airway: avg(healthData,'airway') } };
   consultHistory.unshift(entry);
-  localStorage.setItem('sh_history',JSON.stringify(consultHistory));
+  localStorage.setItem('sh_history', JSON.stringify(consultHistory));
+  const transcripts = JSON.parse(localStorage.getItem('sh_transcripts') || '[]');
+  transcripts.unshift({ date: entry.date, messages: [...chatMessages], scores: entry.scores });
+  localStorage.setItem('sh_transcripts', JSON.stringify(transcripts));
+  const existing = JSON.parse(localStorage.getItem('sh_actions') || '[]');
+  const newItems = extractActionItems(assessment, chatMessages);
+  localStorage.setItem('sh_actions', JSON.stringify([...newItems, ...existing]));
   populateHistory();
+  showRewardToast('📋 Action plan created', `Dr. Sage assigned ${newItems.length} follow-up items to your list.`);
+}
+
+function toggleActionItem(id) {
+  const items = JSON.parse(localStorage.getItem('sh_actions') || '[]');
+  const idx = items.findIndex(i => String(i.id) === String(id));
+  if (idx >= 0 && !items[idx].autoCheck) { items[idx].done = !items[idx].done; localStorage.setItem('sh_actions', JSON.stringify(items)); populateHistory(); }
+}
+
+function switchHistoryTab(tab) {
+  ['actions','transcripts','assessments'].forEach(t => {
+    document.getElementById('historyTab-'+t).style.display = t===tab ? 'block' : 'none';
+    const btn = document.getElementById('tab-'+t);
+    btn.style.background = t===tab ? 'var(--surface2)' : 'transparent';
+    btn.style.color = t===tab ? 'var(--text)' : 'var(--muted)';
+    btn.style.fontWeight = t===tab ? '600' : '500';
+  });
+}
+
+function toggleTranscript(i) {
+  const body = document.getElementById('tb-'+i);
+  const arrow = document.getElementById('ta-'+i);
+  if (body) { const open = body.classList.toggle('open'); if(arrow) arrow.textContent = open ? '▲ collapse' : '▼ expand'; }
 }
 
 function populateHistory() {
-  const stored=localStorage.getItem('sh_history'); if(stored)consultHistory=JSON.parse(stored);
-  const el=document.getElementById('history-list');
-  if(!consultHistory.length){el.innerHTML='<div style="color:var(--muted);font-size:14px;padding:20px 0;">No consultation records yet. Complete your first weekly consult with Dr. Sage to begin building your health history.</div>';return;}
-  el.innerHTML=consultHistory.map(h=>`<div class="history-card"><div class="history-date">${h.date}</div><div style="font-size:15px;font-weight:600;">Weekly clinical assessment — Dr. Sage</div><div class="history-body">${h.assessment}</div><div class="history-scores"><span class="history-score" style="color:var(--accent)">Readiness ${h.scores.readiness}/100</span><span class="history-score" style="color:var(--purple)">Sleep ${h.scores.sleep}h avg</span><span class="history-score" style="color:var(--accent2)">HRV ${h.scores.hrv}ms</span><span class="history-score" style="color:var(--warn)">Airway ${h.scores.airway}/100</span></div></div>`).join('');
+  const stored = localStorage.getItem('sh_history'); if (stored) consultHistory = JSON.parse(stored);
+
+  // Action items
+  let actions = JSON.parse(localStorage.getItem('sh_actions') || '[]');
+  actions = actions.map(checkActionEvidence);
+  localStorage.setItem('sh_actions', JSON.stringify(actions));
+  const al = document.getElementById('action-items-list');
+  const ae = document.getElementById('action-empty');
+  if (actions.length === 0) { if(al)al.innerHTML=''; if(ae)ae.style.display='block'; }
+  else {
+    if(ae)ae.style.display='none';
+    const open = actions.filter(a=>!a.done), done = actions.filter(a=>a.done);
+    let html = '';
+    if (open.length) { html += `<div class="action-section-label">Open (${open.length})</div>`; html += open.map(a=>`<div class="action-card"><div class="action-check" onclick="toggleActionItem(${a.id})"></div><div class="action-body"><div class="action-title">${a.title}</div><div class="action-desc">${a.desc}</div><div class="action-meta"><span class="action-tag tag-${a.tag}">${a.tag}</span><span class="action-date">Assigned ${a.dateAssigned}</span></div></div></div>`).join(''); }
+    if (done.length) { html += `<div class="action-section-label">Completed (${done.length})</div>`; html += done.map(a=>`<div class="action-card done"><div class="action-check ${a.autoCheck?'auto-checked':'checked'}" onclick="toggleActionItem(${a.id})">✓</div><div class="action-body"><div class="action-title">${a.title}</div><div class="action-desc">${a.desc}</div>${a.evidence?`<div class="action-evidence">✓ ${a.evidence}</div>`:''}<div class="action-meta"><span class="action-tag tag-${a.tag}">${a.tag}</span><span class="action-date">Assigned ${a.dateAssigned}</span></div></div></div>`).join(''); }
+    if(al)al.innerHTML=html;
+  }
+
+  // Transcripts
+  const transcripts = JSON.parse(localStorage.getItem('sh_transcripts') || '[]');
+  const tl = document.getElementById('transcript-list'), te = document.getElementById('transcript-empty');
+  if (!transcripts.length) { if(tl)tl.innerHTML=''; if(te)te.style.display='block'; }
+  else {
+    if(te)te.style.display='none';
+    if(tl)tl.innerHTML=transcripts.map((t,i)=>`<div class="transcript-card"><div class="transcript-header" onclick="toggleTranscript(${i})"><div><div class="transcript-date">Consultation · ${t.date}</div><div class="transcript-preview">${t.messages.length} messages · Readiness ${t.scores.readiness}/100 · HRV ${t.scores.hrv}ms</div></div><div class="transcript-toggle" id="ta-${i}">▼ expand</div></div><div class="transcript-body" id="tb-${i}">${t.messages.map(m=>`<div class="t-msg ${m.role==='user'?'user':''}"><div class="t-av ${m.role==='user'?'you':'sage'}">${m.role==='user'?(profile.name||'F')[0].toUpperCase():'🧠'}</div><div class="t-bubble">${m.content}</div></div>`).join('')}</div></div>`).join('');
+  }
+
+  // Assessments
+  const el = document.getElementById('history-list'), aes = document.getElementById('assessment-empty');
+  if (!consultHistory.length) { if(el)el.innerHTML=''; if(aes)aes.style.display='block'; }
+  else {
+    if(aes)aes.style.display='none';
+    if(el)el.innerHTML=consultHistory.map(h=>`<div class="history-card"><div class="history-date">${h.date}</div><div style="font-size:15px;font-weight:600;margin-bottom:8px;">Weekly clinical assessment — Dr. Sage</div><div class="history-body">${h.assessment}</div><div class="history-scores" style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap;"><span class="history-score" style="color:var(--accent)">Readiness ${h.scores.readiness}/100</span><span class="history-score" style="color:var(--purple)">Sleep ${h.scores.sleep}h avg</span><span class="history-score" style="color:var(--accent2)">HRV ${h.scores.hrv}ms</span><span class="history-score" style="color:var(--warn)">Airway ${h.scores.airway}/100</span></div></div>`).join('');
+  }
 }
 
 function populateSettings() {
