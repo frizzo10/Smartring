@@ -409,7 +409,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
 .toast-body{font-size:12px;color:var(--muted);line-height:1.4;}
 
 /* ── SIGNALS PANEL ── */
-.signals-panel{margin-bottom:16px;}
+.signals-panel{margin-bottom:16px;min-height:60px;}
 .signals-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
 .signals-title{font-size:13px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:7px;}
 .signals-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:8px;background:var(--amber-bg);color:var(--amber);border:1px solid rgba(180,83,9,.2);}
@@ -562,7 +562,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
     <div class="briefing-text" id="dailySummary">Loading daily briefing...</div>
   </div>
   <!-- SIGNALS PANEL -->
-  <div class="signals-panel" id="signals-panel"></div>
+  <div class="signals-panel" id="signals-panel"><div style="background:var(--panel);border:1px solid var(--border2);border-radius:12px;padding:14px 18px;box-shadow:var(--shadow);color:var(--muted);font-size:13px;">⏳ Loading health signals...</div></div>
   <!-- 5 metric cards: steps, BP, SpO2, temp°F, HR+HRV -->
   <div class="metrics-row" id="metrics-row"></div>
   <!-- ECG HERO -->

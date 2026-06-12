@@ -426,7 +426,7 @@ function buildSignalsPanel(data, profile, goals) {
     const isOn   = testStates[sig.id] || isLive;
     const levelCol = sig.level === 'urgent' ? 'var(--red)' : sig.level === 'watch' ? 'var(--amber)' : 'var(--cyan)';
     const border = idx > 0 ? 'border-top:1px solid var(--border);' : '';
-    html += `<div style="${border}display:flex;align-items:center;gap:12px;padding:11px 16px;">
+    html += `<div style="${border}display:flex;align-items:center;gap:12px;padding:12px 16px;transition:background .1s;" onmouseenter="this.style.background='#f8fafc'" onmouseleave="this.style.background=''">
       <span style="font-size:16px;flex-shrink:0;">${sig.icon}</span>
       <div style="flex:1;min-width:0;">
         <div style="font-size:13px;font-weight:600;color:var(--text);">${sig.title}</div>
@@ -435,11 +435,11 @@ function buildSignalsPanel(data, profile, goals) {
         </div>
       </div>
       <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:7px;background:${sig.level==='urgent'?'var(--red-bg)':sig.level==='watch'?'var(--amber-bg)':'var(--cyan-bg)'};color:${levelCol};border:1px solid ${levelCol}22;">${sig.level}</span>
-      <label style="position:relative;display:inline-block;width:40px;height:22px;flex-shrink:0;cursor:pointer;">
+      <label style="position:relative;display:inline-block;width:44px;height:24px;flex-shrink:0;cursor:${isLive?'default':'pointer'};">
         <input type="checkbox" ${isOn?'checked':''} ${isLive?'disabled':''} onchange="toggleSignal('${sig.id}',this.checked)"
           style="opacity:0;width:0;height:0;position:absolute;">
-        <span style="position:absolute;inset:0;border-radius:11px;background:${isOn?'var(--green)':'#d1d9e0'};transition:background .2s;"></span>
-        <span style="position:absolute;top:3px;left:${isOn?'21px':'3px'};width:16px;height:16px;border-radius:50%;background:white;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.2);"></span>
+        <span style="position:absolute;inset:0;border-radius:12px;background:${isOn?'#0e9f6e':'#94a3b8'};transition:background .25s;border:1px solid ${isOn?'#0d8a5f':'#7f8ea0'};"></span>
+        <span style="position:absolute;top:3px;left:${isOn?'23px':'3px'};width:16px;height:16px;border-radius:50%;background:white;transition:left .25s;box-shadow:0 1px 4px rgba(0,0,0,.25);"></span>
       </label>
     </div>`;
   });
