@@ -285,6 +285,30 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
 .toast-title{font-size:13px;font-weight:600;color:var(--green);margin-bottom:2px;}
 .toast-body{font-size:12px;color:var(--muted);line-height:1.4;}
 
+/* ── METRIC DEEP-DIVE CARDS ── */
+.mdv-card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:20px 22px;margin-bottom:16px;}
+.mdv-top{display:grid;grid-template-columns:1fr auto;gap:20px;align-items:start;margin-bottom:16px;}
+.mdv-metric-name{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700;margin-bottom:6px;}
+.mdv-value-row{display:flex;align-items:baseline;gap:8px;margin-bottom:8px;}
+.mdv-value{font-size:40px;font-weight:700;font-family:var(--mono);line-height:1;}
+.mdv-unit{font-size:14px;color:var(--muted);}
+.mdv-status-chip{font-size:11px;font-weight:700;padding:3px 10px;border-radius:10px;margin-left:4px;}
+.mdv-what{font-size:14px;font-weight:600;color:var(--text);margin-bottom:6px;}
+.mdv-why{font-size:13px;color:#8fa3c4;line-height:1.75;}
+.mdv-chart-col{min-width:200px;max-width:260px;}
+.mdv-chart-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;}
+.mdv-bottom{border-top:1px solid var(--border);padding-top:14px;display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+.mdv-stat{text-align:center;}
+.mdv-stat-val{font-size:16px;font-weight:700;font-family:var(--mono);}
+.mdv-stat-label{font-size:10px;color:var(--muted);margin-top:2px;}
+.mdv-2col{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}
+.mdv-sleep-bar{display:flex;height:26px;border-radius:6px;overflow:hidden;gap:2px;margin:10px 0 6px;}
+.mdv-scale{display:flex;height:8px;border-radius:4px;overflow:hidden;margin:10px 0 4px;}
+.mdv-range-labels{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);}
+.mdv-marker-row{position:relative;height:14px;margin-bottom:4px;}
+.mdv-marker{position:absolute;width:2px;height:14px;border-radius:1px;transform:translateX(-50%);}
+@media(max-width:900px){.mdv-top{grid-template-columns:1fr;}.mdv-chart-col{min-width:unset;max-width:100%;}.mdv-bottom{grid-template-columns:1fr 1fr;}.mdv-2col{grid-template-columns:1fr;}}
+
 /* ── CLINICAL ENCOUNTER ── */
 .encounter-card{background:var(--panel2);border:1px solid var(--border2);border-radius:12px;padding:20px 22px;margin-bottom:12px;}
 .enc-section{margin-bottom:18px;}
@@ -453,41 +477,9 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
     </div>
   </div>
 
-  <!-- Score rings -->
-  <div class="score-rings">
-    <div class="score-ring-card"><div class="score-ring-label">Readiness</div><div class="score-ring-num" id="sr-readiness" style="color:var(--green)">--</div><div class="score-ring-sub" id="sr-readiness-sub">HRV-driven</div></div>
-    <div class="score-ring-card"><div class="score-ring-label">Sleep quality</div><div class="score-ring-num" id="sr-sleep" style="color:var(--purple)">--</div><div class="score-ring-sub" id="sr-sleep-sub">Architecture score</div></div>
-    <div class="score-ring-card"><div class="score-ring-label">Airway</div><div class="score-ring-num" id="sr-airway" style="color:var(--cyan)">--</div><div class="score-ring-sub" id="sr-airway-sub">SpO₂ + apnea</div></div>
-    <div class="score-ring-card"><div class="score-ring-label">Strain</div><div class="score-ring-num" id="sr-strain" style="color:var(--amber)">--</div><div class="score-ring-sub" id="sr-strain-sub">Cardio load</div></div>
-    <div class="score-ring-card"><div class="score-ring-label">Cardio age</div><div class="score-ring-num" id="sr-cage" style="color:var(--blue)">--</div><div class="score-ring-sub" id="sr-cage-sub">Estimated</div></div>
-  </div>
+  <!-- METRIC DEEP-DIVES — graph + plain English for every vital -->
+  <div id="dash-metrics"></div>
 
-  <!-- Vitals grid -->
-  <div class="vitals-row" id="vitals-grid"></div>
-
-  <!-- Sleep + Steps -->
-  <div class="two-col">
-    <div class="chart-panel">
-      <div class="chart-panel-header"><div class="cp-title">Sleep architecture — last night</div><span class="cp-badge">Algorithm</span></div>
-      <div class="cp-sub" id="sleep-interp-text"></div>
-      <div class="sleep-bar" id="sleep-bar"></div>
-      <div class="sleep-leg">
-        <div class="sl-item"><div class="sl-dot" style="background:#5b3fbf;"></div>Deep</div>
-        <div class="sl-item"><div class="sl-dot" style="background:#7c5cbf;"></div>Light</div>
-        <div class="sl-item"><div class="sl-dot" style="background:#00b8d9;"></div>REM</div>
-        <div class="sl-item"><div class="sl-dot" style="background:#1e2d40;"></div>Awake</div>
-      </div>
-      <div style="margin-top:14px;"><div style="position:relative;height:120px;"><canvas id="sleepWeekChart" role="img" aria-label="7-night sleep chart"></canvas></div></div>
-    </div>
-    <div class="chart-panel">
-      <div class="chart-panel-header"><div class="cp-title">Steps today</div></div>
-      <div style="font-size:34px;font-weight:700;font-family:var(--mono);color:var(--green);margin:4px 0;" id="steps-big">--</div>
-      <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">of <span id="steps-goal-label">8,000</span> goal · <span id="steps-pct">0</span>% complete</div>
-      <div style="height:80px;display:flex;align-items:flex-end;gap:3px;" id="steps-bars"></div>
-      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:4px;"><span>12am</span><span>6am</span><span>12pm</span><span>6pm</span><span>Now</span></div>
-      <div class="cp-sub" style="margin-top:12px;" id="steps-interp"></div>
-    </div>
-  </div>
 </div>
 
 <!-- SLEEP PAGE -->
@@ -767,81 +759,153 @@ function setGreeting(){
 function buildDashboard(){
   const t=healthData[healthData.length-1], age=profile.age||48, name=profile.name||'Frank';
   const ca=cardioAge(t.rhr,t.hrv,t.spo2,age);
-
-  // Briefing
-  let br=`Readiness <strong>${t.readiness}/100</strong> — ${t.readiness>=85?'excellent':t.readiness>=70?'good':'below optimal'}. Sleep: ${t.sleep}h with ${t.deep}h deep sleep and ${t.rem}h REM. HRV at ${t.hrv}ms (${t.hrv>=60?'above average':'within normal range'} for age ${age}). Resting HR <strong>${t.rhr} BPM</strong>. SpO₂ <strong>${t.spo2}%</strong>. `;
-  if(t.apnea>2) br+=`<span class="warn">⚠ ${t.apnea} airway events detected overnight — monitor and consider side-sleeping position.</span> `;
-  else br+=`No significant airway events. `;
-  const stepsLeft=Math.max(0,(goals.steps||8000)-t.steps);
-  br+=stepsLeft>0?`Step count at ${t.steps.toLocaleString()} — <span class="warn">${stepsLeft.toLocaleString()} steps remaining to goal.</span>`:` <strong>Step goal achieved</strong> at ${t.steps.toLocaleString()}.`;
-  if(ca<age) br+=` Cardiovascular age estimate: <strong>${ca} years</strong> — ${age-ca} years younger than actual.`;
-  document.getElementById('dailySummary').innerHTML=br;
-
-  // Score rings
-  document.getElementById('sr-readiness').textContent=t.readiness;
-  document.getElementById('sr-readiness-sub').textContent=sl(ss(t.readiness));
-  document.getElementById('sr-sleep').textContent=t.sleepScore;
-  document.getElementById('sr-sleep-sub').textContent=sl(ss(t.sleepScore));
-  document.getElementById('sr-airway').textContent=t.airway;
-  document.getElementById('sr-airway-sub').textContent=sl(ss(t.airway));
-  document.getElementById('sr-strain').textContent=t.strain;
-  document.getElementById('sr-strain-sub').textContent=t.strain<=45?'Low':t.strain<=65?'Moderate':'High';
-  document.getElementById('sr-cage').textContent=ca;
-  document.getElementById('sr-cage-sub').textContent=ca<age?`${age-ca}y younger`:'At actual age';
+  const labels=healthData.map(d=>d.date.toLocaleDateString('en-US',{weekday:'short'}));
+  const co=(min,max,color)=>({responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#6b7a96',font:{size:10}},grid:{display:false}},y:{ticks:{color:'#6b7a96',font:{size:10}},grid:{color:'rgba(255,255,255,0.04)'},min,max}}});
 
   // ECG values
   document.getElementById('ecg-hr').textContent=t.rhr;
   document.getElementById('ecg-hrv').textContent=t.hrv;
-  const rhythm=t.rhr<60?'Sinus bradycardia · Rate below 60 BPM':t.rhr>100?'Elevated rate detected · Monitor trend':'Normal sinus rhythm · Regular rate and rhythm';
-  document.getElementById('ecg-status-text').textContent=rhythm;
+  document.getElementById('ecg-status-text').textContent=t.rhr<60?'Sinus bradycardia · Rate below 60 BPM':t.rhr>100?'Elevated rate · Monitor trend':'Normal sinus rhythm · Regular rate and rhythm';
 
-  // Vitals
-  const vg=document.getElementById('vitals-grid'); vg.innerHTML='';
-  [
-    {l:'Resting heart rate',v:t.rhr,u:'BPM',s:rhrS(t.rhr),i:iRHR(t.rhr),r:'Reference: 60–70 BPM'},
-    {l:'Heart rate variability',v:t.hrv,u:'ms RMSSD',s:hrvS(t.hrv),i:iHRV(t.hrv,age),r:'Higher = better recovery'},
-    {l:'Blood oxygen (SpO₂)',v:t.spo2,u:'%',s:spo2S(t.spo2),i:iSpO2(t.spo2),r:'Normal: 95–100%'},
-    {l:'BP trend (estimated)',v:bp(t.rhr,t.hrv),u:'mmHg',s:parseInt(bp(t.rhr,t.hrv))<130?'good':'watch',i:'Pulse wave velocity estimate. For reference only — not a blood pressure cuff measurement.',r:'Algorithm estimate only'},
-    {l:'Respiratory rate',v:respRate(t.hrv),u:'br/min',s:respRate(t.hrv)<18?'good':'watch',i:`${respRate(t.hrv)} breaths per minute ${respRate(t.hrv)<18?'is within normal resting range (12–20)':'is slightly elevated — possible stress or incomplete recovery'}.`,r:'Normal: 12–20 at rest'},
-    {l:'Cardiovascular age',v:ca,u:'yrs est.',s:ca<=age?'great':ca<=age+5?'good':'watch',i:ca<age?`Your biometric markers reflect cardiovascular function ${age-ca} years younger than your chronological age.`:ca===age?'Cardiovascular markers are consistent with your actual age — healthy baseline.':'Cardiovascular markers suggest some accelerated aging. Consistent sleep and daily movement are your primary levers.',r:`Actual age: ${age}`},
-  ].forEach(x=>{
-    const el=document.createElement('div'); el.innerHTML=vCard(x.l,x.v,x.u,x.s,x.i,x.r);
-    vg.appendChild(el.firstElementChild);
+  // Briefing
+  let br=`Readiness <strong>${t.readiness}/100</strong> — ${t.readiness>=85?'excellent':t.readiness>=70?'good':'below optimal'}. Sleep: ${t.sleep}h with ${t.deep}h deep and ${t.rem}h REM. HRV <strong>${t.hrv}ms</strong> (${t.hrv>=60?'above average':'within range'} for age ${age}). Resting HR <strong>${t.rhr} BPM</strong>. SpO₂ <strong>${t.spo2}%</strong>. `;
+  if(t.apnea>2) br+=`<span class="warn">⚠ ${t.apnea} airway events overnight.</span> `;
+  else br+=`No airway events. `;
+  const stepsLeft=Math.max(0,(goals.steps||8000)-t.steps);
+  br+=stepsLeft>0?`<span class="warn">${stepsLeft.toLocaleString()} steps remaining to goal.</span>`:` <strong>Step goal achieved.</strong>`;
+  document.getElementById('dailySummary').innerHTML=br;
+
+  // Build metric deep-dive cards
+  const el=document.getElementById('dash-metrics'); el.innerHTML='';
+
+  function makeScale(value, min, max, zones){
+    // zones: [{from,to,color}]
+    const pct=Math.max(0,Math.min(100,(value-min)/(max-min)*100));
+    let scaleHtml=zones.map(z=>`<div class="mdv-scale-seg" style="flex:${z.to-z.from};background:${z.color};opacity:.7;"></div>`).join('');
+    return `<div style="position:relative;">
+      <div class="mdv-scale">${scaleHtml}</div>
+      <div class="mdv-marker-row"><div class="mdv-marker" style="left:${pct}%;background:white;box-shadow:0 0 4px rgba(255,255,255,.5);"></div></div>
+      <div class="mdv-range-labels"><span>${min}</span><span>${max}</span></div>
+    </div>`;
+  }
+
+  function canvasCard(id, height){
+    return `<div style="position:relative;height:${height}px;margin-top:8px;"><canvas id="${id}" role="img" aria-label="${id} chart"></canvas></div>`;
+  }
+
+  function mdvCard(opts){
+    const col = opts.status==='great'?'var(--green)':opts.status==='good'?'var(--cyan)':opts.status==='watch'?'var(--amber)':'var(--red)';
+    const chipBg = opts.status==='great'?'rgba(0,214,143,.12)':opts.status==='good'?'rgba(0,184,217,.12)':opts.status==='watch'?'rgba(245,158,11,.12)':'rgba(240,82,82,.12)';
+    const chipLabel = opts.status==='great'?'Excellent':opts.status==='good'?'Good':opts.status==='watch'?'Watch':'Alert';
+    return `<div class="mdv-card">
+      <div class="mdv-top">
+        <div class="mdv-left">
+          <div class="mdv-metric-name">${opts.name}</div>
+          <div class="mdv-value-row">
+            <span class="mdv-value" style="color:${col}">${opts.value}</span>
+            <span class="mdv-unit">${opts.unit}</span>
+            <span class="mdv-status-chip" style="background:${chipBg};color:${col}">${chipLabel}</span>
+          </div>
+          <div class="mdv-what">${opts.what}</div>
+          <div class="mdv-why">${opts.why}</div>
+          ${opts.scale||''}
+        </div>
+        <div class="mdv-chart-col">
+          <div class="mdv-chart-label">7-day trend</div>
+          ${opts.chart}
+        </div>
+      </div>
+      ${opts.bottom?`<div class="mdv-bottom">${opts.bottom}</div>`:''}
+    </div>`;
+  }
+
+  function statBlock(label,val,color){
+    return `<div class="mdv-stat"><div class="mdv-stat-val" style="color:${color||'var(--text)'}">${val}</div><div class="mdv-stat-label">${label}</div></div>`;
+  }
+
+  // ── HEART RATE ──
+  el.innerHTML += mdvCard({
+    name:'Resting heart rate',
+    value:t.rhr, unit:'BPM', status:rhrS(t.rhr),
+    what:`How fast your heart beats when you're completely at rest.`,
+    why: t.rhr<60?`Your resting heart rate of ${t.rhr} BPM is in the athlete range. A lower resting heart rate means your heart pumps more blood per beat, so it doesn't have to work as hard. Think of it like a powerful engine idling quietly — less wear, more reserve. This is a direct result of cardiovascular fitness.`:
+         t.rhr<70?`Your resting heart rate of ${t.rhr} BPM is in the healthy range. For reference: 60–70 is healthy, under 60 is athletic. A lower number means a more efficient heart — it pumps more blood per beat. Yours is doing its job well.`:
+         t.rhr<80?`Your resting heart rate of ${t.rhr} BPM is mildly elevated. Common causes: dehydration (your blood gets thicker and harder to pump), caffeine, stress hormones, or reduced sleep. It's not alarming at this level, but it means your heart is working harder than it needs to at rest. Think of it like leaving your car engine revving in neutral.`:
+         `Your resting heart rate of ${t.rhr} BPM is elevated. Consistently above 80 means your heart is under sustained load even at rest — like always driving in a lower gear than needed. This increases long-term cardiovascular wear. Track it for a week; if it stays above 80, mention it to your doctor.`,
+    scale: makeScale(t.rhr,40,110,[{from:0,to:20,color:'#9b72f5'},{from:20,to:30,color:'#00d68f'},{from:30,to:50,color:'#f59e0b'},{from:50,to:70,color:'#f05252'}]),
+    chart: canvasCard('dash-rhr-chart',110),
+    bottom: statBlock('7-day avg',avg(healthData,'rhr')+' BPM','var(--cyan)')+statBlock('Lowest this week',Math.min(...healthData.map(d=>d.rhr))+' BPM','var(--green)')+statBlock('Reference range','60–70 BPM','var(--muted)')
   });
 
-  // Sleep bar
-  buildSleepBar(t);
-  document.getElementById('sleep-interp-text').textContent=iSleep(t.sleepScore,t.sleep,t.deep,t.rem);
+  // ── HRV ──
+  el.innerHTML += mdvCard({
+    name:'Heart rate variability (HRV)',
+    value:t.hrv, unit:'ms', status:hrvS(t.hrv),
+    what:'The tiny time gaps between your heartbeats. Counterintuitively, MORE variation = healthier.',
+    why: t.hrv>=60?`Your HRV of ${t.hrv}ms is above average. Here's the plain-English version: a healthy nervous system doesn't keep a perfectly steady beat — it constantly micro-adjusts. High variation means your body is responsive and adaptable, like a well-tuned suspension on a car. Low HRV means your nervous system is stuck in overdrive. At ${t.hrv}ms, your recovery is strong and your stress load is manageable.`:
+         t.hrv>=45?`Your HRV of ${t.hrv}ms is within normal range for your age. Most adults your age land between 40–65ms. Think of HRV as your body's internal stress meter — when it drops, it usually means you're accumulating fatigue or stress before you consciously feel it. Yours is stable today.`:
+         `Your HRV of ${t.hrv}ms is below the typical range for your age. This doesn't mean something is wrong right now — it means your body is under more load than usual. Common causes: poor sleep last night, illness starting, high stress, or alcohol. If this stays low for 3+ days, prioritize rest and watch for other symptoms.`,
+    scale: makeScale(t.hrv,10,100,[{from:0,to:30,color:'#f05252'},{from:30,to:50,color:'#f59e0b'},{from:50,to:60,color:'#00b8d9'},{from:60,to:40,color:'#00d68f'}]),
+    chart: canvasCard('dash-hrv-chart',110),
+    bottom: statBlock('7-day avg',avg(healthData,'hrv')+' ms','var(--green)')+statBlock('Best this week',Math.max(...healthData.map(d=>d.hrv))+' ms','var(--green)')+statBlock('Age-adjusted norm',Math.round(65-(age*.5))+' ms','var(--muted)')
+  });
 
-  // Steps
-  document.getElementById('steps-big').textContent=t.steps.toLocaleString();
-  document.getElementById('steps-goal-label').textContent=(goals.steps||8000).toLocaleString();
-  document.getElementById('steps-pct').textContent=Math.min(100,Math.round(t.steps/(goals.steps||8000)*100));
-  document.getElementById('steps-interp').textContent=iSteps(t.steps,goals.steps||8000);
-  buildStepsBars(t.steps);
+  // ── SLEEP ──
+  const sleepSegs=[{c:'#5b3fbf',f:t.deep*.5},{c:'#7c5cbf',f:t.light*.4},{c:'#5b3fbf',f:t.deep*.5},{c:'#00b8d9',f:t.rem*.6},{c:'#1e2d40',f:.25},{c:'#00b8d9',f:t.rem*.4},{c:'#7c5cbf',f:t.light*.6}];
+  const sleepTotal=sleepSegs.reduce((s,x)=>s+x.f,0);
+  const sleepBarHtml=`<div class="mdv-sleep-bar">${sleepSegs.map(s=>`<div style="flex:${s.f/sleepTotal};background:${s.c};border-radius:3px;"></div>`).join('')}</div><div style="display:flex;gap:14px;margin-top:4px;">${[['#5b3fbf','Deep'],['#7c5cbf','Light'],['#00b8d9','REM'],['#1e2d40','Awake']].map(([c,l])=>`<span style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--muted);"><span style="width:7px;height:7px;background:${c};border-radius:2px;display:inline-block;"></span>${l}</span>`).join('')}</div>`;
+  el.innerHTML += mdvCard({
+    name:'Sleep last night',
+    value:t.sleep, unit:'hours', status:ss(t.sleepScore),
+    what:`How long you slept — and more importantly, how well.`,
+    why: t.sleepScore>=85?`${t.sleep} hours with ${t.deep}h deep sleep and ${t.rem}h REM. This is solid sleep. Here's what happened while you were out: deep sleep is when your body physically repairs itself — muscle, immune system, growth hormone. REM is when your brain processes emotions and locks in memory. You hit both. You should feel like yourself today.`:
+         t.sleepScore>=70?`${t.sleep} hours total. Sleep was adequate but not fully optimized — your deep sleep was ${t.deep}h (target is 1.5h). Deep sleep is when your body does its maintenance work. Think of it like a factory that only runs the night shift. If deep sleep is cut short, the maintenance backlog builds up over days.`:
+         `${t.sleep} hours with limited deep sleep (${t.deep}h). This will impact you today — cognitively and physically. Sleep debt is real and cumulative. Each night below target, your body carries forward a deficit that affects your mood, reaction time, immune system, and metabolism. One bad night you can shake off. Multiple in a row is when it starts to show.`,
+    scale:'',
+    chart:`${sleepBarHtml}${canvasCard('dash-sleep-chart',90)}`,
+    bottom: statBlock('Deep sleep',t.deep+'h','#5b3fbf')+statBlock('REM sleep',t.rem+'h','#00b8d9')+statBlock('7-day avg',avgF(healthData,'sleep')+'h','var(--muted)')
+  });
 
-  // Sleep week chart (mini)
-  const labels=healthData.map(d=>d.date.toLocaleDateString('en-US',{weekday:'short'}));
-  const co={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#6b7a96',font:{size:10}},grid:{color:'rgba(255,255,255,0.03)'}},y:{ticks:{color:'#6b7a96',font:{size:10}},grid:{color:'rgba(255,255,255,0.05)'}, min:0, max:10}}};
-  new Chart(document.getElementById('sleepWeekChart'),{type:'bar',data:{labels,datasets:[{data:healthData.map(d=>d.sleep),backgroundColor:'rgba(155,114,245,.5)',borderRadius:4}]},options:co});
-}
+  // ── SPO2 ──
+  el.innerHTML += mdvCard({
+    name:'Blood oxygen (SpO₂)',
+    value:t.spo2, unit:'%', status:spo2S(t.spo2),
+    what:'The percentage of your red blood cells carrying oxygen to your organs and muscles.',
+    why: t.spo2>=97?`${t.spo2}% — your blood is fully loaded with oxygen. Every organ and muscle is getting what it needs. This is the best-case reading. For context: 95–100% is normal, 91–94% is concerning, below 90% is a medical emergency. You're in the top tier.`:
+         t.spo2>=95?`${t.spo2}% is normal and healthy. Your lungs are moving air efficiently and your blood is carrying it well. The ring measures this using red and infrared light — it shines through your finger and measures how much oxygen is in the blood flowing past. Think of it like a traffic sensor counting full trucks vs empty ones.`:
+         t.spo2>=92?`${t.spo2}% is mildly below the normal 95–100% range. This can happen from shallow breathing during sleep, a slightly stuffy nose, or early illness. If it shows up repeatedly on consecutive nights, it's worth noting — it may indicate your airway is partially closing during sleep, which is the hallmark of sleep apnea.`:
+         `${t.spo2}% is below the safe threshold. Values under 92% mean your blood isn't carrying enough oxygen — your brain, heart, and organs are getting less than they need. This requires medical attention. Don't ignore repeated low readings.`,
+    scale: makeScale(t.spo2,85,100,[{from:0,to:7,color:'#f05252'},{from:7,to:10,color:'#f59e0b'},{from:10,to:15,color:'#00d68f'}]),
+    chart: canvasCard('dash-spo2-chart',110),
+    bottom: statBlock('7-day avg',avgF(healthData,'spo2')+'%','var(--cyan)')+statBlock('Apnea events',t.apnea,t.apnea>2?'var(--amber)':'var(--green)')+statBlock('Normal range','95–100%','var(--muted)')
+  });
 
-function buildSleepBar(d){
-  const el=document.getElementById('sleep-bar'); el.innerHTML='';
-  const segs=[{c:'#5b3fbf',f:d.deep*.5},{c:'#7c5cbf',f:d.light*.4},{c:'#5b3fbf',f:d.deep*.5},{c:'#00b8d9',f:d.rem*.6},{c:'#1e2d40',f:.2},{c:'#00b8d9',f:d.rem*.4},{c:'#7c5cbf',f:d.light*.6}];
-  const total=segs.reduce((s,x)=>s+x.f,0);
-  segs.forEach(s=>{const seg=document.createElement('div');seg.className='sleep-seg';seg.style.flex=s.f/total;seg.style.background=s.c;el.appendChild(seg);});
-}
-
-function buildStepsBars(total){
-  const el=document.getElementById('steps-bars'); el.innerHTML='';
+  // ── STEPS ──
   const hr=new Date().getHours();
-  Array.from({length:24},(_,i)=>{
-    const v=i<hr?Math.round(total/hr*(0.4+Math.random()*.8)):0;
-    const col=document.createElement('div');
-    col.style.cssText=`flex:1;border-radius:3px 3px 0 0;background:${v>0?'var(--green)':'var(--panel2)'};opacity:${v>0?.75:.3};height:${Math.max(2,Math.round(v/(total/hr||1)*72))}px;`;
-    el.appendChild(col);
+  const stepsGoal=goals.steps||8000;
+  const stepsPct=Math.min(100,Math.round(t.steps/stepsGoal*100));
+  const stepsBarHtml=`<div style="height:60px;display:flex;align-items:flex-end;gap:2px;margin:10px 0 4px;">${Array.from({length:24},(_,i)=>{const v=i<hr?Math.round(t.steps/hr*(0.4+Math.random()*.8)):0;return`<div style="flex:1;border-radius:2px 2px 0 0;background:${v>0?'var(--green)':'rgba(255,255,255,.06)'};opacity:${v>0?.8:.4};height:${Math.max(2,Math.round(v/(t.steps/hr||1)*52))}px;"></div>`;}).join('')}</div><div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);"><span>12am</span><span>6am</span><span>12pm</span><span>6pm</span><span>Now</span></div>`;
+  el.innerHTML += mdvCard({
+    name:'Daily movement',
+    value:t.steps.toLocaleString(), unit:'steps', status:t.steps>=stepsGoal?'great':t.steps>=stepsGoal*.75?'good':t.steps>=stepsGoal*.5?'watch':'alert',
+    what:`Your total steps today. Goal: ${stepsGoal.toLocaleString()} steps — ${stepsPct}% complete.`,
+    why: t.steps>=stepsGoal?`Goal achieved at ${t.steps.toLocaleString()} steps. Here's why this matters: a 2020 JAMA study found that people who take 8,000+ steps per day have a 51% lower risk of dying from any cause compared to those who take 4,000. And you don't need to do it in one workout — accumulated steps throughout the day count the same.`:
+         t.steps>=stepsGoal*.75?`${t.steps.toLocaleString()} steps — you're close. ${(stepsGoal-t.steps).toLocaleString()} to go. Even a 10-minute walk adds roughly 1,000 steps. The research is clear: there's no lower threshold where additional steps stop being beneficial. Each 1,000 steps beyond 4,000 reduces cardiovascular risk by another 6%.`:
+         `${t.steps.toLocaleString()} steps — below target. Prolonged sitting has its own independent health risks, separate from exercise. Even if you work out, sitting for 8+ hours raises blood sugar, stiffens arteries, and compresses spinal discs. Breaking up sedentary time with short walks every hour is the fix.`,
+    scale:'',
+    chart:`${stepsBarHtml}${canvasCard('dash-steps-chart',80)}`,
+    bottom: statBlock('7-day avg',avg(healthData,'steps').toLocaleString(),'var(--cyan)')+statBlock('Calories burned',t.calories,'var(--amber)')+statBlock('Distance',t.distance+' mi','var(--muted)')
   });
+
+  // Render charts after DOM update
+  setTimeout(()=>{
+    const chartCo=(min,max)=>({responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#6b7a96',font:{size:10}},grid:{display:false}},y:{ticks:{color:'#6b7a96',font:{size:10}},grid:{color:'rgba(255,255,255,.04)'},min,max}}});
+    new Chart(document.getElementById('dash-rhr-chart'),{type:'line',data:{labels,datasets:[{data:healthData.map(d=>d.rhr),borderColor:'#f05252',backgroundColor:'rgba(240,82,82,.07)',tension:.4,pointBackgroundColor:'#f05252',pointRadius:3,fill:true}]},options:chartCo(45,95)});
+    new Chart(document.getElementById('dash-hrv-chart'),{type:'line',data:{labels,datasets:[{data:healthData.map(d=>d.hrv),borderColor:'#00d68f',backgroundColor:'rgba(0,214,143,.07)',tension:.4,pointBackgroundColor:'#00d68f',pointRadius:3,fill:true}]},options:chartCo(20,100)});
+    new Chart(document.getElementById('dash-sleep-chart'),{type:'bar',data:{labels,datasets:[{data:healthData.map(d=>d.sleep),backgroundColor:healthData.map(d=>d.sleep>=(goals.sleep||7.5)?'rgba(155,114,245,.6)':'rgba(155,114,245,.25)'),borderRadius:4}]},options:chartCo(0,10)});
+    new Chart(document.getElementById('dash-spo2-chart'),{type:'line',data:{labels,datasets:[{data:healthData.map(d=>d.spo2),borderColor:'#00b8d9',backgroundColor:'rgba(0,184,217,.07)',tension:.4,pointBackgroundColor:'#00b8d9',pointRadius:3,fill:true}]},options:chartCo(90,100)});
+    new Chart(document.getElementById('dash-steps-chart'),{type:'bar',data:{labels,datasets:[{data:healthData.map(d=>d.steps),backgroundColor:healthData.map(d=>d.steps>=(goals.steps||8000)?'rgba(0,214,143,.6)':'rgba(0,214,143,.25)'),borderRadius:4}]},options:chartCo(0,Math.max(...healthData.map(d=>d.steps))*1.2)});
+  },50);
 }
 
 // ── ECG SIMULATION ──
