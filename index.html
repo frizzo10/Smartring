@@ -754,7 +754,7 @@ function initApp(){
   populateHistory();
   populateSettings();
   setGreeting();
-  startECG();
+  setTimeout(()=>startECG(), 200);
   // Monday auto-open
   const today=new Date(), isM=today.getDay()===1, lw=localStorage.getItem('sh_nl_opened'), tw=today.toISOString().slice(0,10);
   if(isM&&lw!==tw){localStorage.setItem('sh_nl_opened',tw);setTimeout(()=>openWeeklyReport(),1400);}
@@ -926,24 +926,25 @@ function buildDashboard(){
 function startECG(){
   const canvas=document.getElementById('ecgCanvas');
   if(!canvas)return;
-
-  // Size canvas to its actual rendered pixel width
-  function sizeCanvas(){
-    const rect=canvas.getBoundingClientRect();
-    canvas.width=Math.round(rect.width)||canvas.parentElement.offsetWidth||900;
-    canvas.height=90;
-  }
-  sizeCanvas();
-  // Resize on window resize
-  window.addEventListener('resize',()=>{sizeCanvas();});
-
   const ctx=canvas.getContext('2d');
   const today=healthData[healthData.length-1];
   const bpm=today.rhr, period=60000/bpm;
   let t2=0, lastTime=null;
 
-  function ecgY(phase){
-    const p=phase%1;
+  function setSize(){
+    const w=canvas.parentElement.clientWidth||canvas.parentElement.offsetWidth||800;
+    canvas.width=w;
+    canvas.height=90;
+  }
+  setSize();
+
+  // Use ResizeObserver so canvas always matches its container
+  if(window.ResizeObserver){
+    new ResizeObserver(()=>setSize()).observe(canvas.parentElement);
+  }
+
+  function ecgY(p){
+    p=p%1;
     if(p<0.04)return 5*Math.sin(p/0.04*Math.PI);
     if(p<0.12)return 0;
     if(p<0.13)return -8*(p-0.12)/0.01;
@@ -959,38 +960,39 @@ function startECG(){
     if(!lastTime)lastTime=ts;
     const dt=Math.min(ts-lastTime,50); lastTime=ts;
     const w=canvas.width, h=canvas.height, mid=h/2;
-    if(w===0){ecgAnimId=requestAnimationFrame(draw);return;}
-    const speed=w/3;
-    const dx=speed*dt/1000;
+    if(!w||!h){ecgAnimId=requestAnimationFrame(draw);return;}
+    const speed=w/3, dx=speed*dt/1000;
 
-    const img=ctx.getImageData(Math.ceil(dx),0,w-Math.ceil(dx),h);
-    ctx.clearRect(0,0,w,h);
-    ctx.putImageData(img,0,0);
+    // Scroll existing pixels left
+    if(dx>=1){
+      const img=ctx.getImageData(Math.ceil(dx),0,w-Math.ceil(dx),h);
+      ctx.clearRect(0,0,w,h);
+      ctx.putImageData(img,0,0);
+    }
+
+    // Clear the new right strip
     ctx.clearRect(w-Math.ceil(dx)-1,0,Math.ceil(dx)+2,h);
 
-    // Grid lines
-    ctx.strokeStyle='rgba(0,214,143,.05)'; ctx.lineWidth=.5;
-    for(let gx=0;gx<w;gx+=20){ctx.beginPath();ctx.moveTo(gx,0);ctx.lineTo(gx,h);ctx.stroke();}
+    // Grid
+    ctx.strokeStyle='rgba(0,214,143,.06)'; ctx.lineWidth=.5;
+    for(let gx=w%20;gx<w;gx+=20){ctx.beginPath();ctx.moveTo(gx,0);ctx.lineTo(gx,h);ctx.stroke();}
     for(let gy=0;gy<h;gy+=18){ctx.beginPath();ctx.moveTo(0,gy);ctx.lineTo(w,gy);ctx.stroke();}
 
-    // ECG trace
-    ctx.strokeStyle='#00d68f'; ctx.lineWidth=1.8; ctx.lineJoin='round'; ctx.lineCap='round';
+    // New trace segment on the right
+    ctx.strokeStyle='#00d68f'; ctx.lineWidth=2; ctx.lineJoin='round'; ctx.lineCap='round';
     ctx.beginPath();
-    for(let px=w-Math.ceil(dx);px<=w;px++){
-      const phase=(t2+(px-(w-Math.ceil(dx)))/speed/(period/1000))%1;
-      const y=mid-ecgY(phase)*(mid*0.75/25);
-      if(px===w-Math.ceil(dx))ctx.moveTo(px,y); else ctx.lineTo(px,y);
+    const steps=Math.ceil(dx)+2;
+    for(let i=0;i<=steps;i++){
+      const px=w-steps+i;
+      const phase=(t2+i/speed/(period/1000))%1;
+      const y=mid-ecgY(phase)*(mid*.75/25);
+      if(i===0)ctx.moveTo(px,y); else ctx.lineTo(px,y);
     }
     ctx.stroke();
-
-    // Leading cursor glow
-    ctx.strokeStyle='rgba(0,214,143,.25)'; ctx.lineWidth=1;
-    ctx.beginPath(); ctx.moveTo(w,0); ctx.lineTo(w,h); ctx.stroke();
 
     t2+=dt/1000/(period/1000);
     ecgAnimId=requestAnimationFrame(draw);
   }
-
   if(ecgAnimId)cancelAnimationFrame(ecgAnimId);
   ecgAnimId=requestAnimationFrame(draw);
 }
