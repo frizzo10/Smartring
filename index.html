@@ -207,6 +207,58 @@
   .chart-panel-title { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
   .chart-panel-sub { font-size: 13px; color: var(--muted); margin-bottom: 18px; line-height: 1.5; }
 
+  /* WALKTHROUGH BUTTON */
+  .walkthrough-btn { background: linear-gradient(135deg, rgba(74,222,128,0.1), rgba(34,211,238,0.1)); border: 1px solid rgba(74,222,128,0.25); border-radius: 14px; padding: 18px 22px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; transition: all 0.2s; width: 100%; margin-bottom: 16px; text-align: left; }
+  .walkthrough-btn:hover { border-color: var(--accent); }
+  .walkthrough-btn-title { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 2px; }
+  .walkthrough-btn-sub { font-size: 12px; color: var(--muted); }
+
+  /* WALKTHROUGH OVERLAY */
+  #walkthroughOverlay { display: none; position: fixed; inset: 0; z-index: 900; pointer-events: none; }
+  #walkthroughOverlay.open { display: block; }
+  #walkthroughPanel { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%); width: 560px; max-width: calc(100vw - 40px); background: var(--surface); border: 1px solid var(--border2); border-radius: 20px; padding: 22px 24px; pointer-events: all; box-shadow: 0 8px 40px rgba(0,0,0,0.5); }
+  .wt-header { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+  .wt-avatar { width: 38px; height: 38px; border-radius: 50%; background: linear-gradient(135deg,#a78bfa,#60a5fa); display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+  .wt-name { font-size: 13px; font-weight: 600; }
+  .wt-step { font-size: 11px; color: var(--muted); }
+  .wt-body { font-size: 14px; line-height: 1.7; color: var(--text); margin-bottom: 16px; min-height: 60px; }
+  .wt-controls { display: flex; align-items: center; gap: 10px; }
+  .wt-btn { border: 1px solid var(--border2); background: var(--surface2); color: var(--text); font-size: 13px; font-weight: 500; border-radius: 10px; padding: 9px 18px; cursor: pointer; transition: all 0.15s; }
+  .wt-btn:hover { border-color: var(--accent); }
+  .wt-btn-primary { background: var(--accent); color: #0a1a0f; border-color: var(--accent); }
+  .wt-btn-primary:hover { opacity: 0.88; }
+  .wt-progress { display: flex; gap: 5px; margin-left: auto; }
+  .wt-pip { width: 6px; height: 6px; border-radius: 50%; background: var(--border2); transition: background 0.2s; }
+  .wt-pip.active { background: var(--accent); }
+  .wt-voice-btn { background: var(--surface2); border: 1px solid var(--border2); border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 16px; transition: all 0.15s; flex-shrink: 0; }
+  .wt-voice-btn:hover { border-color: var(--accent); }
+  .wt-voice-btn.speaking { border-color: var(--accent); background: rgba(74,222,128,0.12); animation: pulse 1.5s infinite; }
+  @keyframes pulse { 0%,100%{box-shadow:0 0 0 0 rgba(74,222,128,0.3)}50%{box-shadow:0 0 0 8px rgba(74,222,128,0)} }
+
+  /* VOICE BUTTON IN CHAT */
+  .voice-toggle { background: var(--surface2); border: 1px solid var(--border2); border-radius: 8px; padding: 8px 12px; color: var(--muted); font-size: 12px; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+  .voice-toggle.on { background: rgba(74,222,128,0.1); border-color: var(--accent); color: var(--accent); }
+
+  /* REWARDS & STREAKS */
+  #rewardsBar { display: none; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px 20px; margin-bottom: 20px; }
+  .rewards-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+  .streak-chip { display: flex; align-items: center; gap: 8px; background: var(--surface2); border-radius: 30px; padding: 8px 14px; }
+  .streak-fire { font-size: 20px; }
+  .streak-val { font-size: 18px; font-weight: 700; color: var(--warn); }
+  .streak-label { font-size: 12px; color: var(--muted); }
+  .badge-earned { display: flex; align-items: center; gap: 8px; background: var(--surface2); border-radius: 10px; padding: 8px 12px; }
+  .badge-icon { font-size: 20px; }
+  .badge-info { }
+  .badge-name { font-size: 12px; font-weight: 600; }
+  .badge-desc { font-size: 11px; color: var(--muted); }
+  .badge-new { font-size: 10px; background: var(--accent); color: #0a1a0f; padding: 2px 6px; border-radius: 10px; font-weight: 700; margin-left: 4px; }
+
+  /* REWARD TOAST */
+  #rewardToast { position: fixed; top: 24px; right: 24px; background: var(--surface); border: 1px solid var(--accent); border-radius: 14px; padding: 16px 20px; z-index: 9999; transform: translateX(200%); transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1); max-width: 300px; }
+  #rewardToast.show { transform: translateX(0); }
+  .toast-title { font-size: 14px; font-weight: 600; color: var(--accent); margin-bottom: 3px; }
+  .toast-body { font-size: 13px; color: var(--muted); line-height: 1.5; }
+
   @media(max-width:900px){
     .sidebar{width:64px;padding:20px 10px;}
     .nav-item span,.logo span,.user-name,.user-sub{display:none;}
@@ -302,7 +354,24 @@
         <div class="page-sub" id="dashDate">Today's health overview</div>
       </div>
 
-      <!-- Dr. Sage button -->
+      <!-- Rewards bar -->
+      <div id="rewardsBar">
+        <div class="rewards-row" id="rewardsRow"></div>
+      </div>
+
+      <!-- Dr. Sage walkthrough button -->
+      <button class="walkthrough-btn" onclick="startWalkthrough()">
+        <div style="display:flex;align-items:center;gap:14px;">
+          <span style="font-size:26px;">🎙️</span>
+          <div>
+            <div class="walkthrough-btn-title">Would you like Dr. Sage to walk you through your numbers?</div>
+            <div class="walkthrough-btn-sub">A personalized audio + guided tour of today's health data — tracks your progress and rewards real improvement</div>
+          </div>
+        </div>
+        <div style="font-size:22px;color:var(--accent);">→</div>
+      </button>
+
+      <!-- Dr. Sage weekly button -->
       <button class="weekly-btn" onclick="openWeeklyReport()">
         <div style="display:flex;align-items:center;gap:14px;">
           <span style="font-size:28px;">🧠</span>
@@ -454,6 +523,7 @@
         <div class="chat-area" id="chatArea"></div>
         <div class="chat-input-row">
           <input class="chat-input" id="chatInput" placeholder="Talk to Dr. Sage about your health this week..." onkeydown="if(event.key==='Enter')sendChat()">
+          <button class="voice-toggle" id="chatVoiceBtn" onclick="toggleChatVoice()" title="Dr. Sage speaks replies aloud">🔇 Voice off</button>
           <button class="chat-send" id="chatSendBtn" onclick="sendChat()">Send</button>
         </div>
       </div>
@@ -461,6 +531,35 @@
     </div>
   </div>
 </div>
+
+<!-- WALKTHROUGH OVERLAY -->
+<div id="walkthroughOverlay">
+  <div id="walkthroughPanel">
+    <div class="wt-header">
+      <div class="wt-avatar">🧠</div>
+      <div>
+        <div class="wt-name">Dr. Sage</div>
+        <div class="wt-step" id="wtStep">Step 1 of 6</div>
+      </div>
+      <button class="wt-voice-btn" id="wtVoiceBtn" onclick="toggleWtVoice()" title="Toggle voice">🔊</button>
+      <button onclick="closeWalkthrough()" style="margin-left:auto;background:var(--surface2);border:1px solid var(--border2);color:var(--muted);border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:14px;">✕</button>
+    </div>
+    <div class="wt-body" id="wtBody">Loading your walkthrough...</div>
+    <div class="wt-controls">
+      <button class="wt-btn" id="wtPrevBtn" onclick="wtNav(-1)">← Back</button>
+      <button class="wt-btn wt-btn-primary" id="wtNextBtn" onclick="wtNav(1)">Next →</button>
+      <div class="wt-progress" id="wtProgress"></div>
+    </div>
+  </div>
+</div>
+
+<!-- REWARD TOAST -->
+<div id="rewardToast">
+  <div class="toast-title" id="toastTitle">🏆 Achievement unlocked!</div>
+  <div class="toast-body" id="toastBody"></div>
+</div>
+
+<!-- VOICE TOGGLE in chat (injected near send btn via JS) -->
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script>
@@ -902,6 +1001,253 @@ function showPage(id,el) {
   document.getElementById('page-'+id).classList.add('active');
   if(el)el.classList.add('active');
 }
+
+// ── VOICE (Web Speech API) ────────────────────────────
+let voiceEnabled = false;
+let wtVoiceEnabled = true;
+let currentUtterance = null;
+
+function speak(text, onEnd) {
+  if (!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const clean = text.replace(/<[^>]*>/g,'').replace(/[🧠💍🍎📊🌙❤️🏃📋⚙️🎙️🔊🔇]/g,'').trim();
+  const u = new SpeechSynthesisUtterance(clean);
+  u.rate = 0.92;
+  u.pitch = 1.0;
+  u.volume = 1;
+  // Try to pick a good voice
+  const voices = window.speechSynthesis.getVoices();
+  const preferred = voices.find(v => /samantha|karen|moira|daniel|alex/i.test(v.name)) || voices.find(v => v.lang === 'en-US') || voices[0];
+  if (preferred) u.voice = preferred;
+  if (onEnd) u.onend = onEnd;
+  currentUtterance = u;
+  window.speechSynthesis.speak(u);
+}
+
+function stopSpeech() {
+  if (window.speechSynthesis) window.speechSynthesis.cancel();
+}
+
+function toggleChatVoice() {
+  voiceEnabled = !voiceEnabled;
+  const btn = document.getElementById('chatVoiceBtn');
+  btn.textContent = voiceEnabled ? '🔊 Voice on' : '🔇 Voice off';
+  btn.classList.toggle('on', voiceEnabled);
+}
+
+function toggleWtVoice() {
+  wtVoiceEnabled = !wtVoiceEnabled;
+  const btn = document.getElementById('wtVoiceBtn');
+  btn.textContent = wtVoiceEnabled ? '🔊' : '🔇';
+  btn.classList.toggle('speaking', false);
+  if (!wtVoiceEnabled) stopSpeech();
+  else speakCurrentStep();
+}
+
+// ── WALKTHROUGH ───────────────────────────────────────
+let wtIndex = 0;
+let wtSteps = [];
+
+function buildWalkthroughSteps() {
+  const today = healthData[healthData.length - 1];
+  const name = profile.name || 'Frank';
+  const age = profile.age || 48;
+  const cardioAge = calcCardioAge(today.rhr, today.hrv, today.spo2, age);
+  const stepsGoal = goals.steps || 8000;
+  const stepsPct = Math.round(today.steps / stepsGoal * 100);
+
+  return [
+    {
+      title: 'Overall readiness',
+      text: `Good ${new Date().getHours()<12?'morning':'afternoon'}, ${name}. Let's go through your health numbers together. Your readiness score today is ${today.readiness} out of 100. ${today.readiness >= 85 ? `That's excellent — your body is well recovered and you have strong capacity for whatever the day brings.` : today.readiness >= 70 ? `That's a good reading. Your body handled yesterday's demands and you're recovered enough for a normal active day.` : today.readiness >= 55 ? `That's moderate. Your body is still processing yesterday's stress, so lighter activity is advisable today.` : `That's a low reading — your body is fatigued. Rest is the most productive thing you can do today.`}`
+    },
+    {
+      title: 'Your sleep last night',
+      text: `You slept ${today.sleep} hours last night, with ${today.deep} hours of deep sleep and ${today.rem} hours of REM. ${today.deep >= 1.5 ? `That's a strong deep sleep result. Deep sleep is when your body physically repairs itself — muscles recover, immune cells activate, and growth hormone is released.` : `Your deep sleep of ${today.deep} hours is below the ideal 1.5 to 2 hour target. The most common causes are alcohol within 3 hours of bed, inconsistent bedtimes, and blue light exposure in the evening.`} ${today.rem >= 1.5 ? `Your REM sleep was also solid at ${today.rem} hours — this is when your brain consolidates memories and regulates mood.` : `REM at ${today.rem} hours is slightly lower than optimal. Stress is the primary suppressor of REM sleep.`}`
+    },
+    {
+      title: 'Heart rate and HRV',
+      text: `Your resting heart rate was ${today.rhr} beats per minute. ${today.rhr < 60 ? `That's excellent — a resting heart rate below 60 is typical of people with strong cardiovascular fitness.` : today.rhr < 70 ? `That's in the healthy range. Your heart is pumping efficiently at rest.` : `That's slightly elevated. Dehydration, stress, caffeine, and poor sleep are the most common causes of a temporarily elevated resting heart rate.`} Your heart rate variability — which measures the healthy variation between heartbeats — was ${today.hrv} milliseconds. ${today.hrv >= 60 ? `This is above average and indicates your nervous system is well-balanced and recovered.` : today.hrv >= 45 ? `This is within the normal range for your age group.` : `This is below your optimal baseline, which signals accumulated stress or fatigue.`}`
+    },
+    {
+      title: 'Blood oxygen and breathing',
+      text: `Your blood oxygen level overnight was ${today.spo2} percent. ${today.spo2 >= 97 ? `That's optimal — your body is carrying oxygen efficiently to every organ and tissue.` : today.spo2 >= 95 ? `That's normal. Healthy adults typically measure between 95 and 100 percent.` : `That's mildly below the normal threshold. Repeated readings below 95 percent during sleep can indicate breathing disruptions worth monitoring.`} You had ${today.apnea} airway events detected overnight. ${today.apnea === 0 ? `No significant airway disruptions — excellent.` : today.apnea <= 2 ? `That's within an acceptable range.` : `More than 2 events per night is worth monitoring. Sleeping on your side, avoiding alcohol before bed, and maintaining a healthy weight all reduce airway events.`}`
+    },
+    {
+      title: 'Your activity today',
+      text: `You've taken ${today.steps.toLocaleString()} steps today — that's ${stepsPct} percent of your ${stepsGoal.toLocaleString()} step goal. ${stepsPct >= 100 ? `Goal achieved. Research consistently links 8,000 or more daily steps to a significantly lower risk of cardiovascular disease and all-cause mortality.` : stepsPct >= 75 ? `You're close to your target. A short walk after your next meal would get you there.` : stepsPct >= 50 ? `You're halfway there. Adding a 20-minute walk this afternoon would make a meaningful difference.` : `You're well below your movement target today. Even a 10-minute walk every hour adds up quickly — try setting a reminder.`} Your active calories burned are approximately ${today.calories}, and you covered roughly ${today.distance} miles.`
+    },
+    {
+      title: 'Your cardiovascular age',
+      text: `Based on your HRV, resting heart rate, and blood oxygen levels, your cardiovascular system is performing like someone who is ${cardioAge} years old. Your actual age is ${age}. ${cardioAge < age ? `That means your heart is biologically younger than your calendar age — a direct result of your fitness habits and recovery quality. Keep it up.` : cardioAge === age ? `Your heart metrics match your actual age, which is a healthy baseline. Consistent sleep and daily movement are your best tools for improving this number.` : `There's room to improve this. The three most effective interventions are increasing daily steps, improving sleep consistency, and reducing chronic stress.`} That's your full health overview for today, ${name}. Do you have any questions, or would you like to start a deeper consultation with me?`
+    }
+  ];
+}
+
+function startWalkthrough() {
+  wtSteps = buildWalkthroughSteps();
+  wtIndex = 0;
+  document.getElementById('walkthroughOverlay').classList.add('open');
+  renderWtStep();
+  // Build pips
+  const prog = document.getElementById('wtProgress');
+  prog.innerHTML = wtSteps.map((_,i) => `<div class="wt-pip" id="pip${i}"></div>`).join('');
+}
+
+function renderWtStep() {
+  const step = wtSteps[wtIndex];
+  document.getElementById('wtBody').textContent = step.text;
+  document.getElementById('wtStep').textContent = `Step ${wtIndex+1} of ${wtSteps.length} · ${step.title}`;
+  document.getElementById('wtPrevBtn').style.opacity = wtIndex === 0 ? '0.3' : '1';
+  document.getElementById('wtPrevBtn').disabled = wtIndex === 0;
+  document.getElementById('wtNextBtn').textContent = wtIndex === wtSteps.length - 1 ? 'Finish ✓' : 'Next →';
+  // Update pips
+  wtSteps.forEach((_,i) => {
+    const pip = document.getElementById('pip'+i);
+    if (pip) pip.classList.toggle('active', i <= wtIndex);
+  });
+  if (wtVoiceEnabled) speakCurrentStep();
+}
+
+function speakCurrentStep() {
+  const step = wtSteps[wtIndex];
+  if (!step) return;
+  const btn = document.getElementById('wtVoiceBtn');
+  btn.classList.add('speaking');
+  speak(step.text, () => btn.classList.remove('speaking'));
+}
+
+function wtNav(dir) {
+  stopSpeech();
+  if (dir === 1 && wtIndex === wtSteps.length - 1) {
+    closeWalkthrough();
+    return;
+  }
+  wtIndex = Math.max(0, Math.min(wtSteps.length - 1, wtIndex + dir));
+  renderWtStep();
+}
+
+function closeWalkthrough() {
+  stopSpeech();
+  document.getElementById('walkthroughOverlay').classList.remove('open');
+}
+
+// ── REWARDS & STREAKS ─────────────────────────────────
+const BADGES = [
+  { id:'first_steps',   icon:'👟', name:'First steps',       desc:'Completed your first walkthrough with Dr. Sage', check: (h) => h.length >= 1 },
+  { id:'step_goal',     icon:'🎯', name:'Goal crusher',      desc:'Hit your daily step goal', check: (_,t) => t && t.steps >= (goals.steps||8000) },
+  { id:'deep_sleep',    icon:'🌊', name:'Deep diver',        desc:'Achieved 1.5h+ deep sleep', check: (_,t) => t && t.deep >= 1.5 },
+  { id:'hrv_high',      icon:'💚', name:'High coherence',    desc:'HRV above 65ms — excellent nervous system recovery', check: (_,t) => t && t.hrv >= 65 },
+  { id:'clean_airway',  icon:'🫁', name:'Clear airways',     desc:'Zero apnea events in a night', check: (_,t) => t && t.apnea === 0 },
+  { id:'readiness_90',  icon:'⚡', name:'Peak readiness',    desc:'Readiness score of 90 or above', check: (_,t) => t && t.readiness >= 90 },
+  { id:'week_steps',    icon:'🏃', name:'Week warrior',      desc:'Hit step goal 5+ days this week', check: (h) => h.filter(d=>d.steps>=(goals.steps||8000)).length >= 5 },
+  { id:'consistent_sleep', icon:'🌙', name:'Sleep consistent', desc:'7+ hours sleep 5 nights in a row', check: (h) => h.filter(d=>d.sleep>=7).length >= 5 },
+];
+
+function getEarnedBadges() {
+  const stored = localStorage.getItem('sh_badges');
+  return stored ? JSON.parse(stored) : [];
+}
+
+function checkAndAwardBadges() {
+  const today = healthData[healthData.length-1];
+  const earned = getEarnedBadges();
+  const newlyEarned = [];
+  BADGES.forEach(b => {
+    if (!earned.includes(b.id) && b.check(healthData, today)) {
+      earned.push(b.id);
+      newlyEarned.push(b);
+    }
+  });
+  localStorage.setItem('sh_badges', JSON.stringify(earned));
+  return { earned, newlyEarned };
+}
+
+function calcStreak() {
+  const stepsGoal = goals.steps || 8000;
+  let streak = 0;
+  for (let i = healthData.length - 1; i >= 0; i--) {
+    if (healthData[i].steps >= stepsGoal) streak++;
+    else break;
+  }
+  return streak;
+}
+
+function buildRewardsBar() {
+  const { earned, newlyEarned } = checkAndAwardBadges();
+  const streak = calcStreak();
+  const bar = document.getElementById('rewardsBar');
+  const row = document.getElementById('rewardsRow');
+  if (earned.length === 0 && streak === 0) { bar.style.display = 'none'; return; }
+  bar.style.display = 'block';
+
+  const earnedBadges = BADGES.filter(b => earned.includes(b.id));
+  row.innerHTML = `
+    <div class="streak-chip">
+      <span class="streak-fire">🔥</span>
+      <span class="streak-val">${streak}</span>
+      <span class="streak-label">day step streak</span>
+    </div>
+    ${earnedBadges.slice(0,4).map(b => `
+      <div class="badge-earned">
+        <span class="badge-icon">${b.icon}</span>
+        <div class="badge-info">
+          <div class="badge-name">${b.name}</div>
+          <div class="badge-desc">${b.desc}</div>
+        </div>
+      </div>`).join('')}
+    ${earned.length > 4 ? `<div style="font-size:12px;color:var(--muted);">+${earned.length-4} more badges</div>` : ''}
+  `;
+
+  // Show toast for newly earned badges
+  if (newlyEarned.length > 0) {
+    const b = newlyEarned[0];
+    showRewardToast(`${b.icon} ${b.name} unlocked!`, b.desc + (newlyEarned.length > 1 ? ` (+${newlyEarned.length-1} more)` : ''));
+    speak(`Congratulations, ${profile.name||'Frank'}! You just earned the ${b.name} badge. ${b.desc}.`);
+  }
+}
+
+function showRewardToast(title, body) {
+  const t = document.getElementById('rewardToast');
+  document.getElementById('toastTitle').textContent = title;
+  document.getElementById('toastBody').textContent = body;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 5000);
+}
+
+// Also award "first walkthrough" badge when walkthrough completes
+const _origCloseWalkthrough = closeWalkthrough;
+closeWalkthrough = function() {
+  _origCloseWalkthrough();
+  const earned = getEarnedBadges();
+  if (!earned.includes('first_steps')) {
+    earned.push('first_steps');
+    localStorage.setItem('sh_badges', JSON.stringify(earned));
+    showRewardToast('👟 First steps unlocked!', 'You completed your first walkthrough with Dr. Sage.');
+    speak(`Well done, ${profile.name||'Frank'}. You've earned the First Steps badge for completing your first guided walkthrough with Dr. Sage.`);
+    buildRewardsBar();
+  }
+};
+
+// ── PATCH initApp to call rewards ────────────────────
+const _origInitApp = initApp;
+initApp = function() {
+  _origInitApp();
+  buildRewardsBar();
+};
+
+// ── PATCH sendChat to speak replies ──────────────────
+const _origSendChat = sendChat;
+sendChat = async function() {
+  await _origSendChat();
+  if (voiceEnabled) {
+    // speak the last sage bubble
+    const bubbles = document.querySelectorAll('#chatArea .chat-msg:not(.user) .chat-bubble');
+    const last = bubbles[bubbles.length-1];
+    if (last) speak(last.textContent);
+  }
+};
+
 
 window.addEventListener('load',()=>{
   const sp=localStorage.getItem('sh_profile'); const sg=localStorage.getItem('sh_goals');
