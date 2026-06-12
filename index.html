@@ -1168,13 +1168,22 @@ function buildRewardsBar() {
   if (streak > 0) { sc.style.display='flex'; document.getElementById('streakNum').textContent=streak; }
   else sc.style.display='none';
 
-  // Badge chips — compact pill style, max 5 shown
-  const earnedBadges = BADGES.filter(b => earned.includes(b.id));
+  // Badge chips — only show if any earned via real interaction (not demo auto-awards)
+  const realEarned = earned.filter(id => id !== 'step_goal' && id !== 'deep_sleep' && id !== 'hrv_high' && id !== 'clean_airway' && id !== 'readiness_90' && id !== 'week_steps' && id !== 'consistent_sleep');
+  // Auto-metric badges only show after user has completed a walkthrough (first_steps earned)
+  const showAll = earned.includes('first_steps');
+  const displayBadges = showAll ? BADGES.filter(b => earned.includes(b.id)) : BADGES.filter(b => realEarned.includes(b.id));
+
   const bc = document.getElementById('badgeChips');
   if (bc) {
-    bc.innerHTML = earnedBadges.slice(0,5).map(b =>
-      `<span style="display:inline-flex;align-items:center;gap:4px;background:var(--surface2);border-radius:20px;padding:4px 10px;font-size:11px;color:var(--muted);" title="${b.desc}">${b.icon} ${b.name}</span>`
-    ).join('') + (earnedBadges.length > 5 ? `<span style="font-size:11px;color:var(--muted);padding:4px 6px;">+${earnedBadges.length-5} more</span>` : '');
+    if (displayBadges.length > 0) {
+      bc.innerHTML = `<span style="font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);padding:4px 4px 4px 2px;font-weight:600;">Your achievements</span>` +
+        displayBadges.slice(0,4).map(b =>
+          `<span style="display:inline-flex;align-items:center;gap:4px;background:var(--surface2);border-radius:20px;padding:4px 10px;font-size:11px;color:var(--muted);" title="${b.desc}">${b.icon} ${b.name}</span>`
+        ).join('') + (displayBadges.length > 4 ? `<span style="font-size:11px;color:var(--muted);padding:4px 6px;">+${displayBadges.length-4} more</span>` : '');
+    } else {
+      bc.innerHTML = '';
+    }
   }
 
   // Toast for newly earned
@@ -1238,6 +1247,14 @@ sendChat = async function() {
 
 window.addEventListener('load',()=>{
   const sp=localStorage.getItem('sh_profile'); const sg=localStorage.getItem('sh_goals');
+  // Clear auto-awarded metric badges if user hasn't done a walkthrough yet
+  const earned = localStorage.getItem('sh_badges');
+  if (earned) {
+    const arr = JSON.parse(earned);
+    if (!arr.includes('first_steps')) {
+      localStorage.removeItem('sh_badges');
+    }
+  }
   if(sp&&sg){profile=JSON.parse(sp);goals=JSON.parse(sg);initApp();}
 });
 </script>
