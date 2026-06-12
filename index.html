@@ -3,58 +3,50 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SageHealth</title>
+<title>SageHealth — Wosheng TK30</title>
 <style>
-:root {
-  --bg: #080d14;
-  --panel: #0d1520;
-  --panel2: #111c2a;
-  --border: rgba(255,255,255,0.07);
-  --border2: rgba(255,255,255,0.13);
-  --text: #e8f0ff;
-  --muted: #6b7a96;
-  --green: #00d68f;
-  --cyan: #00b8d9;
-  --purple: #9b72f5;
-  --amber: #f59e0b;
-  --red: #f05252;
-  --blue: #3b82f6;
-  --font: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
-  --mono: 'SF Mono', 'Fira Code', monospace;
+:root{
+  --bg:#07090f;--panel:#0d1320;--panel2:#121b2b;
+  --border:rgba(255,255,255,.07);--border2:rgba(255,255,255,.13);
+  --text:#e4eeff;--muted:#5a6a85;
+  --green:#00d68f;--cyan:#00b8d9;--purple:#9b72f5;
+  --amber:#f59e0b;--red:#f05252;--blue:#3b82f6;--pink:#ec4899;
+  --font:-apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI',sans-serif;
+  --mono:'SF Mono','Fira Code',monospace;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
-body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;overflow-x:hidden;}
+body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;}
 
-/* ── ONBOARDING ── */
+/* ── ONBOARDING ─────────────────────────────────── */
 #onboarding{position:fixed;inset:0;background:var(--bg);z-index:1000;display:flex;align-items:center;justify-content:center;padding:24px;}
-.ob-card{background:var(--panel);border:1px solid var(--border2);border-radius:20px;padding:40px;max-width:500px;width:100%;}
-.ob-logo{font-size:22px;font-weight:700;color:var(--green);margin-bottom:6px;letter-spacing:-0.5px;}
+.ob{background:var(--panel);border:1px solid var(--border2);border-radius:20px;padding:38px;max-width:500px;width:100%;}
+.ob-logo{font-size:21px;font-weight:700;color:var(--green);margin-bottom:6px;}
 .ob-logo span{color:var(--muted);font-weight:400;}
-.ob-step{display:none;} .ob-step.active{display:block;}
-.ob-title{font-size:19px;font-weight:600;margin-bottom:6px;}
-.ob-sub{font-size:13px;color:var(--muted);margin-bottom:24px;line-height:1.6;}
-.ob-prog{display:flex;gap:5px;margin-bottom:24px;}
-.ob-dot{height:3px;border-radius:2px;flex:1;background:var(--border2);transition:background .3s;}
-.ob-dot.done{background:var(--green);}
-.ob-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;}
-.ob-f{display:flex;flex-direction:column;gap:5px;margin-bottom:12px;}
+.ob-step{display:none;}.ob-step.on{display:block;}
+.ob-prog{display:flex;gap:5px;margin-bottom:22px;}
+.ob-pip{height:3px;border-radius:2px;flex:1;background:var(--border2);transition:background .3s;}
+.ob-pip.on{background:var(--green);}
+.ob-h{font-size:18px;font-weight:600;margin-bottom:5px;}
+.ob-s{font-size:13px;color:var(--muted);margin-bottom:22px;line-height:1.6;}
+.ob-g{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:11px;}
+.ob-f{display:flex;flex-direction:column;gap:5px;margin-bottom:11px;}
 .ob-f label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;}
 .ob-f input,.ob-f select,.ob-f textarea{background:var(--panel2);border:1px solid var(--border2);border-radius:9px;color:var(--text);font-family:var(--font);font-size:14px;padding:9px 13px;outline:none;width:100%;}
 .ob-f input:focus,.ob-f select:focus{border-color:var(--green);}
-.ob-f textarea{resize:none;height:72px;}
-.ob-f select option{background:#111c2a;}
-.ob-setup{display:flex;align-items:center;gap:12px;background:var(--panel2);border-radius:10px;padding:12px 14px;margin-bottom:8px;}
-.ob-setup-icon{font-size:20px;}
-.ob-setup-text strong{display:block;font-size:13px;margin-bottom:2px;}
-.ob-setup-text span{font-size:12px;color:var(--muted);}
-.btn-go{background:var(--green);color:#020f08;font-weight:700;font-size:14px;border:none;border-radius:10px;padding:12px;cursor:pointer;width:100%;margin-top:8px;transition:opacity .15s;}
+.ob-f textarea{resize:none;height:68px;}
+.ob-f select option{background:#121b2b;}
+.ob-row{display:flex;align-items:center;gap:12px;background:var(--panel2);border-radius:10px;padding:12px 14px;margin-bottom:8px;}
+.ob-row-icon{font-size:20px;flex-shrink:0;}
+.ob-row-text strong{display:block;font-size:13px;margin-bottom:2px;}
+.ob-row-text span{font-size:12px;color:var(--muted);}
+.btn-go{background:var(--green);color:#020f08;font-weight:700;font-size:14px;border:none;border-radius:10px;padding:12px;cursor:pointer;width:100%;margin-top:8px;}
 .btn-go:hover{opacity:.88;}
 .btn-skip{background:transparent;color:var(--muted);font-size:12px;border:none;cursor:pointer;margin-top:10px;display:block;text-align:center;width:100%;}
 
-/* ── LAYOUT ── */
+/* ── APP SHELL ──────────────────────────────────── */
 #app{display:none;}
-.sidebar{position:fixed;left:0;top:0;bottom:0;width:200px;background:var(--panel);border-right:1px solid var(--border);padding:20px 14px;display:flex;flex-direction:column;z-index:100;}
-.logo{font-size:17px;font-weight:700;color:var(--green);letter-spacing:-.5px;margin-bottom:28px;padding:0 6px;}
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:195px;background:var(--panel);border-right:1px solid var(--border);padding:20px 13px;display:flex;flex-direction:column;z-index:100;}
+.logo{font-size:17px;font-weight:700;color:var(--green);letter-spacing:-.5px;margin-bottom:26px;padding:0 6px;}
 .logo span{color:var(--muted);font-weight:400;}
 .nav-item{display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:9px;font-size:13px;color:var(--muted);cursor:pointer;margin-bottom:2px;transition:all .15s;}
 .nav-item:hover{background:var(--panel2);color:var(--text);}
@@ -62,374 +54,352 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
 .nav-dot{width:7px;height:7px;border-radius:50%;background:var(--border2);flex-shrink:0;}
 .nav-item.active .nav-dot{background:var(--green);}
 .sidebar-bottom{margin-top:auto;}
-.user-chip{display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:9px;background:var(--panel2);}
+.u-chip{display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:9px;background:var(--panel2);}
 .u-av{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#00d68f,#00b8d9);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#020f08;flex-shrink:0;}
 .u-name{font-size:12px;font-weight:600;}
 .u-sub{font-size:10px;color:var(--muted);}
-.main{margin-left:200px;padding:28px 32px;min-height:100vh;}
-.page{display:none;} .page.active{display:block;}
+.main{margin-left:195px;padding:28px 30px;min-height:100vh;}
+.page{display:none;}.page.active{display:block;}
 
-/* ── HEADER ── */
-.dash-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;gap:16px;}
-.dash-title{font-size:22px;font-weight:600;margin-bottom:2px;}
+/* ── DASHBOARD ──────────────────────────────────── */
+.dash-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px;gap:12px;}
+.dash-title{font-size:21px;font-weight:600;margin-bottom:2px;}
 .dash-sub{font-size:12px;color:var(--muted);}
-.header-actions{display:flex;gap:8px;flex-shrink:0;}
+.hdr-btns{display:flex;gap:8px;flex-shrink:0;}
 .btn-sm{display:flex;align-items:center;gap:6px;border:1px solid var(--border2);background:var(--panel);color:var(--muted);font-size:12px;border-radius:8px;padding:7px 12px;cursor:pointer;white-space:nowrap;transition:all .15s;}
 .btn-sm:hover{border-color:var(--green);color:var(--green);}
-.btn-sm.active{background:rgba(0,214,143,.08);border-color:var(--green);color:var(--green);}
 
-/* ── CLINICAL BRIEFING ── */
-.briefing-panel{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:18px 22px;margin-bottom:20px;display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:start;}
-.briefing-badge{background:rgba(0,214,143,.08);border:1px solid rgba(0,214,143,.2);border-radius:10px;padding:10px 14px;text-align:center;flex-shrink:0;}
-.briefing-badge-title{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--green);font-weight:600;margin-bottom:4px;}
-.briefing-date{font-size:11px;color:var(--muted);}
-.briefing-text{font-size:13px;line-height:1.75;color:var(--text);}
+.ring-banner{display:flex;align-items:center;gap:8px;background:rgba(0,214,143,.04);border:1px solid rgba(0,214,143,.1);border-radius:10px;padding:9px 14px;margin-bottom:14px;flex-wrap:wrap;}
+.rs{font-size:11px;font-weight:600;padding:3px 9px;border-radius:7px;background:var(--panel2);}
+
+.briefing{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:13px 17px;margin-bottom:14px;display:flex;align-items:flex-start;gap:13px;}
+.briefing-av{background:rgba(0,214,143,.08);border:1px solid rgba(0,214,143,.15);border-radius:8px;padding:7px 10px;text-align:center;flex-shrink:0;}
+.briefing-text{font-size:13px;line-height:1.75;flex:1;}
 .briefing-text strong{color:var(--green);}
 .briefing-text .warn{color:var(--amber);}
-.briefing-text .alert{color:var(--red);}
 
-/* ── ECG STRIP ── */
-.ecg-panel{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:18px 22px;margin-bottom:20px;position:relative;overflow:hidden;}
-.ecg-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
-.ecg-title{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);}
-.ecg-vitals{display:flex;gap:24px;}
-.ecg-vital{text-align:right;}
-.ecg-vital-val{font-size:20px;font-weight:700;font-family:var(--mono);color:var(--green);}
-.ecg-vital-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;}
-.ecg-canvas-wrap{position:relative;height:90px;background:rgba(0,214,143,.02);border-radius:8px;overflow:hidden;}
-.ecg-grid{position:absolute;inset:0;pointer-events:none;}
-.ecg-status{display:flex;align-items:center;gap:8px;margin-top:10px;}
-.ecg-dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:ecg-pulse 1s infinite;}
-@keyframes ecg-pulse{0%,100%{opacity:1}50%{opacity:.3}}
-.ecg-status-text{font-size:11px;color:var(--muted);}
-.ecg-note{font-size:11px;color:var(--muted);margin-left:auto;}
+/* ── TOP STAT CARDS ─────────────────────────────── */
+.top-stats{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:14px;}
+.sc{background:var(--panel);border:1px solid var(--border);border-radius:11px;padding:13px 14px;cursor:pointer;transition:border-color .15s;}
+.sc:hover{border-color:var(--border2);}
+.sc-label{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:600;margin-bottom:5px;}
+.sc-val{font-size:22px;font-weight:700;font-family:var(--mono);line-height:1;margin-bottom:3px;}
+.sc-sub{font-size:10px;color:var(--muted);}
+.sc-status{font-size:10px;font-weight:600;margin-top:4px;}
 
-/* ── VITAL GRID ── */
-.vitals-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:20px;}
-.vital-card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px 18px;}
-.vital-card-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px;}
-.vital-card-label{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:600;}
-.vital-status{font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;}
-.vs-great{background:rgba(0,214,143,.1);color:var(--green);}
-.vs-good{background:rgba(0,184,217,.1);color:var(--cyan);}
-.vs-watch{background:rgba(245,158,11,.1);color:var(--amber);}
-.vs-alert{background:rgba(240,82,82,.1);color:var(--red);}
-.vital-value{font-size:28px;font-weight:700;font-family:var(--mono);line-height:1;margin-bottom:3px;}
-.vital-unit{font-size:12px;color:var(--muted);font-weight:400;font-family:var(--font);}
-.vital-interp{font-size:12px;color:var(--muted);line-height:1.5;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);}
-.vital-sparkline{height:36px;margin:8px 0 4px;}
-.vital-range{font-size:10px;color:var(--muted);}
+/* ── DEEP DIVE CARDS ────────────────────────────── */
+.dd{background:var(--panel);border:1px solid var(--border);border-radius:13px;padding:19px 21px;margin-bottom:13px;}
+.dd-head{display:flex;gap:16px;align-items:flex-start;margin-bottom:13px;}
+.dd-left{flex:1;min-width:0;}
+.dd-name{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700;margin-bottom:5px;}
+.dd-val-row{display:flex;align-items:baseline;gap:7px;margin-bottom:6px;flex-wrap:wrap;}
+.dd-val{font-size:36px;font-weight:700;font-family:var(--mono);line-height:1;}
+.dd-unit{font-size:13px;color:var(--muted);}
+.dd-chip{font-size:10px;font-weight:700;padding:2px 9px;border-radius:8px;margin-left:3px;}
+.dd-what{font-size:13px;font-weight:600;color:var(--text);margin-bottom:5px;}
+.dd-why{font-size:13px;color:#7a92b5;line-height:1.75;}
+.dd-chart{min-width:190px;max-width:230px;flex-shrink:0;}
+.dd-chart-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;}
+.dd-bottom{border-top:1px solid var(--border);padding-top:12px;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px;}
+.dd-stat{text-align:center;}
+.dd-stat-val{font-size:14px;font-weight:700;font-family:var(--mono);}
+.dd-stat-label{font-size:10px;color:var(--muted);margin-top:2px;}
+.dd-scale{margin:10px 0 4px;position:relative;}
+.dd-scale-track{display:flex;height:7px;border-radius:4px;overflow:hidden;}
+.dd-scale-marker{position:absolute;top:-3px;width:3px;height:13px;border-radius:2px;background:white;box-shadow:0 0 5px rgba(255,255,255,.5);transform:translateX(-50%);}
+.dd-scale-labels{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:3px;}
 
-/* ── TWO-COL LAYOUT ── */
-.two-col{display:grid;grid-template-columns:1.4fr 1fr;gap:16px;margin-bottom:20px;}
-.three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:20px;}
+.sleep-bar{display:flex;height:22px;border-radius:6px;overflow:hidden;gap:2px;margin:10px 0 6px;}
+.sleep-leg{display:flex;gap:12px;flex-wrap:wrap;}
+.sl-i{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--muted);}
+.sl-d{width:7px;height:7px;border-radius:2px;}
 
-/* ── CHART PANELS ── */
-.chart-panel{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:18px 20px;}
-.chart-panel-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:4px;}
-.cp-title{font-size:13px;font-weight:600;}
-.cp-sub{font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.5;}
-.cp-badge{font-size:10px;padding:2px 8px;border-radius:10px;background:rgba(155,114,245,.1);color:var(--purple);}
-
-/* ── SLEEP TIMELINE ── */
-.sleep-bar{display:flex;height:32px;border-radius:6px;overflow:hidden;gap:2px;margin:12px 0 8px;}
-.sleep-seg{height:100%;border-radius:3px;}
-.sleep-leg{display:flex;gap:14px;flex-wrap:wrap;}
-.sl-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);}
-.sl-dot{width:7px;height:7px;border-radius:2px;}
-
-/* ── SCORE RING ── */
-.score-rings{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:20px;}
-.score-ring-card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px;text-align:center;}
-.score-ring-label{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:600;margin-bottom:10px;}
-.score-ring-num{font-size:32px;font-weight:700;font-family:var(--mono);line-height:1;margin-bottom:4px;}
-.score-ring-sub{font-size:11px;color:var(--muted);}
-
-/* ── PAGE HEADER ── */
-.page-header{margin-bottom:22px;}
-.page-title{font-size:20px;font-weight:600;margin-bottom:3px;}
+/* ── GRID HELPERS ───────────────────────────────── */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-bottom:13px;}
+.vitals-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:11px;margin-bottom:13px;}
+.page-hdr{margin-bottom:18px;}
+.page-title{font-size:20px;font-weight:600;margin-bottom:2px;}
 .page-sub{font-size:13px;color:var(--muted);}
+.chart-panel{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:17px 19px;margin-bottom:13px;}
+.cp-title{font-size:13px;font-weight:600;margin-bottom:4px;}
+.cp-sub{font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.5;}
 
-/* ── HISTORY TABS ── */
-.tab-bar{display:flex;gap:3px;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:3px;width:fit-content;margin-bottom:18px;}
-.tab-btn{background:transparent;border:none;color:var(--muted);font-size:12px;font-weight:500;border-radius:7px;padding:7px 16px;cursor:pointer;transition:all .15s;}
-.tab-btn.active{background:var(--panel2);color:var(--text);font-weight:600;}
-.action-card{background:var(--panel);border:1px solid var(--border);border-radius:11px;padding:15px 18px;margin-bottom:8px;display:flex;align-items:flex-start;gap:12px;}
-.action-card.done{opacity:.5;}
-.ac-check{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--border2);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;margin-top:2px;cursor:pointer;}
-.ac-check.checked,.ac-check.auto{background:var(--green);border-color:var(--green);color:#020f08;}
-.ac-check.auto{background:var(--cyan);border-color:var(--cyan);}
-.ac-title{font-size:13px;font-weight:600;margin-bottom:3px;}
-.action-card.done .ac-title{text-decoration:line-through;color:var(--muted);}
-.ac-desc{font-size:12px;color:var(--muted);line-height:1.5;margin-bottom:5px;}
-.ac-meta{display:flex;gap:7px;align-items:center;flex-wrap:wrap;}
-.ac-tag{font-size:10px;padding:2px 7px;border-radius:8px;font-weight:600;text-transform:uppercase;}
-.tag-sleep{background:rgba(155,114,245,.1);color:var(--purple);}
-.tag-heart{background:rgba(240,82,82,.1);color:var(--red);}
-.tag-activity{background:rgba(0,214,143,.1);color:var(--green);}
-.tag-airway{background:rgba(0,184,217,.1);color:var(--cyan);}
-.tag-general{background:rgba(107,122,150,.1);color:var(--muted);}
-.ac-evidence{font-size:11px;color:var(--cyan);margin-top:4px;}
-.ac-date{font-size:10px;color:var(--muted);}
-.sec-label{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:600;margin:16px 0 8px;}
-.transcript-card{background:var(--panel);border:1px solid var(--border);border-radius:11px;margin-bottom:10px;overflow:hidden;}
-.tc-header{padding:14px 18px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;}
-.tc-header:hover{background:var(--panel2);}
-.tc-date{font-size:13px;font-weight:600;}
-.tc-prev{font-size:11px;color:var(--muted);margin-top:2px;}
-.tc-body{display:none;border-top:1px solid var(--border);padding:14px 18px;}
-.tc-body.open{display:block;}
-.t-msg{display:flex;gap:9px;margin-bottom:12px;align-items:flex-start;}
-.t-msg.user{flex-direction:row-reverse;}
-.t-av{width:24px;height:24px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;}
-.t-av.sage{background:linear-gradient(135deg,#9b72f5,#3b82f6);color:white;font-size:12px;}
-.t-av.you{background:var(--panel2);border:1px solid var(--border2);color:var(--muted);}
-.t-bubble{max-width:82%;background:var(--panel2);border-radius:10px;padding:8px 12px;font-size:12px;line-height:1.6;}
-.t-msg.user .t-bubble{background:rgba(0,214,143,.07);border:1px solid rgba(0,214,143,.12);}
-.history-card{background:var(--panel);border:1px solid var(--border);border-radius:11px;padding:18px;margin-bottom:10px;}
-.hc-date{font-size:11px;color:var(--muted);margin-bottom:6px;}
-.hc-body{font-size:13px;color:#bcc8e0;line-height:1.7;margin-top:8px;}
-.hc-scores{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
-.hc-score{font-size:11px;padding:3px 9px;border-radius:9px;background:var(--panel2);}
+/* ── ECG MODAL ──────────────────────────────────── */
+#ecgModal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:800;align-items:center;justify-content:center;padding:20px;}
+.ecg-card{background:var(--panel);border:1px solid var(--border2);border-radius:16px;width:100%;max-width:780px;}
+.ecg-card-head{padding:17px 21px 0;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+.ecg-vital-val{font-size:25px;font-weight:700;font-family:var(--mono);}
+.ecg-vital-label{font-size:10px;color:var(--muted);}
+.ecg-body{padding:13px 21px 0;}
+.ecg-canvas-wrap{background:rgba(0,214,143,.015);border-radius:8px;overflow:hidden;}
+.ecg-foot{border-top:1px solid var(--border);padding:14px 21px 17px;}
+.ecg-reading{font-size:13px;color:#7a92b5;line-height:1.75;min-height:32px;margin-bottom:12px;}
+.ecg-anatomy{display:grid;grid-template-columns:repeat(3,1fr);gap:13px;padding-top:11px;border-top:1px solid var(--border);}
+.ecg-anat-title{font-size:11px;font-weight:600;color:var(--text);margin-bottom:3px;}
+.ecg-anat-body{font-size:11px;color:var(--muted);line-height:1.6;}
+.ecg-dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:ecgp 1s infinite;}
+@keyframes ecgp{0%,100%{opacity:1}50%{opacity:.25}}
 
-/* ── MODAL ── */
-#weeklyModal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:500;align-items:center;justify-content:center;padding:20px;}
-#weeklyModal.open{display:flex;}
-.modal-card{background:var(--panel);border:1px solid var(--border2);border-radius:18px;width:100%;max-width:680px;max-height:90vh;overflow-y:auto;}
-.modal-header{padding:22px 26px 18px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;}
-.modal-title{font-size:17px;font-weight:600;}
-.modal-sub{font-size:12px;color:var(--muted);margin-top:2px;}
-.modal-close{background:var(--panel2);border:none;color:var(--muted);font-size:16px;width:28px;height:28px;border-radius:50%;cursor:pointer;}
-.modal-body{padding:22px 26px;}
-.m-section{margin-bottom:24px;}
-.m-label{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:600;margin-bottom:12px;}
-.week-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px;}
-.wstat{background:var(--panel2);border-radius:10px;padding:12px 14px;}
-.wstat-label{font-size:10px;color:var(--muted);margin-bottom:3px;}
-.wstat-val{font-size:20px;font-weight:700;font-family:var(--mono);margin-bottom:2px;}
-.wstat-interp{font-size:11px;color:var(--muted);line-height:1.4;}
+/* ── WEEKLY MODAL ───────────────────────────────── */
+#weeklyModal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:500;align-items:center;justify-content:center;padding:20px;}
+.wm-card{background:var(--panel);border:1px solid var(--border2);border-radius:18px;width:100%;max-width:700px;max-height:90vh;overflow-y:auto;}
+.wm-head{padding:21px 25px 17px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;}
+.wm-title{font-size:17px;font-weight:600;}
+.wm-sub{font-size:12px;color:var(--muted);margin-top:2px;}
+.wm-close{background:var(--panel2);border:none;color:var(--muted);font-size:15px;width:28px;height:28px;border-radius:50%;cursor:pointer;}
+.wm-body{padding:21px 25px;}
+.wm-section{margin-bottom:22px;}
+.wm-label{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:600;margin-bottom:11px;}
+.wk-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px;}
+.wkstat{background:var(--panel2);border-radius:10px;padding:11px 13px;}
+.wkstat-label{font-size:10px;color:var(--muted);margin-bottom:3px;}
+.wkstat-val{font-size:19px;font-weight:700;font-family:var(--mono);margin-bottom:2px;}
+.wkstat-note{font-size:11px;color:var(--muted);line-height:1.4;}
 .insight{border-left:2px solid var(--green);background:rgba(0,214,143,.04);border-radius:0 9px 9px 0;padding:10px 13px;margin-bottom:8px;}
 .insight.warn{border-left-color:var(--amber);background:rgba(245,158,11,.04);}
-.insight.danger{border-left-color:var(--red);background:rgba(240,82,82,.04);}
 .insight-title{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:3px;}
 .insight-body{font-size:12px;line-height:1.6;}
-.goal-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);}
+.goal-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);}
 .goal-row:last-child{border-bottom:none;}
 .goal-label{font-size:12px;flex:1;}
-.goal-bar-wrap{flex:2;height:5px;background:var(--panel2);border-radius:3px;overflow:hidden;}
-.goal-bar-fill{height:100%;border-radius:3px;}
+.goal-bar{flex:2;height:5px;background:var(--panel2);border-radius:3px;overflow:hidden;}
+.goal-fill{height:100%;border-radius:3px;}
 .goal-vals{font-size:11px;color:var(--muted);min-width:80px;text-align:right;}
 
-/* ── DR SAGE CHAT ── */
-.sage-head{display:flex;align-items:center;gap:11px;background:var(--panel2);border-radius:10px;padding:12px 14px;margin-bottom:16px;}
-.sage-av{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#9b72f5,#3b82f6);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;}
-.sage-name{font-weight:600;font-size:14px;}
+/* ── DR SAGE CHAT ───────────────────────────────── */
+.sage-head{display:flex;align-items:center;gap:10px;background:var(--panel2);border-radius:10px;padding:11px 13px;margin-bottom:14px;}
+.sage-av{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#9b72f5,#3b82f6);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;}
+.sage-name{font-weight:600;font-size:13px;}
 .sage-cred{font-size:11px;color:var(--muted);}
 .sage-online{font-size:11px;color:var(--green);display:flex;align-items:center;gap:4px;margin-top:1px;}
 .online-dot{width:5px;height:5px;border-radius:50%;background:var(--green);}
-.chat-area{height:300px;overflow-y:auto;display:flex;flex-direction:column;gap:12px;margin-bottom:14px;}
-.chat-msg{display:flex;gap:9px;align-items:flex-start;}
+.chat-area{height:270px;overflow-y:auto;display:flex;flex-direction:column;gap:11px;margin-bottom:12px;}
+.chat-msg{display:flex;gap:8px;align-items:flex-start;}
 .chat-msg.user{flex-direction:row-reverse;}
-.chat-av{width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;}
+.chat-av{width:26px;height:26px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px;}
 .chat-av.sage{background:linear-gradient(135deg,#9b72f5,#3b82f6);color:white;}
-.chat-av.you{background:var(--panel2);border:1px solid var(--border2);color:var(--muted);font-size:11px;font-weight:600;}
-.chat-bubble{max-width:80%;background:var(--panel2);border-radius:12px;padding:9px 13px;font-size:13px;line-height:1.65;}
-.chat-msg.user .chat-bubble{background:rgba(0,214,143,.08);border:1px solid rgba(0,214,143,.15);}
+.chat-av.you{background:var(--panel2);border:1px solid var(--border2);color:var(--muted);font-size:10px;font-weight:600;}
+.chat-bubble{max-width:80%;background:var(--panel2);border-radius:11px;padding:8px 12px;font-size:13px;line-height:1.65;}
+.chat-msg.user .chat-bubble{background:rgba(0,214,143,.08);border:1px solid rgba(0,214,143,.14);}
 .chat-row{display:flex;gap:8px;}
 .chat-input{flex:1;background:var(--panel2);border:1px solid var(--border2);border-radius:9px;color:var(--text);font-family:var(--font);font-size:13px;padding:9px 13px;outline:none;}
 .chat-input:focus{border-color:var(--purple);}
-.voice-btn{background:var(--panel2);border:1px solid var(--border2);border-radius:8px;padding:8px 11px;color:var(--muted);font-size:12px;cursor:pointer;white-space:nowrap;}
+.voice-btn{background:var(--panel2);border:1px solid var(--border2);border-radius:8px;padding:8px 11px;color:var(--muted);font-size:12px;cursor:pointer;}
 .voice-btn.on{background:rgba(0,214,143,.08);border-color:var(--green);color:var(--green);}
 .chat-send{background:var(--purple);color:white;border:none;border-radius:9px;padding:9px 18px;font-size:13px;font-weight:600;cursor:pointer;}
 .chat-send:disabled{opacity:.4;cursor:not-allowed;}
 .typing{display:flex;gap:4px;align-items:center;}
 .td{width:6px;height:6px;border-radius:50%;background:var(--muted);animation:bounce 1s infinite;}
-.td:nth-child(2){animation-delay:.15s;} .td:nth-child(3){animation-delay:.3s;}
+.td:nth-child(2){animation-delay:.15s;}.td:nth-child(3){animation-delay:.3s;}
 @keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-5px)}}
 
-/* ── WALKTHROUGH PANEL ── */
-#wtOverlay{display:none;position:fixed;inset:0;z-index:900;pointer-events:none;}
-#wtOverlay.open{display:block;}
-#wtPanel{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);width:540px;max-width:calc(100vw - 32px);background:var(--panel);border:1px solid var(--border2);border-radius:16px;padding:20px 22px;pointer-events:all;box-shadow:0 12px 50px rgba(0,0,0,.6);}
-.wt-head{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
-.wt-av{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#9b72f5,#3b82f6);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;}
-.wt-name{font-size:13px;font-weight:600;}
-.wt-step{font-size:11px;color:var(--muted);}
-.wt-body{font-size:13px;line-height:1.7;margin-bottom:14px;min-height:56px;}
-.wt-controls{display:flex;align-items:center;gap:8px;}
-.wt-btn{background:var(--panel2);border:1px solid var(--border2);color:var(--text);font-size:12px;font-weight:500;border-radius:8px;padding:7px 16px;cursor:pointer;}
-.wt-btn:hover{border-color:var(--green);}
-.wt-btn-go{background:var(--green);color:#020f08;border-color:var(--green);}
-.wt-pips{display:flex;gap:5px;margin-left:auto;}
-.wt-pip{width:6px;height:6px;border-radius:50%;background:var(--border2);}
-.wt-pip.on{background:var(--green);}
-.wt-voice{background:var(--panel2);border:1px solid var(--border2);border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;}
-.wt-voice.speaking{border-color:var(--green);background:rgba(0,214,143,.1);animation:pulse 1.5s infinite;}
-@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(0,214,143,.3)}50%{box-shadow:0 0 0 8px rgba(0,214,143,0)}}
+/* ── ENCOUNTER TABS ─────────────────────────────── */
+.enc-tab-bar{display:flex;border-bottom:1px solid var(--border);margin-bottom:15px;}
+.enc-tab{background:transparent;border:none;color:var(--muted);font-size:12px;font-weight:500;padding:8px 15px;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;}
+.enc-tab.active{color:var(--green);border-bottom-color:var(--green);font-weight:600;}
+.enc-panel{display:none;}.enc-panel.active{display:block;}
+.enc-generating{display:flex;align-items:center;gap:10px;padding:14px 0;color:var(--muted);font-size:13px;}
+.enc-spinner{width:16px;height:16px;border-radius:50%;border:2px solid var(--border2);border-top-color:var(--green);animation:spin .8s linear infinite;flex-shrink:0;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.enc-card{background:var(--panel2);border:1px solid var(--border2);border-radius:11px;padding:17px 19px;margin-bottom:10px;}
+.enc-label{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+.enc-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.enc-finding{display:flex;gap:9px;padding:7px 0;border-bottom:1px solid var(--border);}
+.enc-finding:last-child{border-bottom:none;}
+.enc-finding-body{font-size:13px;line-height:1.6;}
+.enc-finding-body strong{color:var(--text);}
+.enc-sub{display:block;font-size:11px;color:var(--muted);margin-top:2px;}
+.test-order{display:flex;gap:10px;background:var(--panel);border:1px solid var(--border2);border-radius:9px;padding:10px 12px;margin-bottom:7px;}
+.test-pri{font-size:10px;font-weight:700;padding:2px 8px;border-radius:7px;flex-shrink:0;margin-top:2px;text-transform:uppercase;}
+.pri-urgent{background:rgba(240,82,82,.15);color:var(--red);}
+.pri-routine{background:rgba(59,130,246,.12);color:var(--blue);}
+.pri-optional{background:rgba(90,106,133,.12);color:var(--muted);}
+.test-name{font-size:13px;font-weight:600;margin-bottom:3px;}
+.test-reason{font-size:12px;color:var(--muted);line-height:1.5;}
+.test-how{font-size:11px;margin-top:5px;padding:4px 9px;background:rgba(0,184,217,.06);border-radius:6px;color:var(--cyan);line-height:1.5;}
+.plan-item{display:flex;gap:9px;padding:8px 0;border-bottom:1px solid var(--border);}
+.plan-item:last-child{border-bottom:none;}
+.plan-num{width:21px;height:21px;border-radius:50%;background:rgba(0,214,143,.08);border:1px solid rgba(0,214,143,.2);color:var(--green);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;}
+.plan-text{font-size:13px;line-height:1.65;}
+.plan-text strong{color:var(--green);}
+.plan-timeframe{font-size:11px;color:var(--muted);display:block;margin-top:2px;}
+.enc-disclaimer{background:rgba(240,82,82,.05);border:1px solid rgba(240,82,82,.14);border-radius:8px;padding:9px 12px;font-size:11px;color:#f87171;line-height:1.6;margin-top:12px;}
 
-/* ── SETTINGS ── */
-.settings-panel{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:20px;}
-.settings-title{font-size:13px;font-weight:600;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--border);}
-.settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+/* ── RECORDS ────────────────────────────────────── */
+.tab-bar{display:flex;gap:3px;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:3px;width:fit-content;margin-bottom:15px;}
+.tab-btn{background:transparent;border:none;color:var(--muted);font-size:12px;font-weight:500;border-radius:7px;padding:7px 15px;cursor:pointer;}
+.tab-btn.active{background:var(--panel2);color:var(--text);font-weight:600;}
+.action-card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:13px 15px;margin-bottom:7px;display:flex;gap:10px;}
+.action-card.done{opacity:.5;}
+.ac-check{width:19px;height:19px;border-radius:50%;border:1.5px solid var(--border2);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;margin-top:1px;cursor:pointer;}
+.ac-check.checked{background:var(--green);border-color:var(--green);color:#020f08;}
+.ac-check.auto{background:var(--cyan);border-color:var(--cyan);color:#020f08;}
+.ac-title{font-size:13px;font-weight:600;margin-bottom:3px;}
+.action-card.done .ac-title{text-decoration:line-through;color:var(--muted);}
+.ac-desc{font-size:12px;color:var(--muted);line-height:1.5;margin-bottom:5px;}
+.ac-meta{display:flex;gap:7px;flex-wrap:wrap;}
+.ac-tag{font-size:10px;padding:2px 7px;border-radius:7px;font-weight:600;text-transform:uppercase;}
+.tag-sleep{background:rgba(155,114,245,.1);color:var(--purple);}
+.tag-heart{background:rgba(240,82,82,.1);color:var(--red);}
+.tag-activity{background:rgba(0,214,143,.1);color:var(--green);}
+.tag-airway{background:rgba(0,184,217,.1);color:var(--cyan);}
+.tag-temp{background:rgba(245,158,11,.1);color:var(--amber);}
+.tag-bp{background:rgba(236,72,153,.1);color:var(--pink);}
+.tag-general{background:rgba(90,106,133,.12);color:var(--muted);}
+.ac-date{font-size:10px;color:var(--muted);}
+.sec-label{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:600;margin:13px 0 7px;}
+.transcript-card{background:var(--panel);border:1px solid var(--border);border-radius:10px;margin-bottom:7px;overflow:hidden;}
+.tc-head{padding:12px 16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;}
+.tc-head:hover{background:var(--panel2);}
+.tc-date{font-size:13px;font-weight:600;}
+.tc-prev{font-size:11px;color:var(--muted);margin-top:2px;}
+.tc-body{display:none;border-top:1px solid var(--border);padding:12px 16px;}
+.tc-body.open{display:block;}
+.t-msg{display:flex;gap:8px;margin-bottom:10px;align-items:flex-start;}
+.t-msg.user{flex-direction:row-reverse;}
+.t-av{width:22px;height:22px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;}
+.t-av.sage{background:linear-gradient(135deg,#9b72f5,#3b82f6);color:white;}
+.t-av.you{background:var(--panel2);border:1px solid var(--border2);color:var(--muted);}
+.t-bubble{max-width:82%;background:var(--panel2);border-radius:9px;padding:7px 11px;font-size:12px;line-height:1.6;}
+.t-msg.user .t-bubble{background:rgba(0,214,143,.07);border:1px solid rgba(0,214,143,.12);}
+.hc{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:15px 17px;margin-bottom:7px;}
+.hc-date{font-size:11px;color:var(--muted);margin-bottom:5px;}
+.hc-body{font-size:13px;color:#7a92b5;line-height:1.7;margin-top:7px;}
+.hc-scores{display:flex;gap:8px;margin-top:9px;flex-wrap:wrap;}
+.hc-score{font-size:11px;padding:2px 9px;border-radius:8px;background:var(--panel2);}
+.he{background:var(--panel);border:1px solid rgba(0,214,143,.14);border-radius:10px;padding:15px 17px;margin-bottom:7px;}
+.he-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.he-expand{background:transparent;border:1px solid var(--border2);color:var(--muted);font-size:11px;border-radius:7px;padding:3px 9px;cursor:pointer;}
+.he-body{display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);}
+.he-body.open{display:block;}
+
+/* ── SETTINGS ───────────────────────────────────── */
+.settings-panel{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:19px;}
+.settings-title{font-size:13px;font-weight:600;margin-bottom:10px;padding-bottom:9px;border-bottom:1px solid var(--border);}
+.settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px;}
 .sf{display:flex;flex-direction:column;gap:5px;margin-bottom:4px;}
 .sf label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;}
 .sf input,.sf select,.sf textarea{background:var(--panel2);border:1px solid var(--border2);border-radius:8px;color:var(--text);font-family:var(--font);font-size:13px;padding:8px 12px;outline:none;width:100%;}
 .sf input:focus,.sf select:focus{border-color:var(--green);}
-.sf textarea{resize:none;height:70px;}
-.sf select option{background:#111c2a;}
-.btn-save{background:var(--green);color:#020f08;font-weight:700;font-size:13px;border:none;border-radius:9px;padding:10px 24px;cursor:pointer;margin-top:16px;}
+.sf textarea{resize:none;height:65px;}
+.sf select option{background:#121b2b;}
+.btn-save{background:var(--green);color:#020f08;font-weight:700;font-size:13px;border:none;border-radius:9px;padding:10px 24px;cursor:pointer;margin-top:14px;}
 
-/* ── TOAST ── */
-#toast{position:fixed;top:20px;right:20px;background:var(--panel);border:1px solid var(--green);border-radius:12px;padding:14px 18px;z-index:9999;transform:translateX(200%);transition:transform .4s cubic-bezier(.34,1.56,.64,1);max-width:280px;}
+/* ── WALKTHROUGH ────────────────────────────────── */
+#wtOverlay{display:none;position:fixed;inset:0;z-index:900;pointer-events:none;}
+#wtOverlay.open{display:block;}
+#wtPanel{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);width:530px;max-width:calc(100vw - 28px);background:var(--panel);border:1px solid var(--border2);border-radius:15px;padding:18px 20px;pointer-events:all;box-shadow:0 10px 50px rgba(0,0,0,.6);}
+.wt-head{display:flex;align-items:center;gap:9px;margin-bottom:10px;}
+.wt-av{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#9b72f5,#3b82f6);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
+.wt-body{font-size:13px;line-height:1.7;margin-bottom:12px;min-height:50px;}
+.wt-controls{display:flex;align-items:center;gap:8px;}
+.wt-btn{background:var(--panel2);border:1px solid var(--border2);color:var(--text);font-size:12px;border-radius:7px;padding:6px 14px;cursor:pointer;}
+.wt-btn-go{background:var(--green);color:#020f08;border-color:var(--green);}
+.wt-pips{display:flex;gap:4px;margin-left:auto;}
+.wt-pip{width:5px;height:5px;border-radius:50%;background:var(--border2);}
+.wt-pip.on{background:var(--green);}
+.wt-voice{background:var(--panel2);border:1px solid var(--border2);border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px;}
+.wt-voice.speaking{border-color:var(--green);background:rgba(0,214,143,.1);}
+
+/* ── TOAST ──────────────────────────────────────── */
+#toast{position:fixed;top:18px;right:18px;background:var(--panel);border:1px solid var(--green);border-radius:11px;padding:12px 16px;z-index:9999;transform:translateX(200%);transition:transform .4s cubic-bezier(.34,1.56,.64,1);max-width:270px;}
 #toast.show{transform:translateX(0);}
 .toast-title{font-size:13px;font-weight:600;color:var(--green);margin-bottom:2px;}
 .toast-body{font-size:12px;color:var(--muted);line-height:1.4;}
 
-/* ── METRIC DEEP-DIVE CARDS ── */
-.mdv-card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:20px 22px;margin-bottom:16px;}
-.mdv-top{display:grid;grid-template-columns:1fr auto;gap:20px;align-items:start;margin-bottom:16px;}
-.mdv-metric-name{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700;margin-bottom:6px;}
-.mdv-value-row{display:flex;align-items:baseline;gap:8px;margin-bottom:8px;}
-.mdv-value{font-size:40px;font-weight:700;font-family:var(--mono);line-height:1;}
-.mdv-unit{font-size:14px;color:var(--muted);}
-.mdv-status-chip{font-size:11px;font-weight:700;padding:3px 10px;border-radius:10px;margin-left:4px;}
-.mdv-what{font-size:14px;font-weight:600;color:var(--text);margin-bottom:6px;}
-.mdv-why{font-size:13px;color:#8fa3c4;line-height:1.75;}
-.mdv-chart-col{min-width:200px;max-width:260px;}
-.mdv-chart-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;}
-.mdv-bottom{border-top:1px solid var(--border);padding-top:14px;display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
-.mdv-stat{text-align:center;}
-.mdv-stat-val{font-size:16px;font-weight:700;font-family:var(--mono);}
-.mdv-stat-label{font-size:10px;color:var(--muted);margin-top:2px;}
-.mdv-2col{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}
-.mdv-sleep-bar{display:flex;height:26px;border-radius:6px;overflow:hidden;gap:2px;margin:10px 0 6px;}
-.mdv-scale{display:flex;height:8px;border-radius:4px;overflow:hidden;margin:10px 0 4px;}
-.mdv-range-labels{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);}
-.mdv-marker-row{position:relative;height:14px;margin-bottom:4px;}
-.mdv-marker{position:absolute;width:2px;height:14px;border-radius:1px;transform:translateX(-50%);}
-@media(max-width:900px){.mdv-top{grid-template-columns:1fr;}.mdv-chart-col{min-width:unset;max-width:100%;}.mdv-bottom{grid-template-columns:1fr 1fr;}.mdv-2col{grid-template-columns:1fr;}}
-
-/* ── CLINICAL ENCOUNTER ── */
-.encounter-card{background:var(--panel2);border:1px solid var(--border2);border-radius:12px;padding:20px 22px;margin-bottom:12px;}
-.enc-section{margin-bottom:18px;}
-.enc-section:last-child{margin-bottom:0;}
-.enc-label{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:7px;}
-.enc-label-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
-.enc-finding{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);}
-.enc-finding:last-child{border-bottom:none;}
-.enc-finding-icon{font-size:15px;margin-top:1px;flex-shrink:0;}
-.enc-finding-body{font-size:13px;line-height:1.6;}
-.enc-finding-body strong{color:var(--text);}
-.enc-finding-body .enc-sub{display:block;font-size:11px;color:var(--muted);margin-top:2px;}
-.test-order{display:flex;align-items:flex-start;gap:12px;background:var(--panel);border:1px solid var(--border2);border-radius:10px;padding:12px 14px;margin-bottom:8px;}
-.test-priority{font-size:10px;font-weight:700;padding:2px 8px;border-radius:8px;flex-shrink:0;margin-top:2px;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap;}
-.pri-urgent{background:rgba(240,82,82,.15);color:var(--red);}
-.pri-routine{background:rgba(59,130,246,.12);color:var(--blue);}
-.pri-optional{background:rgba(107,122,150,.12);color:var(--muted);}
-.test-info{flex:1;}
-.test-name{font-size:13px;font-weight:600;margin-bottom:3px;}
-.test-reason{font-size:12px;color:var(--muted);line-height:1.5;}
-.test-how{font-size:11px;margin-top:6px;padding:5px 9px;background:rgba(0,184,217,.06);border-radius:6px;color:var(--cyan);line-height:1.5;}
-.test-done{margin-left:auto;flex-shrink:0;padding-top:2px;}
-.test-done input{width:16px;height:16px;cursor:pointer;accent-color:var(--green);}
-.plan-item{display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);}
-.plan-item:last-child{border-bottom:none;}
-.plan-num{width:22px;height:22px;border-radius:50%;background:rgba(0,214,143,.08);border:1px solid rgba(0,214,143,.2);color:var(--green);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;}
-.plan-text{font-size:13px;line-height:1.65;}
-.plan-text strong{color:var(--green);}
-.plan-text .plan-timeframe{font-size:11px;color:var(--muted);display:block;margin-top:2px;}
-.enc-disclaimer{background:rgba(240,82,82,.05);border:1px solid rgba(240,82,82,.15);border-radius:9px;padding:10px 13px;font-size:12px;color:#f87171;line-height:1.6;margin-top:14px;}
-.enc-generating{display:flex;align-items:center;gap:10px;padding:18px 0;color:var(--muted);font-size:13px;}
-.enc-spinner{width:16px;height:16px;border-radius:50%;border:2px solid var(--border2);border-top-color:var(--green);animation:spin .8s linear infinite;flex-shrink:0;}
-@keyframes spin{to{transform:rotate(360deg)}}
-.enc-tab-bar{display:flex;gap:0;margin-bottom:16px;border-bottom:1px solid var(--border);}
-.enc-tab{background:transparent;border:none;color:var(--muted);font-size:12px;font-weight:500;padding:8px 16px;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s;}
-.enc-tab:hover{color:var(--text);}
-.enc-tab.active{color:var(--green);border-bottom-color:var(--green);font-weight:600;}
-.enc-panel{display:none;} .enc-panel.active{display:block;}
-.history-encounter{background:var(--panel);border:1px solid rgba(0,214,143,.15);border-radius:12px;padding:18px 20px;margin-bottom:10px;}
-.he-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
-.he-date{font-size:12px;color:var(--muted);}
-.he-title{font-size:14px;font-weight:600;}
-.he-expand{background:transparent;border:1px solid var(--border2);color:var(--muted);font-size:11px;border-radius:7px;padding:4px 10px;cursor:pointer;}
-.he-body{display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);}
-.he-body.open{display:block;}
-
+/* ── RESPONSIVE ─────────────────────────────────── */
 @media(max-width:900px){
-  .sidebar{width:56px;padding:16px 8px;}
+  .sidebar{width:52px;padding:14px 7px;}
   .nav-item span,.logo span,.u-name,.u-sub{display:none;}
   .logo{font-size:13px;padding:0;}
-  .main{margin-left:56px;padding:16px;}
-  .two-col,.three-col{grid-template-columns:1fr;}
+  .main{margin-left:52px;padding:14px;}
+  .top-stats{grid-template-columns:repeat(3,1fr);}
+  .dd-head{flex-direction:column;}
+  .dd-chart{min-width:unset;max-width:100%;}
+  .two-col{grid-template-columns:1fr;}
+  .settings-grid{grid-template-columns:1fr;}
+  .ecg-anatomy{grid-template-columns:1fr;}
+  .wk-stats{grid-template-columns:1fr 1fr;}
 }
 </style>
 </head>
 <body>
 
-<!-- ONBOARDING -->
+<!-- ═══════════════ ONBOARDING ═══════════════ -->
 <div id="onboarding">
-<div class="ob-card">
-  <div class="ob-logo">SageHealth <span>Clinical Dashboard</span></div>
-  <div class="ob-prog"><div class="ob-dot done" id="d0"></div><div class="ob-dot" id="d1"></div><div class="ob-dot" id="d2"></div><div class="ob-dot" id="d3"></div></div>
-  <div class="ob-step active" id="s0">
-    <div class="ob-title">Your personal health command center</div>
-    <div class="ob-sub">SageHealth reads your ring's biometrics and presents them the way a doctor would — with ECG simulation, clinical interpretation, and Dr. Sage as your weekly AI physician.</div>
-    <div class="ob-setup"><div class="ob-setup-icon">💍</div><div class="ob-setup-text"><strong>Smart Ring → Apple Health</strong><span>Your ring data flows through Ringlo into Apple Health</span></div></div>
-    <div class="ob-setup"><div class="ob-setup-icon">📈</div><div class="ob-setup-text"><strong>Clinical-grade graphs</strong><span>ECG trace, HRV trends, sleep architecture, oxygen levels</span></div></div>
-    <div class="ob-setup"><div class="ob-setup-icon">🧠</div><div class="ob-setup-text"><strong>Dr. Sage weekly consult</strong><span>Every Monday — reads your data, runs the consultation, assigns follow-ups</span></div></div>
-    <button class="btn-go" onclick="nextStep(1)">Get started →</button>
+<div class="ob">
+  <div class="ob-logo">SageHealth <span>powered by Wosheng TK30</span></div>
+  <div class="ob-prog">
+    <div class="ob-pip on" id="p0"></div><div class="ob-pip" id="p1"></div>
+    <div class="ob-pip" id="p2"></div><div class="ob-pip" id="p3"></div>
   </div>
+
+  <div class="ob-step on" id="s0">
+    <div class="ob-h">Your medical-grade health command center</div>
+    <div class="ob-s">Your Wosheng TK30 ring measures ECG, blood pressure, body temperature, SpO₂, HRV, sleep stages, and activity. SageHealth turns all of it into a clinical dashboard with Dr. Sage as your AI physician.</div>
+    <div class="ob-row"><div class="ob-row-icon">💍</div><div class="ob-row-text"><strong>Wosheng TK30 — 7 active sensors</strong><span>ECG · Blood pressure · Temperature · SpO₂ · HRV · Sleep · Activity</span></div></div>
+    <div class="ob-row"><div class="ob-row-icon">🧠</div><div class="ob-row-text"><strong>Dr. Sage — your AI physician</strong><span>Reads every metric, weekly clinical encounters, orders tests</span></div></div>
+    <div class="ob-row"><div class="ob-row-icon">📈</div><div class="ob-row-text"><strong>Graphs + plain English</strong><span>Every number explained the way your doctor never does</span></div></div>
+    <button class="btn-go" onclick="nextOb(1)">Get started →</button>
+  </div>
+
   <div class="ob-step" id="s1">
-    <div class="ob-title">Your health profile</div>
-    <div class="ob-sub">Dr. Sage uses this to calibrate every reading to your age, weight, and history.</div>
-    <div class="ob-grid">
-      <div class="ob-f"><label>First name</label><input type="text" id="ob_name" placeholder="Frank"></div>
-      <div class="ob-f"><label>Age</label><input type="number" id="ob_age" placeholder="48"></div>
-      <div class="ob-f"><label>Weight (lbs)</label><input type="number" id="ob_weight" placeholder="185"></div>
-      <div class="ob-f"><label>Height (ft)</label><input type="number" id="ob_height" placeholder="5.11" step="0.1"></div>
+    <div class="ob-h">Your health profile</div>
+    <div class="ob-s">Dr. Sage calibrates every reading to your age, weight, sex, and conditions.</div>
+    <div class="ob-g">
+      <div class="ob-f"><label>First name</label><input id="ob_name" placeholder="Frank" type="text"></div>
+      <div class="ob-f"><label>Age</label><input id="ob_age" placeholder="48" type="number"></div>
+      <div class="ob-f"><label>Weight (lbs)</label><input id="ob_weight" placeholder="185" type="number"></div>
+      <div class="ob-f"><label>Height (ft)</label><input id="ob_height" placeholder="5.11" type="number" step="0.1"></div>
     </div>
     <div class="ob-f"><label>Biological sex</label><select id="ob_sex"><option value="">Select</option><option>Male</option><option>Female</option><option>Other</option></select></div>
     <div class="ob-f"><label>Known conditions (optional)</label><textarea id="ob_conditions" placeholder="e.g. hypertension, sleep apnea history..."></textarea></div>
-    <button class="btn-go" onclick="nextStep(2)">Continue →</button>
+    <button class="btn-go" onclick="nextOb(2)">Continue →</button>
   </div>
+
   <div class="ob-step" id="s2">
-    <div class="ob-title">Set your targets</div>
-    <div class="ob-sub">Dr. Sage tracks your weekly progress and flags when you drift off course.</div>
-    <div class="ob-grid">
-      <div class="ob-f"><label>Daily steps</label><input type="number" id="ob_steps" placeholder="8000"></div>
-      <div class="ob-f"><label>Sleep goal (hrs)</label><input type="number" id="ob_sleep" placeholder="7.5" step="0.5"></div>
-      <div class="ob-f"><label>Max apnea events</label><input type="number" id="ob_apnea" placeholder="2"></div>
-      <div class="ob-f"><label>SpO₂ floor (%)</label><input type="number" id="ob_spo2" placeholder="92"></div>
+    <div class="ob-h">Set your weekly targets</div>
+    <div class="ob-s">Dr. Sage tracks progress and flags when you drift off course.</div>
+    <div class="ob-g">
+      <div class="ob-f"><label>Daily steps</label><input id="ob_steps" placeholder="8000" type="number"></div>
+      <div class="ob-f"><label>Sleep goal (hrs)</label><input id="ob_sleep" placeholder="7.5" type="number" step="0.5"></div>
+      <div class="ob-f"><label>Max apnea events</label><input id="ob_apnea" placeholder="2" type="number"></div>
+      <div class="ob-f"><label>SpO₂ floor (%)</label><input id="ob_spo2" placeholder="92" type="number"></div>
     </div>
-    <button class="btn-go" onclick="nextStep(3)">Continue →</button>
+    <button class="btn-go" onclick="nextOb(3)">Continue →</button>
   </div>
+
   <div class="ob-step" id="s3">
-    <div class="ob-title">Connect your ring</div>
-    <div class="ob-sub">Do this once your ring arrives. Skip to explore with demo data.</div>
-    <div class="ob-setup"><div class="ob-setup-icon">1️⃣</div><div class="ob-setup-text"><strong>Download Ringlo</strong><span>App Store — replaces the Temu factory app</span></div></div>
-    <div class="ob-setup"><div class="ob-setup-icon">2️⃣</div><div class="ob-setup-text"><strong>Enable Apple Health sync</strong><span>In Ringlo settings — turns on the data pipeline</span></div></div>
-    <div class="ob-setup"><div class="ob-setup-icon">3️⃣</div><div class="ob-setup-text"><strong>Install Health Auto Export</strong><span>App Store — pushes Apple Health to SageHealth hourly</span></div></div>
-    <div class="ob-setup"><div class="ob-setup-icon">4️⃣</div><div class="ob-setup-text"><strong>Optional: SnoreLab</strong><span>iPhone nightstand mic for apnea fusion</span></div></div>
-    <button class="btn-go" onclick="finishOnboarding()">Enter dashboard →</button>
-    <button class="btn-skip" onclick="finishOnboarding()">Skip — use demo data</button>
+    <div class="ob-h">Connect your TK30 ring</div>
+    <div class="ob-s">Once your ring arrives. Skip now to explore with demo data.</div>
+    <div class="ob-row"><div class="ob-row-icon">1️⃣</div><div class="ob-row-text"><strong>Find the companion app</strong><span>Check the manual for the app name — enable Apple Health sync</span></div></div>
+    <div class="ob-row"><div class="ob-row-icon">2️⃣</div><div class="ob-row-text"><strong>Install Health Auto Export</strong><span>App Store — pushes Apple Health data to SageHealth hourly</span></div></div>
+    <div class="ob-row"><div class="ob-row-icon">3️⃣</div><div class="ob-row-text"><strong>Optional: SnoreLab</strong><span>iPhone mic for apnea audio fusion with ring SpO₂</span></div></div>
+    <button class="btn-go" onclick="finishOb()">Enter dashboard →</button>
+    <button class="btn-skip" onclick="finishOb()">Skip — use demo data</button>
   </div>
 </div>
 </div>
 
-<!-- APP -->
+<!-- ═══════════════ APP ═══════════════ -->
 <div id="app">
+
 <div class="sidebar">
   <div class="logo">Sage<span>Health</span></div>
   <nav>
     <div class="nav-item active" onclick="showPage('dashboard',this)"><div class="nav-dot"></div><span>Dashboard</span></div>
+    <div class="nav-item" onclick="showPage('heart',this)"><div class="nav-dot"></div><span>Heart &amp; ECG</span></div>
     <div class="nav-item" onclick="showPage('sleep',this)"><div class="nav-dot"></div><span>Sleep</span></div>
-    <div class="nav-item" onclick="showPage('heart',this)"><div class="nav-dot"></div><span>Heart</span></div>
+    <div class="nav-item" onclick="showPage('vitals',this)"><div class="nav-dot"></div><span>Vitals</span></div>
     <div class="nav-item" onclick="showPage('activity',this)"><div class="nav-dot"></div><span>Activity</span></div>
-    <div class="nav-item" onclick="showPage('history',this)"><div class="nav-dot"></div><span>Records</span></div>
+    <div class="nav-item" onclick="showPage('records',this)"><div class="nav-dot"></div><span>Records</span></div>
     <div class="nav-item" onclick="showPage('settings',this)"><div class="nav-dot"></div><span>Settings</span></div>
   </nav>
   <div class="sidebar-bottom">
-    <div class="user-chip"><div class="u-av" id="sav">F</div><div><div class="u-name" id="sname">Frank</div><div class="u-sub">SageHealth</div></div></div>
+    <div class="u-chip">
+      <div class="u-av" id="sav">F</div>
+      <div><div class="u-name" id="sname">Frank</div><div class="u-sub">TK30 · SageHealth</div></div>
+    </div>
   </div>
 </div>
 
@@ -439,153 +409,126 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
 <div class="page active" id="page-dashboard">
   <div class="dash-header">
     <div>
-      <div class="dash-title" id="dashGreet">Good afternoon, Frank</div>
+      <div class="dash-title" id="dashGreet">Good afternoon</div>
       <div class="dash-sub" id="dashDate">Friday, June 12, 2026</div>
     </div>
-    <div class="header-actions">
-      <button class="btn-sm" onclick="startWalkthrough()">🎙️ Voice walkthrough</button>
-      <button class="btn-sm" onclick="openWeeklyReport()">📋 Weekly report</button>
+    <div class="hdr-btns">
+      <button class="btn-sm" onclick="startWt()">🎙️ Walkthrough</button>
+      <button class="btn-sm" onclick="openECG()">❤️ ECG rhythm</button>
+      <button class="btn-sm" onclick="openWeekly()">📋 Weekly report</button>
     </div>
   </div>
-
-  <!-- TOP ROW: Movement quick stats -->
-  <div id="dash-top-row" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;"></div>
-
-  <!-- Dr. Sage briefing + ECG button -->
-  <div style="background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin-bottom:16px;display:flex;align-items:flex-start;gap:14px;">
-    <div style="background:rgba(0,214,143,.08);border:1px solid rgba(0,214,143,.15);border-radius:9px;padding:8px 12px;text-align:center;flex-shrink:0;">
+  <div class="ring-banner">
+    <span style="font-size:11px;color:var(--muted);font-weight:600;margin-right:4px;">TK30 sensors:</span>
+    <span class="rs" style="color:var(--red);">❤️ ECG</span>
+    <span class="rs" style="color:var(--pink);">🩸 Blood pressure</span>
+    <span class="rs" style="color:var(--amber);">🌡️ Temperature</span>
+    <span class="rs" style="color:var(--cyan);">💧 SpO₂</span>
+    <span class="rs" style="color:var(--green);">📊 HRV</span>
+    <span class="rs" style="color:var(--purple);">🌙 Sleep</span>
+    <span class="rs" style="color:var(--blue);">🏃 Activity</span>
+  </div>
+  <div class="briefing">
+    <div class="briefing-av">
       <div style="font-size:9px;text-transform:uppercase;letter-spacing:.07em;color:var(--green);font-weight:700;">Dr. Sage</div>
       <div style="font-size:18px;margin:3px 0;">🧠</div>
     </div>
-    <div class="briefing-text" id="dailySummary" style="font-size:13px;line-height:1.7;flex:1;">Loading...</div>
-    <button onclick="openECG()" style="flex-shrink:0;display:flex;align-items:center;gap:7px;background:rgba(0,214,143,.06);border:1px solid rgba(0,214,143,.18);border-radius:9px;padding:9px 14px;cursor:pointer;color:var(--green);font-size:12px;font-weight:600;white-space:nowrap;">
-      ❤️ ECG rhythm
-    </button>
+    <div class="briefing-text" id="dailySummary">Loading clinical briefing...</div>
   </div>
-
-  <!-- METRIC DEEP-DIVES -->
+  <div class="top-stats" id="top-stats"></div>
   <div id="dash-metrics"></div>
-
-</div>
-
-<!-- ECG MODAL -->
-<div id="ecgModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:800;align-items:center;justify-content:center;padding:24px;">
-  <div style="background:var(--panel);border:1px solid var(--border2);border-radius:16px;width:100%;max-width:760px;">
-    <div style="padding:18px 22px 0;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
-      <div>
-        <div style="font-size:15px;font-weight:600;">Cardiac rhythm simulation</div>
-        <div style="font-size:12px;color:var(--muted);margin-top:2px;">Lead II waveform · Simulated from PPG data · Not a medical ECG</div>
-      </div>
-      <div style="display:flex;align-items:center;gap:8px;">
-        <span style="font-size:24px;font-weight:700;font-family:var(--mono);color:var(--green);" id="ecg-hr">--</span>
-        <span style="font-size:10px;color:var(--muted);">BPM</span>
-        <span style="font-size:24px;font-weight:700;font-family:var(--mono);color:var(--cyan);margin-left:10px;" id="ecg-hrv">--</span>
-        <span style="font-size:10px;color:var(--muted);">HRV ms</span>
-        <button onclick="closeECG()" style="background:var(--panel2);border:1px solid var(--border2);color:var(--muted);border-radius:50%;width:28px;height:28px;cursor:pointer;margin-left:8px;font-size:14px;">✕</button>
-      </div>
-    </div>
-    <div style="padding:14px 22px 0;">
-      <div style="background:rgba(0,214,143,.02);border-radius:8px;overflow:hidden;position:relative;">
-        <canvas id="ecgCanvas" style="display:block;"></canvas>
-      </div>
-      <div style="display:flex;align-items:center;gap:7px;margin-top:8px;">
-        <div class="ecg-dot"></div>
-        <div style="font-size:12px;color:var(--muted);" id="ecg-status-text">Normal sinus rhythm</div>
-      </div>
-    </div>
-    <div style="border-top:1px solid var(--border);padding:16px 22px;margin-top:14px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-        <div style="display:flex;align-items:center;gap:9px;">
-          <div style="width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#9b72f5,#3b82f6);display:flex;align-items:center;justify-content:center;font-size:13px;">🧠</div>
-          <div style="font-size:13px;font-weight:600;">Dr. Sage reads your rhythm</div>
-        </div>
-        <button onclick="sageReadsECG()" id="ecgReadBtn" style="background:rgba(155,114,245,.1);border:1px solid rgba(155,114,245,.25);color:var(--purple);font-size:12px;font-weight:600;border-radius:8px;padding:7px 16px;cursor:pointer;">▶ Read results aloud</button>
-      </div>
-      <div id="ecgReading" style="font-size:13px;color:#8fa3c4;line-height:1.75;min-height:36px;margin-bottom:14px;"></div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;padding-top:12px;border-top:1px solid var(--border);">
-        <div><div style="font-size:11px;font-weight:600;color:var(--text);margin-bottom:3px;">P wave — atria contract</div><div style="font-size:11px;color:var(--muted);line-height:1.6;">The small bump. Your atria squeeze blood down into the ventricles, loading them up for the main pump.</div></div>
-        <div><div style="font-size:11px;font-weight:600;color:var(--text);margin-bottom:3px;">QRS spike — ventricles fire</div><div style="font-size:11px;color:var(--muted);line-height:1.6;">The tall spike — this IS your heartbeat. Both ventricles contract simultaneously, pumping blood to your lungs and body.</div></div>
-        <div><div style="font-size:11px;font-weight:600;color:var(--text);margin-bottom:3px;">T wave — heart resets</div><div style="font-size:11px;color:var(--muted);line-height:1.6;">The rounded hill. The heart muscle relaxes and recharges electrically, ready for the next beat.</div></div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- SLEEP PAGE -->
-<div class="page" id="page-sleep">
-  <div class="page-header"><div class="page-title">Sleep analysis</div><div class="page-sub">What happened overnight — explained clinically</div></div>
-  <div class="vitals-row" id="sleep-vitals"></div>
-  <div class="chart-panel" style="margin-bottom:16px;">
-    <div class="chart-panel-header"><div class="cp-title">7-night sleep duration</div></div>
-    <div class="cp-sub" id="sleep7-interp"></div>
-    <div style="position:relative;height:180px;"><canvas id="sleepChart7" role="img" aria-label="7-night sleep duration"></canvas></div>
-  </div>
-  <div class="two-col">
-    <div class="chart-panel"><div class="cp-title" style="margin-bottom:6px;">SpO₂ overnight</div><div class="cp-sub" id="spo2-interp"></div><div style="position:relative;height:140px;"><canvas id="spo2Chart" role="img" aria-label="SpO2 chart"></canvas></div></div>
-    <div class="chart-panel"><div class="cp-title" style="margin-bottom:6px;">Apnea events — 7 nights</div><div class="cp-sub" id="apnea-interp"></div><div style="position:relative;height:140px;"><canvas id="apneaChart" role="img" aria-label="Apnea events chart"></canvas></div></div>
-  </div>
 </div>
 
 <!-- HEART PAGE -->
 <div class="page" id="page-heart">
-  <div class="page-header"><div class="page-title">Cardiovascular health</div><div class="page-sub">Heart rate, HRV, blood pressure trend, and cardiac rhythm</div></div>
+  <div class="page-hdr"><div class="page-title">Heart &amp; ECG</div><div class="page-sub">Cardiovascular health — every metric explained</div></div>
+  <button onclick="openECG()" style="display:flex;align-items:center;gap:9px;background:rgba(240,82,82,.06);border:1px solid rgba(240,82,82,.18);border-radius:11px;padding:13px 18px;cursor:pointer;margin-bottom:16px;width:100%;text-align:left;">
+    <span style="font-size:22px;">❤️</span>
+    <div><div style="font-size:14px;font-weight:600;color:var(--text);">Run ECG rhythm analysis</div><div style="font-size:12px;color:var(--muted);margin-top:2px;">Simulated Lead II from TK30 ECG sensor · Dr. Sage reads results aloud</div></div>
+    <span style="margin-left:auto;font-size:18px;color:var(--red);">→</span>
+  </button>
   <div class="vitals-row" id="heart-vitals"></div>
-  <div class="two-col" style="margin-bottom:16px;">
-    <div class="chart-panel"><div class="chart-panel-header"><div class="cp-title">HRV — 7 days</div></div><div class="cp-sub" id="hrv7-interp"></div><div style="position:relative;height:160px;"><canvas id="hrv7Chart" role="img" aria-label="HRV 7 day trend"></canvas></div></div>
-    <div class="chart-panel"><div class="chart-panel-header"><div class="cp-title">Resting HR — 7 days</div></div><div class="cp-sub" id="rhr7-interp"></div><div style="position:relative;height:160px;"><canvas id="rhr7Chart" role="img" aria-label="RHR 7 day trend"></canvas></div></div>
+  <div class="two-col">
+    <div class="chart-panel"><div class="cp-title">HRV — 7 days</div><div class="cp-sub" id="hrv7-sub"></div><div style="position:relative;height:150px;"><canvas id="hrv7Chart"></canvas></div></div>
+    <div class="chart-panel"><div class="cp-title">Resting heart rate — 7 days</div><div class="cp-sub" id="rhr7-sub"></div><div style="position:relative;height:150px;"><canvas id="rhr7Chart"></canvas></div></div>
   </div>
-  <div class="chart-panel">
-    <div class="chart-panel-header"><div class="cp-title">24-hr heart rate trace</div><span class="cp-badge">Today</span></div>
-    <div class="cp-sub" id="hr24-interp"></div>
-    <div style="position:relative;height:140px;"><canvas id="hr24Chart" role="img" aria-label="24-hour heart rate"></canvas></div>
+  <div class="chart-panel"><div class="cp-title">Blood pressure trend — 7 days</div><div class="cp-sub" id="bp7-sub"></div><div style="position:relative;height:130px;"><canvas id="bp7Chart"></canvas></div></div>
+</div>
+
+<!-- SLEEP PAGE -->
+<div class="page" id="page-sleep">
+  <div class="page-hdr"><div class="page-title">Sleep analysis</div><div class="page-sub">What happened overnight — and what it means for today</div></div>
+  <div class="vitals-row" id="sleep-vitals"></div>
+  <div class="chart-panel"><div class="cp-title">7-night sleep duration</div><div class="cp-sub" id="sleep7-sub"></div><div style="position:relative;height:160px;"><canvas id="sleep7Chart"></canvas></div></div>
+  <div class="two-col">
+    <div class="chart-panel"><div class="cp-title">SpO₂ overnight — 7 nights</div><div class="cp-sub" id="spo2-7-sub"></div><div style="position:relative;height:120px;"><canvas id="spo27Chart"></canvas></div></div>
+    <div class="chart-panel"><div class="cp-title">Body temperature overnight</div><div class="cp-sub" id="temp7-sub"></div><div style="position:relative;height:120px;"><canvas id="temp7Chart"></canvas></div></div>
+  </div>
+</div>
+
+<!-- VITALS PAGE -->
+<div class="page" id="page-vitals">
+  <div class="page-hdr"><div class="page-title">Vitals monitoring</div><div class="page-sub">BP, temperature, SpO₂, respiratory rate — tracked daily by TK30</div></div>
+  <div class="vitals-row" id="vitals-row"></div>
+  <div class="two-col">
+    <div class="chart-panel"><div class="cp-title">Blood pressure systolic — 7 days</div><div class="cp-sub" id="bpsys-sub"></div><div style="position:relative;height:130px;"><canvas id="bpSysChart"></canvas></div></div>
+    <div class="chart-panel"><div class="cp-title">Body temperature — 7 days</div><div class="cp-sub" id="tempv-sub"></div><div style="position:relative;height:130px;"><canvas id="tempVChart"></canvas></div></div>
   </div>
 </div>
 
 <!-- ACTIVITY PAGE -->
 <div class="page" id="page-activity">
-  <div class="page-header"><div class="page-title">Activity & movement</div><div class="page-sub">Steps, calories, distance — and whether it was enough</div></div>
-  <div class="vitals-row" id="activity-vitals"></div>
-  <div class="chart-panel">
-    <div class="chart-panel-header"><div class="cp-title">Daily steps — 7 days</div></div>
-    <div class="cp-sub" id="steps7-interp"></div>
-    <div style="position:relative;height:180px;"><canvas id="steps7Chart" role="img" aria-label="7-day steps"></canvas></div>
-  </div>
+  <div class="page-hdr"><div class="page-title">Activity &amp; movement</div><div class="page-sub">Steps, calories, distance — and whether it was enough</div></div>
+  <div class="vitals-row" id="act-vitals"></div>
+  <div class="chart-panel"><div class="cp-title">Daily steps — 7 days</div><div class="cp-sub" id="steps7-sub"></div><div style="position:relative;height:160px;"><canvas id="steps7Chart"></canvas></div></div>
 </div>
 
 <!-- RECORDS PAGE -->
-<div class="page" id="page-history">
-  <div class="page-header"><div class="page-title">Dr. Sage — records</div><div class="page-sub">Action items, full transcripts, and weekly assessments</div></div>
+<div class="page" id="page-records">
+  <div class="page-hdr"><div class="page-title">Dr. Sage — records</div><div class="page-sub">Action items, clinical encounters, transcripts, and assessments</div></div>
   <div class="tab-bar">
     <button class="tab-btn active" id="tab-actions" onclick="switchTab('actions')">Action items</button>
     <button class="tab-btn" id="tab-encounters" onclick="switchTab('encounters')">Encounters</button>
     <button class="tab-btn" id="tab-transcripts" onclick="switchTab('transcripts')">Transcripts</button>
     <button class="tab-btn" id="tab-assessments" onclick="switchTab('assessments')">Assessments</button>
   </div>
-  <div id="historyTab-actions"><div id="action-items-list"></div><div id="action-empty" style="display:none;color:var(--muted);font-size:13px;padding:16px 0;">No action items yet. Complete a consultation with Dr. Sage to generate your first action plan.</div></div>
-  <div id="historyTab-encounters" style="display:none;"><div id="encounter-list"></div><div id="encounter-empty" style="display:none;color:var(--muted);font-size:13px;padding:16px 0;">No clinical encounters on record yet. Complete a weekly report to generate your first encounter document.</div></div>
-  <div id="historyTab-transcripts" style="display:none;"><div id="transcript-list"></div><div id="transcript-empty" style="display:none;color:var(--muted);font-size:13px;padding:16px 0;">No transcripts yet.</div></div>
-  <div id="historyTab-assessments" style="display:none;"><div id="history-list"></div><div id="assessment-empty" style="display:none;color:var(--muted);font-size:13px;padding:16px 0;">No assessments yet.</div></div>
+  <div id="historyTab-actions">
+    <div id="action-items-list"></div>
+    <div id="action-empty" style="display:none;color:var(--muted);font-size:13px;padding:13px 0;">No action items yet. Complete a Dr. Sage consultation to generate your first action plan.</div>
+  </div>
+  <div id="historyTab-encounters" style="display:none;">
+    <div id="encounter-list"></div>
+    <div id="encounter-empty" style="display:none;color:var(--muted);font-size:13px;padding:13px 0;">No encounters yet.</div>
+  </div>
+  <div id="historyTab-transcripts" style="display:none;">
+    <div id="transcript-list"></div>
+    <div id="transcript-empty" style="display:none;color:var(--muted);font-size:13px;padding:13px 0;">No transcripts yet.</div>
+  </div>
+  <div id="historyTab-assessments" style="display:none;">
+    <div id="history-list"></div>
+    <div id="assessment-empty" style="display:none;color:var(--muted);font-size:13px;padding:13px 0;">No assessments yet.</div>
+  </div>
 </div>
 
 <!-- SETTINGS PAGE -->
 <div class="page" id="page-settings">
-  <div class="page-header"><div class="page-title">Settings</div><div class="page-sub">Health profile and weekly goals</div></div>
+  <div class="page-hdr"><div class="page-title">Settings</div><div class="page-sub">Health profile and weekly goals</div></div>
   <div class="settings-panel">
     <div class="settings-title">Health profile</div>
     <div class="settings-grid">
-      <div class="sf"><label>First name</label><input type="text" id="s_name"></div>
-      <div class="sf"><label>Age</label><input type="number" id="s_age"></div>
-      <div class="sf"><label>Weight (lbs)</label><input type="number" id="s_weight"></div>
-      <div class="sf"><label>Height (ft)</label><input type="number" id="s_height" step="0.1"></div>
+      <div class="sf"><label>First name</label><input id="s_name" type="text"></div>
+      <div class="sf"><label>Age</label><input id="s_age" type="number"></div>
+      <div class="sf"><label>Weight (lbs)</label><input id="s_weight" type="number"></div>
+      <div class="sf"><label>Height (ft)</label><input id="s_height" type="number" step="0.1"></div>
       <div class="sf"><label>Biological sex</label><select id="s_sex"><option>Male</option><option>Female</option><option>Other</option></select></div>
     </div>
-    <div class="sf" style="margin-top:12px;"><label>Known conditions</label><textarea id="s_conditions"></textarea></div>
-    <div class="settings-title" style="margin-top:20px;">Weekly goals</div>
+    <div class="sf" style="margin-top:11px;"><label>Known conditions</label><textarea id="s_conditions"></textarea></div>
+    <div class="settings-title" style="margin-top:17px;">Weekly goals</div>
     <div class="settings-grid">
-      <div class="sf"><label>Daily steps</label><input type="number" id="s_steps"></div>
-      <div class="sf"><label>Sleep goal (hrs)</label><input type="number" id="s_sleep" step="0.5"></div>
-      <div class="sf"><label>Max apnea events</label><input type="number" id="s_apnea"></div>
-      <div class="sf"><label>SpO₂ floor (%)</label><input type="number" id="s_spo2"></div>
+      <div class="sf"><label>Daily steps</label><input id="s_steps" type="number"></div>
+      <div class="sf"><label>Sleep goal (hrs)</label><input id="s_sleep" type="number" step="0.5"></div>
+      <div class="sf"><label>Max apnea events</label><input id="s_apnea" type="number"></div>
+      <div class="sf"><label>SpO₂ floor (%)</label><input id="s_spo2" type="number"></div>
     </div>
     <button class="btn-save" onclick="saveSettings()">Save settings</button>
   </div>
@@ -594,49 +537,83 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
 </div><!-- /main -->
 </div><!-- /app -->
 
-<!-- WEEKLY MODAL -->
-<div id="weeklyModal">
-<div class="modal-card">
-  <div class="modal-header">
-    <div><div class="modal-title">Weekly health report</div><div class="modal-sub" id="modal-week-label"></div></div>
-    <button class="modal-close" onclick="closeWeekly()">✕</button>
+<!-- ═══════════════ ECG MODAL ═══════════════ -->
+<div id="ecgModal">
+<div class="ecg-card">
+  <div class="ecg-card-head">
+    <div>
+      <div style="font-size:15px;font-weight:600;">ECG rhythm analysis</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:2px;">Lead II · TK30 ECG sensor · Simulated until ring data live</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div><div class="ecg-vital-val" id="ecg-hr" style="color:var(--green);">--</div><div class="ecg-vital-label">BPM</div></div>
+      <div style="margin-left:8px;"><div class="ecg-vital-val" id="ecg-hrv" style="color:var(--cyan);">--</div><div class="ecg-vital-label">HRV ms</div></div>
+      <button onclick="closeECG()" style="background:var(--panel2);border:1px solid var(--border2);color:var(--muted);border-radius:50%;width:28px;height:28px;cursor:pointer;margin-left:10px;font-size:14px;">✕</button>
+    </div>
   </div>
-  <div class="modal-body">
-    <!-- Tab bar -->
+  <div class="ecg-body">
+    <div class="ecg-canvas-wrap"><canvas id="ecgCanvas" style="display:block;"></canvas></div>
+    <div style="display:flex;align-items:center;gap:7px;margin-top:8px;">
+      <div class="ecg-dot"></div>
+      <div style="font-size:12px;color:var(--muted);" id="ecg-status">Normal sinus rhythm</div>
+    </div>
+  </div>
+  <div class="ecg-foot">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div style="width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#9b72f5,#3b82f6);display:flex;align-items:center;justify-content:center;font-size:13px;">🧠</div>
+        <div style="font-size:13px;font-weight:600;">Dr. Sage reads your rhythm</div>
+      </div>
+      <button onclick="sageReadsECG()" id="ecgReadBtn" style="background:rgba(155,114,245,.1);border:1px solid rgba(155,114,245,.25);color:var(--purple);font-size:12px;font-weight:600;border-radius:8px;padding:6px 14px;cursor:pointer;">▶ Read aloud</button>
+    </div>
+    <div class="ecg-reading" id="ecgReading"></div>
+    <div class="ecg-anatomy">
+      <div><div class="ecg-anat-title">P wave — atria contract</div><div class="ecg-anat-body">The small bump. Your atria squeeze blood into the ventricles, loading them for the main pump.</div></div>
+      <div><div class="ecg-anat-title">QRS spike — ventricles fire</div><div class="ecg-anat-body">The tall spike. Both ventricles contract together, pushing blood to your lungs and body.</div></div>
+      <div><div class="ecg-anat-title">T wave — heart resets</div><div class="ecg-anat-body">The rounded hill. The muscle relaxes and recharges electrically for the next beat.</div></div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ═══════════════ WEEKLY MODAL ═══════════════ -->
+<div id="weeklyModal">
+<div class="wm-card">
+  <div class="wm-head">
+    <div><div class="wm-title">Weekly health report</div><div class="wm-sub" id="wm-week-label"></div></div>
+    <button class="wm-close" onclick="closeWeekly()">✕</button>
+  </div>
+  <div class="wm-body">
     <div class="enc-tab-bar">
       <button class="enc-tab active" id="etab-brief" onclick="encTab('brief')">Briefing</button>
       <button class="enc-tab" id="etab-encounter" onclick="encTab('encounter')">Clinical encounter</button>
       <button class="enc-tab" id="etab-chat" onclick="encTab('chat')">Talk to Dr. Sage</button>
     </div>
-
-    <!-- BRIEFING PANEL -->
     <div class="enc-panel active" id="epanel-brief">
-      <div class="m-section"><div class="m-label">This week at a glance</div><div class="week-stats" id="week-stats"></div></div>
-      <div class="m-section"><div class="m-label">What Dr. Sage found in your data</div><div id="week-insights"></div></div>
-      <div class="m-section"><div class="m-label">Goal scorecard</div><div id="week-goals"></div></div>
+      <div class="wm-section"><div class="wm-label">This week at a glance</div><div class="wk-stats" id="wk-stats"></div></div>
+      <div class="wm-section"><div class="wm-label">What Dr. Sage found</div><div id="wk-insights"></div></div>
+      <div class="wm-section"><div class="wm-label">Goal scorecard</div><div id="wk-goals"></div></div>
       <div style="text-align:center;margin-top:8px;">
-        <button onclick="encTab('encounter')" style="background:rgba(0,214,143,.08);border:1px solid rgba(0,214,143,.25);color:var(--green);font-size:13px;font-weight:600;border-radius:10px;padding:10px 22px;cursor:pointer;">Continue to clinical encounter →</button>
+        <button onclick="encTab('encounter')" style="background:rgba(0,214,143,.08);border:1px solid rgba(0,214,143,.22);color:var(--green);font-size:13px;font-weight:600;border-radius:9px;padding:9px 20px;cursor:pointer;">Continue to clinical encounter →</button>
       </div>
     </div>
-
-    <!-- CLINICAL ENCOUNTER PANEL -->
     <div class="enc-panel" id="epanel-encounter">
-      <div id="encounter-content">
-        <div class="enc-generating"><div class="enc-spinner"></div>Dr. Sage is reviewing your complete history and generating your clinical encounter...</div>
-      </div>
+      <div id="encounter-content"><div class="enc-generating"><div class="enc-spinner"></div>Dr. Sage is reviewing your complete history...</div></div>
     </div>
-
-    <!-- CHAT PANEL -->
     <div class="enc-panel" id="epanel-chat">
       <div class="sage-head">
         <div class="sage-av">🧠</div>
-        <div><div class="sage-name">Dr. Sage</div><div class="sage-cred">AI Clinical Advisor · SageHealth</div><div class="sage-online"><div class="online-dot"></div>Ready for your consultation</div></div>
-        <div style="margin-left:auto;font-size:11px;color:var(--muted);max-width:150px;text-align:right;line-height:1.5;">AI advisor. Not a licensed physician.</div>
+        <div>
+          <div class="sage-name">Dr. Sage</div>
+          <div class="sage-cred">AI Clinical Advisor · SageHealth</div>
+          <div class="sage-online"><div class="online-dot"></div>Ready</div>
+        </div>
+        <div style="margin-left:auto;font-size:11px;color:var(--muted);max-width:140px;text-align:right;line-height:1.4;">AI advisor. Not a licensed physician.</div>
       </div>
       <div class="chat-area" id="chatArea"></div>
       <div class="chat-row">
-        <input class="chat-input" id="chatInput" placeholder="Ask Dr. Sage about your findings, tests, or plan..." onkeydown="if(event.key==='Enter')sendChat()">
-        <button class="voice-btn" id="chatVoiceBtn" onclick="toggleChatVoice()">🔇 Voice</button>
+        <input class="chat-input" id="chatInput" placeholder="Ask Dr. Sage about your results..." onkeydown="if(event.key==='Enter')sendChat()">
+        <button class="voice-btn" id="chatVoiceBtn" onclick="toggleVoice()">🔇</button>
         <button class="chat-send" id="chatSendBtn" onclick="sendChat()">Send</button>
       </div>
     </div>
@@ -644,14 +621,17 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
 </div>
 </div>
 
-<!-- WALKTHROUGH -->
+<!-- ═══════════════ WALKTHROUGH ═══════════════ -->
 <div id="wtOverlay">
 <div id="wtPanel">
   <div class="wt-head">
     <div class="wt-av">🧠</div>
-    <div><div class="wt-name">Dr. Sage</div><div class="wt-step" id="wtStep">Step 1 of 6</div></div>
+    <div style="flex:1;">
+      <div style="font-size:13px;font-weight:600;">Dr. Sage</div>
+      <div style="font-size:11px;color:var(--muted);" id="wtStep">Step 1 of 7</div>
+    </div>
     <button class="wt-voice" id="wtVoiceBtn" onclick="toggleWtVoice()">🔊</button>
-    <button onclick="closeWt()" style="margin-left:8px;background:var(--panel2);border:1px solid var(--border2);color:var(--muted);border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:13px;">✕</button>
+    <button onclick="closeWt()" style="background:var(--panel2);border:1px solid var(--border2);color:var(--muted);border-radius:50%;width:27px;height:27px;cursor:pointer;margin-left:7px;font-size:13px;">✕</button>
   </div>
   <div class="wt-body" id="wtBody"></div>
   <div class="wt-controls">
@@ -665,884 +645,6 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
 <div id="toast"><div class="toast-title" id="toastTitle"></div><div class="toast-body" id="toastBody"></div></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
-<script>
-// ── STATE ──
-let profile={}, goals={}, healthData=[], consultHistory=[], chatMessages=[];
-let voiceOn=false, wtVoiceOn=true, wtIdx=0, wtSteps=[], ecgAnimId=null;
-
-// ── ONBOARDING ──
-let obStep=0;
-function nextStep(n){
-  document.getElementById('s'+obStep).classList.remove('active'); obStep=n;
-  document.getElementById('s'+n).classList.add('active');
-  for(let i=0;i<=3;i++) document.getElementById('d'+i).classList.toggle('done',i<=n);
-}
-function finishOnboarding(){
-  profile={name:document.getElementById('ob_name').value||'Frank',age:parseInt(document.getElementById('ob_age').value)||48,weight:parseInt(document.getElementById('ob_weight').value)||185,height:parseFloat(document.getElementById('ob_height').value)||5.11,sex:document.getElementById('ob_sex').value||'Male',conditions:document.getElementById('ob_conditions').value||''};
-  goals={steps:parseInt(document.getElementById('ob_steps').value)||8000,sleep:parseFloat(document.getElementById('ob_sleep').value)||7.5,apnea:parseInt(document.getElementById('ob_apnea').value)||2,spo2:parseInt(document.getElementById('ob_spo2').value)||92};
-  localStorage.setItem('sh_profile',JSON.stringify(profile)); localStorage.setItem('sh_goals',JSON.stringify(goals));
-  initApp();
-}
-
-// ── DATA ──
-function genData(){
-  return Array.from({length:7},(_,i)=>{
-    const d=new Date(); d.setDate(d.getDate()-(6-i));
-    const hrv=Math.round(48+Math.random()*30), rhr=Math.round(56+Math.random()*14);
-    const sleep=+(6.5+Math.random()*2).toFixed(1), deep=+(sleep*(0.15+Math.random()*0.1)).toFixed(1);
-    const rem=+(sleep*(0.18+Math.random()*0.1)).toFixed(1), light=+(sleep-deep-rem-0.3).toFixed(1);
-    const steps=Math.round(5000+Math.random()*7000), spo2=+(96+Math.random()*3).toFixed(1);
-    const apnea=Math.floor(Math.random()*3);
-    const readiness=Math.min(100,Math.round((hrv/75*40)+((72-rhr)/16*30)+(deep/1.5*30)));
-    const strain=Math.min(100,Math.round((steps/12000*50)+(Math.max(0,rhr-55)/15*50)));
-    const airway=Math.min(100,Math.round(100-apnea*8-(spo2<93?10:0)));
-    const sleepScore=Math.min(100,Math.round((sleep/(goals.sleep||7.5)*40)+(deep/1.5*35)+(rem/1.8*25)));
-    const calories=Math.round(steps*0.04*(profile.weight||185)/100);
-    const distance=+(steps*0.00047).toFixed(1);
-    return {date:d,hrv,rhr,sleep,deep,rem,light,steps,spo2,apnea,readiness,strain,airway,sleepScore,calories,distance};
-  });
-}
-const avg=(arr,k)=>Math.round(arr.reduce((s,d)=>s+d[k],0)/arr.length);
-const avgF=(arr,k)=>+(arr.reduce((s,d)=>s+d[k],0)/arr.length).toFixed(1);
-function cardioAge(rhr,hrv,spo2,age){let a=0;if(rhr<60)a-=3;else if(rhr>72)a+=3;if(hrv>60)a-=2;else if(hrv<40)a+=2;if(spo2<95)a+=2;return Math.max(25,age+a);}
-function respRate(hrv){return+(13+(70-hrv)*0.04).toFixed(1);}
-function bp(rhr,hrv){return Math.round(115+(rhr-60)*0.6+(60-hrv)*0.2)+'/'+Math.round(75+(rhr-60)*0.3);}
-
-// ── STATUS ──
-function ss(v){return v>=85?'great':v>=70?'good':v>=55?'watch':'alert';}
-function sl(s){return s==='great'?'Excellent':s==='good'?'Good':s==='watch'?'Watch':'Alert';}
-function rhrS(v){return v<60?'great':v<70?'good':v<80?'watch':'alert';}
-function hrvS(v){return v>=60?'great':v>=45?'good':v>=35?'watch':'alert';}
-function spo2S(v){return v>=97?'great':v>=95?'good':v>=92?'watch':'alert';}
-
-// ── INTERPRETATIONS ──
-function iReadiness(v,name){
-  if(v>=85)return`${name}'s body is fully recovered. Nervous system is balanced — strong capacity for physical and mental output today.`;
-  if(v>=70)return`Good recovery. Yesterday's demands were handled well. Normal active day is appropriate — avoid high-intensity training.`;
-  if(v>=55)return`Moderate recovery. HRV and resting HR suggest your body is still under load. Lighter activity advised.`;
-  return`Low recovery. Biometric markers indicate significant fatigue or stress. Rest is clinically the most productive choice today.`;
-}
-function iSleep(score,hours,deep,rem){
-  if(score>=85)return`Strong sleep architecture: ${hours}h total, ${deep}h deep, ${rem}h REM. All three stages reached optimal thresholds. Physical repair and memory consolidation were efficient.`;
-  if(score>=70)return`Good sleep. ${hours}h recorded with adequate deep and REM staging. Normal cognitive and physical recovery expected.`;
-  if(score>=55)return`Below-target sleep. ${hours}h logged but stage quality was suboptimal. Deep sleep of ${deep}h is below the 1.5h threshold for full physical repair.`;
-  return`Poor sleep detected. ${hours}h with disrupted staging. Cognitive performance, mood regulation, and immune function will all be impaired today.`;
-}
-function iHRV(v,age){
-  const exp=Math.round(65-age*0.5);
-  if(v>=exp+10)return`HRV of ${v}ms is well above the expected range for age ${age}. This indicates excellent autonomic nervous system recovery and low allostatic load.`;
-  if(v>=exp-5)return`HRV of ${v}ms is within normal reference range for your demographic. Autonomic balance is maintained.`;
-  if(v>=exp-15)return`HRV of ${v}ms is slightly below age-adjusted norms. This can reflect accumulated fatigue, suboptimal sleep, elevated cortisol, or early illness.`;
-  return`HRV of ${v}ms is significantly depressed. This is a reliable physiological stress marker. Prioritise recovery — avoid adding training load.`;
-}
-function iRHR(v){
-  if(v<60)return`Resting HR of ${v} BPM indicates strong cardiovascular conditioning. Lower RHR reflects a heart that pumps more efficiently per beat, reducing long-term cardiac workload.`;
-  if(v<70)return`Resting HR of ${v} BPM is within the healthy adult reference range. Cardiac output at rest is appropriate.`;
-  if(v<80)return`Resting HR of ${v} BPM is mildly elevated. Common causes: dehydration, caffeine, stress, or reduced sleep quality. Monitor for trend.`;
-  return`Elevated resting HR of ${v} BPM. Sustained values above 80 BPM correlate with increased cardiovascular risk. Track trend and consider physician review if persistent.`;
-}
-function iSpO2(v){
-  if(v>=97)return`SpO₂ of ${v}% is optimal. Red blood cells are fully saturated — oxygen delivery to all tissues and organs is unrestricted.`;
-  if(v>=95)return`SpO₂ of ${v}% is within normal limits. Healthy adults typically range 95–100%.`;
-  if(v>=92)return`SpO₂ of ${v}% is mildly reduced. Repeated overnight readings below 95% warrant monitoring for sleep-disordered breathing.`;
-  return`SpO₂ of ${v}% is below safe threshold. Values under 92% require medical attention — do not ignore this reading.`;
-}
-function iSteps(steps,goal){
-  const p=Math.round(steps/goal*100);
-  if(p>=100)return`Daily movement goal achieved: ${steps.toLocaleString()} steps. Studies link 8,000+ daily steps to 51% lower all-cause mortality compared to 4,000 steps.`;
-  if(p>=75)return`${steps.toLocaleString()} steps — ${p}% of goal. A 15–20 minute walk would close the gap. Consistent daily targets drive the long-term cardiovascular benefit.`;
-  return`${steps.toLocaleString()} steps — below target. Sedentary periods elevate blood glucose, increase LDL cholesterol, and raise cardiovascular risk independent of exercise sessions.`;
-}
-
-// ── VITAL CARD BUILDER ──
-function vCard(label,value,unit,status,interpret,range){
-  return`<div class="vital-card"><div class="vital-card-top"><div class="vital-card-label">${label}</div><span class="vital-status vs-${status}">${sl(status)}</span></div><div><span class="vital-value">${value}</span><span class="vital-unit"> ${unit}</span></div><div class="vital-range">${range}</div><div class="vital-interp">${interpret}</div></div>`;
-}
-
-// ── INIT ──
-function initApp(){
-  document.getElementById('onboarding').style.display='none';
-  document.getElementById('app').style.display='block';
-  healthData=genData();
-  buildDashboard();
-  buildSubpages();
-  populateHistory();
-  populateSettings();
-  setGreeting();
-  // Monday auto-open
-  const today=new Date(), isM=today.getDay()===1, lw=localStorage.getItem('sh_nl_opened'), tw=today.toISOString().slice(0,10);
-  if(isM&&lw!==tw){localStorage.setItem('sh_nl_opened',tw);setTimeout(()=>openWeeklyReport(),1400);}
-}
-
-function setGreeting(){
-  const h=new Date().getHours(), n=profile.name||'Frank';
-  document.getElementById('dashGreet').textContent=(h<12?'Good morning':h<17?'Good afternoon':'Good evening')+', '+n;
-  document.getElementById('dashDate').textContent=new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
-  document.getElementById('briefing-date').textContent='Daily briefing';
-  document.getElementById('sav').textContent=n[0].toUpperCase();
-  document.getElementById('sname').textContent=n;
-}
-
-// ── DASHBOARD ──
-function buildDashboard(){
-  const t=healthData[healthData.length-1], age=profile.age||48, name=profile.name||'Frank';
-  const ca=cardioAge(t.rhr,t.hrv,t.spo2,age);
-  const labels=healthData.map(d=>d.date.toLocaleDateString('en-US',{weekday:'short'}));
-  const co=(min,max,color)=>({responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#6b7a96',font:{size:10}},grid:{display:false}},y:{ticks:{color:'#6b7a96',font:{size:10}},grid:{color:'rgba(255,255,255,0.04)'},min,max}}});
-
-  // TOP ROW — movement first
-  const tr = document.getElementById('dash-top-row');
-  const stepsGoal = goals.steps||8000;
-  const stepsPct = Math.min(100,Math.round(t.steps/stepsGoal*100));
-  const stepCol = t.steps>=stepsGoal?'var(--green)':t.steps>=stepsGoal*.75?'var(--cyan)':'var(--amber)';
-  tr.innerHTML = [
-    {label:'Steps today', value:t.steps.toLocaleString(), sub:`${stepsPct}% of ${stepsGoal.toLocaleString()} goal`, color:stepCol, icon:'🏃', note: t.steps>=stepsGoal?'Goal achieved':''+Math.max(0,stepsGoal-t.steps).toLocaleString()+' to go'},
-    {label:'Readiness', value:t.readiness+'/100', sub:t.readiness>=85?'Excellent':t.readiness>=70?'Good':t.readiness>=55?'Moderate':'Low', color:t.readiness>=85?'var(--green)':t.readiness>=70?'var(--cyan)':'var(--amber)', icon:'⚡', note:'HRV + sleep driven'},
-    {label:'Sleep last night', value:t.sleep+'h', sub:`${t.deep}h deep · ${t.rem}h REM`, color:t.sleepScore>=80?'var(--purple)':'var(--amber)', icon:'🌙', note:t.sleepScore>=80?'Good architecture':'Below target'},
-    {label:'Heart rate', value:t.rhr+' BPM', sub:`HRV: ${t.hrv}ms`, color:rhrS(t.rhr)==='great'?'var(--green)':rhrS(t.rhr)==='good'?'var(--cyan)':'var(--amber)', icon:'❤️', note:t.rhr<60?'Athletic range':t.rhr<70?'Healthy range':'Mildly elevated'},
-  ].map(s=>`<div style="background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px 16px;">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-      <div style="font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:600;">${s.label}</div>
-      <span style="font-size:16px;">${s.icon}</span>
-    </div>
-    <div style="font-size:28px;font-weight:700;font-family:var(--mono);color:${s.color};line-height:1;margin-bottom:4px;">${s.value}</div>
-    <div style="font-size:11px;color:var(--muted);margin-bottom:3px;">${s.sub}</div>
-    <div style="font-size:11px;color:${s.color};font-weight:500;">${s.note}</div>
-  </div>`).join('');
-
-  // ECG values
-  document.getElementById('ecg-hr').textContent=t.rhr;
-  document.getElementById('ecg-hrv').textContent=t.hrv;
-  document.getElementById('ecg-status-text').textContent=t.rhr<60?'Sinus bradycardia · Rate below 60 BPM':t.rhr>100?'Elevated rate · Monitor trend':'Normal sinus rhythm · Regular rate and rhythm';
-
-  // Briefing
-  let br=`Readiness <strong>${t.readiness}/100</strong> — ${t.readiness>=85?'excellent':t.readiness>=70?'good':'below optimal'}. Sleep: ${t.sleep}h with ${t.deep}h deep and ${t.rem}h REM. HRV <strong>${t.hrv}ms</strong> (${t.hrv>=60?'above average':'within range'} for age ${age}). Resting HR <strong>${t.rhr} BPM</strong>. SpO₂ <strong>${t.spo2}%</strong>. `;
-  if(t.apnea>2) br+=`<span class="warn">⚠ ${t.apnea} airway events overnight.</span> `;
-  else br+=`No airway events. `;
-  const stepsLeft=Math.max(0,(goals.steps||8000)-t.steps);
-  br+=stepsLeft>0?`<span class="warn">${stepsLeft.toLocaleString()} steps remaining to goal.</span>`:` <strong>Step goal achieved.</strong>`;
-  document.getElementById('dailySummary').innerHTML=br;
-
-  // Build metric deep-dive cards
-  const el=document.getElementById('dash-metrics'); el.innerHTML='';
-
-  function makeScale(value, min, max, zones){
-    // zones: [{from,to,color}]
-    const pct=Math.max(0,Math.min(100,(value-min)/(max-min)*100));
-    let scaleHtml=zones.map(z=>`<div class="mdv-scale-seg" style="flex:${z.to-z.from};background:${z.color};opacity:.7;"></div>`).join('');
-    return `<div style="position:relative;">
-      <div class="mdv-scale">${scaleHtml}</div>
-      <div class="mdv-marker-row"><div class="mdv-marker" style="left:${pct}%;background:white;box-shadow:0 0 4px rgba(255,255,255,.5);"></div></div>
-      <div class="mdv-range-labels"><span>${min}</span><span>${max}</span></div>
-    </div>`;
-  }
-
-  function canvasCard(id, height){
-    return `<div style="position:relative;height:${height}px;margin-top:8px;"><canvas id="${id}" role="img" aria-label="${id} chart"></canvas></div>`;
-  }
-
-  function mdvCard(opts){
-    const col = opts.status==='great'?'var(--green)':opts.status==='good'?'var(--cyan)':opts.status==='watch'?'var(--amber)':'var(--red)';
-    const chipBg = opts.status==='great'?'rgba(0,214,143,.12)':opts.status==='good'?'rgba(0,184,217,.12)':opts.status==='watch'?'rgba(245,158,11,.12)':'rgba(240,82,82,.12)';
-    const chipLabel = opts.status==='great'?'Excellent':opts.status==='good'?'Good':opts.status==='watch'?'Watch':'Alert';
-    return `<div class="mdv-card">
-      <div class="mdv-top">
-        <div class="mdv-left">
-          <div class="mdv-metric-name">${opts.name}</div>
-          <div class="mdv-value-row">
-            <span class="mdv-value" style="color:${col}">${opts.value}</span>
-            <span class="mdv-unit">${opts.unit}</span>
-            <span class="mdv-status-chip" style="background:${chipBg};color:${col}">${chipLabel}</span>
-          </div>
-          <div class="mdv-what">${opts.what}</div>
-          <div class="mdv-why">${opts.why}</div>
-          ${opts.scale||''}
-        </div>
-        <div class="mdv-chart-col">
-          <div class="mdv-chart-label">7-day trend</div>
-          ${opts.chart}
-        </div>
-      </div>
-      ${opts.bottom?`<div class="mdv-bottom">${opts.bottom}</div>`:''}
-    </div>`;
-  }
-
-  function statBlock(label,val,color){
-    return `<div class="mdv-stat"><div class="mdv-stat-val" style="color:${color||'var(--text)'}">${val}</div><div class="mdv-stat-label">${label}</div></div>`;
-  }
-
-  // ── HEART RATE ──
-  el.innerHTML += mdvCard({
-    name:'Resting heart rate',
-    value:t.rhr, unit:'BPM', status:rhrS(t.rhr),
-    what:`How fast your heart beats when you're completely at rest.`,
-    why: t.rhr<60?`Your resting heart rate of ${t.rhr} BPM is in the athlete range. A lower resting heart rate means your heart pumps more blood per beat, so it doesn't have to work as hard. Think of it like a powerful engine idling quietly — less wear, more reserve. This is a direct result of cardiovascular fitness.`:
-         t.rhr<70?`Your resting heart rate of ${t.rhr} BPM is in the healthy range. For reference: 60–70 is healthy, under 60 is athletic. A lower number means a more efficient heart — it pumps more blood per beat. Yours is doing its job well.`:
-         t.rhr<80?`Your resting heart rate of ${t.rhr} BPM is mildly elevated. Common causes: dehydration (your blood gets thicker and harder to pump), caffeine, stress hormones, or reduced sleep. It's not alarming at this level, but it means your heart is working harder than it needs to at rest. Think of it like leaving your car engine revving in neutral.`:
-         `Your resting heart rate of ${t.rhr} BPM is elevated. Consistently above 80 means your heart is under sustained load even at rest — like always driving in a lower gear than needed. This increases long-term cardiovascular wear. Track it for a week; if it stays above 80, mention it to your doctor.`,
-    scale: makeScale(t.rhr,40,110,[{from:0,to:20,color:'#9b72f5'},{from:20,to:30,color:'#00d68f'},{from:30,to:50,color:'#f59e0b'},{from:50,to:70,color:'#f05252'}]),
-    chart: canvasCard('dash-rhr-chart',110),
-    bottom: statBlock('7-day avg',avg(healthData,'rhr')+' BPM','var(--cyan)')+statBlock('Lowest this week',Math.min(...healthData.map(d=>d.rhr))+' BPM','var(--green)')+statBlock('Reference range','60–70 BPM','var(--muted)')
-  });
-
-  // ── HRV ──
-  el.innerHTML += mdvCard({
-    name:'Heart rate variability (HRV)',
-    value:t.hrv, unit:'ms', status:hrvS(t.hrv),
-    what:'The tiny time gaps between your heartbeats. Counterintuitively, MORE variation = healthier.',
-    why: t.hrv>=60?`Your HRV of ${t.hrv}ms is above average. Here's the plain-English version: a healthy nervous system doesn't keep a perfectly steady beat — it constantly micro-adjusts. High variation means your body is responsive and adaptable, like a well-tuned suspension on a car. Low HRV means your nervous system is stuck in overdrive. At ${t.hrv}ms, your recovery is strong and your stress load is manageable.`:
-         t.hrv>=45?`Your HRV of ${t.hrv}ms is within normal range for your age. Most adults your age land between 40–65ms. Think of HRV as your body's internal stress meter — when it drops, it usually means you're accumulating fatigue or stress before you consciously feel it. Yours is stable today.`:
-         `Your HRV of ${t.hrv}ms is below the typical range for your age. This doesn't mean something is wrong right now — it means your body is under more load than usual. Common causes: poor sleep last night, illness starting, high stress, or alcohol. If this stays low for 3+ days, prioritize rest and watch for other symptoms.`,
-    scale: makeScale(t.hrv,10,100,[{from:0,to:30,color:'#f05252'},{from:30,to:50,color:'#f59e0b'},{from:50,to:60,color:'#00b8d9'},{from:60,to:40,color:'#00d68f'}]),
-    chart: canvasCard('dash-hrv-chart',110),
-    bottom: statBlock('7-day avg',avg(healthData,'hrv')+' ms','var(--green)')+statBlock('Best this week',Math.max(...healthData.map(d=>d.hrv))+' ms','var(--green)')+statBlock('Age-adjusted norm',Math.round(65-(age*.5))+' ms','var(--muted)')
-  });
-
-  // ── SLEEP ──
-  const sleepSegs=[{c:'#5b3fbf',f:t.deep*.5},{c:'#7c5cbf',f:t.light*.4},{c:'#5b3fbf',f:t.deep*.5},{c:'#00b8d9',f:t.rem*.6},{c:'#1e2d40',f:.25},{c:'#00b8d9',f:t.rem*.4},{c:'#7c5cbf',f:t.light*.6}];
-  const sleepTotal=sleepSegs.reduce((s,x)=>s+x.f,0);
-  const sleepBarHtml=`<div class="mdv-sleep-bar">${sleepSegs.map(s=>`<div style="flex:${s.f/sleepTotal};background:${s.c};border-radius:3px;"></div>`).join('')}</div><div style="display:flex;gap:14px;margin-top:4px;">${[['#5b3fbf','Deep'],['#7c5cbf','Light'],['#00b8d9','REM'],['#1e2d40','Awake']].map(([c,l])=>`<span style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--muted);"><span style="width:7px;height:7px;background:${c};border-radius:2px;display:inline-block;"></span>${l}</span>`).join('')}</div>`;
-  el.innerHTML += mdvCard({
-    name:'Sleep last night',
-    value:t.sleep, unit:'hours', status:ss(t.sleepScore),
-    what:`How long you slept — and more importantly, how well.`,
-    why: t.sleepScore>=85?`${t.sleep} hours with ${t.deep}h deep sleep and ${t.rem}h REM. This is solid sleep. Here's what happened while you were out: deep sleep is when your body physically repairs itself — muscle, immune system, growth hormone. REM is when your brain processes emotions and locks in memory. You hit both. You should feel like yourself today.`:
-         t.sleepScore>=70?`${t.sleep} hours total. Sleep was adequate but not fully optimized — your deep sleep was ${t.deep}h (target is 1.5h). Deep sleep is when your body does its maintenance work. Think of it like a factory that only runs the night shift. If deep sleep is cut short, the maintenance backlog builds up over days.`:
-         `${t.sleep} hours with limited deep sleep (${t.deep}h). This will impact you today — cognitively and physically. Sleep debt is real and cumulative. Each night below target, your body carries forward a deficit that affects your mood, reaction time, immune system, and metabolism. One bad night you can shake off. Multiple in a row is when it starts to show.`,
-    scale:'',
-    chart:`${sleepBarHtml}${canvasCard('dash-sleep-chart',90)}`,
-    bottom: statBlock('Deep sleep',t.deep+'h','#5b3fbf')+statBlock('REM sleep',t.rem+'h','#00b8d9')+statBlock('7-day avg',avgF(healthData,'sleep')+'h','var(--muted)')
-  });
-
-  // ── SPO2 ──
-  el.innerHTML += mdvCard({
-    name:'Blood oxygen (SpO₂)',
-    value:t.spo2, unit:'%', status:spo2S(t.spo2),
-    what:'The percentage of your red blood cells carrying oxygen to your organs and muscles.',
-    why: t.spo2>=97?`${t.spo2}% — your blood is fully loaded with oxygen. Every organ and muscle is getting what it needs. This is the best-case reading. For context: 95–100% is normal, 91–94% is concerning, below 90% is a medical emergency. You're in the top tier.`:
-         t.spo2>=95?`${t.spo2}% is normal and healthy. Your lungs are moving air efficiently and your blood is carrying it well. The ring measures this using red and infrared light — it shines through your finger and measures how much oxygen is in the blood flowing past. Think of it like a traffic sensor counting full trucks vs empty ones.`:
-         t.spo2>=92?`${t.spo2}% is mildly below the normal 95–100% range. This can happen from shallow breathing during sleep, a slightly stuffy nose, or early illness. If it shows up repeatedly on consecutive nights, it's worth noting — it may indicate your airway is partially closing during sleep, which is the hallmark of sleep apnea.`:
-         `${t.spo2}% is below the safe threshold. Values under 92% mean your blood isn't carrying enough oxygen — your brain, heart, and organs are getting less than they need. This requires medical attention. Don't ignore repeated low readings.`,
-    scale: makeScale(t.spo2,85,100,[{from:0,to:7,color:'#f05252'},{from:7,to:10,color:'#f59e0b'},{from:10,to:15,color:'#00d68f'}]),
-    chart: canvasCard('dash-spo2-chart',110),
-    bottom: statBlock('7-day avg',avgF(healthData,'spo2')+'%','var(--cyan)')+statBlock('Apnea events',t.apnea,t.apnea>2?'var(--amber)':'var(--green)')+statBlock('Normal range','95–100%','var(--muted)')
-  });
-
-  // ── STEPS ──
-  const hr=new Date().getHours();
-  const stepsGoalMdv=goals.steps||8000;
-  const stepsPctMdv=Math.min(100,Math.round(t.steps/stepsGoalMdv*100));
-  const stepsBarHtml=`<div style="height:60px;display:flex;align-items:flex-end;gap:2px;margin:10px 0 4px;">${Array.from({length:24},(_,i)=>{const v=i<hr?Math.round(t.steps/hr*(0.4+Math.random()*.8)):0;return`<div style="flex:1;border-radius:2px 2px 0 0;background:${v>0?'var(--green)':'rgba(255,255,255,.06)'};opacity:${v>0?.8:.4};height:${Math.max(2,Math.round(v/(t.steps/hr||1)*52))}px;"></div>`;}).join('')}</div><div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);"><span>12am</span><span>6am</span><span>12pm</span><span>6pm</span><span>Now</span></div>`;
-  el.innerHTML += mdvCard({
-    name:'Daily movement',
-    value:t.steps.toLocaleString(), unit:'steps', status:t.steps>=stepsGoalMdv?'great':t.steps>=stepsGoalMdv*.75?'good':t.steps>=stepsGoalMdv*.5?'watch':'alert',
-    what:`Your total steps today. Goal: ${stepsGoalMdv.toLocaleString()} steps — ${stepsPctMdv}% complete.`,
-    why: t.steps>=stepsGoalMdv?`Goal achieved at ${t.steps.toLocaleString()} steps. Here's why this matters: a 2020 JAMA study found that people who take 8,000+ steps per day have a 51% lower risk of dying from any cause compared to those who take 4,000. And you don't need to do it in one workout — accumulated steps throughout the day count the same.`:
-         t.steps>=stepsGoalMdv*.75?`${t.steps.toLocaleString()} steps — you're close. ${(stepsGoalMdv-t.steps).toLocaleString()} to go. Even a 10-minute walk adds roughly 1,000 steps. The research is clear: there's no lower threshold where additional steps stop being beneficial. Each 1,000 steps beyond 4,000 reduces cardiovascular risk by another 6%.`:
-         `${t.steps.toLocaleString()} steps — below target. Prolonged sitting has its own independent health risks, separate from exercise. Even if you work out, sitting for 8+ hours raises blood sugar, stiffens arteries, and compresses spinal discs. Breaking up sedentary time with short walks every hour is the fix.`,
-    scale:'',
-    chart:`${stepsBarHtml}${canvasCard('dash-steps-chart',80)}`,
-    bottom: statBlock('7-day avg',avg(healthData,'steps').toLocaleString(),'var(--cyan)')+statBlock('Calories burned',t.calories,'var(--amber)')+statBlock('Distance',t.distance+' mi','var(--muted)')
-  });
-
-  // Render charts after DOM update
-  setTimeout(()=>{
-    const chartCo=(min,max)=>({responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#6b7a96',font:{size:10}},grid:{display:false}},y:{ticks:{color:'#6b7a96',font:{size:10}},grid:{color:'rgba(255,255,255,.04)'},min,max}}});
-    new Chart(document.getElementById('dash-rhr-chart'),{type:'line',data:{labels,datasets:[{data:healthData.map(d=>d.rhr),borderColor:'#f05252',backgroundColor:'rgba(240,82,82,.07)',tension:.4,pointBackgroundColor:'#f05252',pointRadius:3,fill:true}]},options:chartCo(45,95)});
-    new Chart(document.getElementById('dash-hrv-chart'),{type:'line',data:{labels,datasets:[{data:healthData.map(d=>d.hrv),borderColor:'#00d68f',backgroundColor:'rgba(0,214,143,.07)',tension:.4,pointBackgroundColor:'#00d68f',pointRadius:3,fill:true}]},options:chartCo(20,100)});
-    new Chart(document.getElementById('dash-sleep-chart'),{type:'bar',data:{labels,datasets:[{data:healthData.map(d=>d.sleep),backgroundColor:healthData.map(d=>d.sleep>=(goals.sleep||7.5)?'rgba(155,114,245,.6)':'rgba(155,114,245,.25)'),borderRadius:4}]},options:chartCo(0,10)});
-    new Chart(document.getElementById('dash-spo2-chart'),{type:'line',data:{labels,datasets:[{data:healthData.map(d=>d.spo2),borderColor:'#00b8d9',backgroundColor:'rgba(0,184,217,.07)',tension:.4,pointBackgroundColor:'#00b8d9',pointRadius:3,fill:true}]},options:chartCo(90,100)});
-    new Chart(document.getElementById('dash-steps-chart'),{type:'bar',data:{labels,datasets:[{data:healthData.map(d=>d.steps),backgroundColor:healthData.map(d=>d.steps>=(goals.steps||8000)?'rgba(0,214,143,.6)':'rgba(0,214,143,.25)'),borderRadius:4}]},options:chartCo(0,Math.max(...healthData.map(d=>d.steps))*1.2)});
-  },50);
-}
-
-// ── ECG MODAL ──
-function openECG(){
-  const modal=document.getElementById('ecgModal');
-  modal.style.display='flex';
-  document.getElementById('ecgReading').textContent='';
-  setTimeout(()=>startECG(),80);
-}
-function closeECG(){
-  document.getElementById('ecgModal').style.display='none';
-  if(ecgAnimId){cancelAnimationFrame(ecgAnimId);ecgAnimId=null;}
-  stopSpeech();
-}
-function sageReadsECG(){
-  const t=healthData[healthData.length-1], age=profile.age||48, name=profile.name||'Frank';
-  const btn=document.getElementById('ecgReadBtn');
-  btn.disabled=true; btn.textContent='Reading...';
-  const rhythm=t.rhr<60?'sinus bradycardia — your heart rate is below 60, which is common in athletic or well-conditioned individuals':t.rhr>100?'elevated heart rate — your resting rate is above 100, which warrants monitoring':'normal sinus rhythm — regular rate and regular spacing between beats';
-  const hrvNote=t.hrv>=60?`Your HRV of ${t.hrv} milliseconds is above average, indicating excellent autonomic recovery. The spacing between beats is healthily variable, which is exactly what you want to see.`:t.hrv>=45?`Your HRV of ${t.hrv} milliseconds is within the normal range. The beat-to-beat variation looks healthy.`:`Your HRV of ${t.hrv} milliseconds is slightly below the optimal range for your age. This suggests your nervous system is carrying some load — worth tracking over the coming days.`;
-  const reading=`Good afternoon, ${name}. Looking at your cardiac rhythm simulation. I'm seeing ${rhythm}. Your heart is beating at ${t.rhr} beats per minute. ${hrvNote} The QRS complex — that's the tall spike you see on the trace — looks clean and regular, which is what we want. The T wave recovery looks normal. ${t.rhr<70?'Overall, your cardiac profile today is reassuring.':'I would encourage you to stay well hydrated and check in again tomorrow.'} Remember, this is a simulation from your ring's PPG sensor — it models your rhythm from timing data, not electrical signals. For a real cardiac evaluation, a KardiaMobile or a visit to your doctor would give you a true ECG.`;
-  document.getElementById('ecgReading').textContent=reading;
-  speak(reading, ()=>{btn.disabled=false; btn.textContent='▶ Read results aloud';});
-}
-
-
-// ── ECG SIMULATION ──
-function startECG(){
-  const canvas=document.getElementById('ecgCanvas');
-  if(!canvas)return;
-  const parent=canvas.parentElement;
-  const w=parent.clientWidth||700;
-  canvas.width=w; canvas.height=100;
-  canvas.style.width=w+'px'; canvas.style.height='100px';
-
-  const ctx=canvas.getContext('2d');
-  const today=healthData[healthData.length-1];
-  const bpm=today.rhr, period=60000/bpm;
-  let t2=0, lastTime=null;
-
-  function ecgY(p){
-    p=p%1;
-    if(p<0.04)return 5*Math.sin(p/0.04*Math.PI);
-    if(p<0.12)return 0;
-    if(p<0.13)return -8*(p-0.12)/0.01;
-    if(p<0.15)return -8+50*(p-0.13)/0.02;
-    if(p<0.17)return 42-45*(p-0.15)/0.02;
-    if(p<0.19)return -3+3*(p-0.17)/0.02;
-    if(p<0.32)return 0;
-    if(p<0.50)return 10*Math.sin((p-0.32)/0.18*Math.PI);
-    return 0;
-  }
-
-  function draw(ts){
-    if(!lastTime)lastTime=ts;
-    const dt=Math.min(ts-lastTime,50); lastTime=ts;
-    const w=canvas.width, h=canvas.height, mid=h/2;
-    if(!w||!h){ecgAnimId=requestAnimationFrame(draw);return;}
-    const speed=w/3, dx=speed*dt/1000;
-    if(dx>=1){
-      const img=ctx.getImageData(Math.ceil(dx),0,w-Math.ceil(dx),h);
-      ctx.clearRect(0,0,w,h);
-      ctx.putImageData(img,0,0);
-    }
-    ctx.clearRect(w-Math.ceil(dx)-1,0,Math.ceil(dx)+3,h);
-    ctx.strokeStyle='rgba(0,214,143,.06)'; ctx.lineWidth=.5;
-    for(let gx=w%20;gx<w;gx+=20){ctx.beginPath();ctx.moveTo(gx,0);ctx.lineTo(gx,h);ctx.stroke();}
-    for(let gy=0;gy<h;gy+=18){ctx.beginPath();ctx.moveTo(0,gy);ctx.lineTo(w,gy);ctx.stroke();}
-    ctx.strokeStyle='#00d68f'; ctx.lineWidth=2; ctx.lineJoin='round'; ctx.lineCap='round';
-    ctx.beginPath();
-    const steps=Math.ceil(dx)+2;
-    for(let i=0;i<=steps;i++){
-      const px=w-steps+i;
-      const phase=(t2+i/speed/(period/1000))%1;
-      const y=mid-ecgY(phase)*(mid*.78/25);
-      if(i===0)ctx.moveTo(px,y); else ctx.lineTo(px,y);
-    }
-    ctx.stroke();
-    t2+=dt/1000/(period/1000);
-    ecgAnimId=requestAnimationFrame(draw);
-  }
-  if(ecgAnimId)cancelAnimationFrame(ecgAnimId);
-  ecgAnimId=requestAnimationFrame(draw);
-}
-
-
-// ── SUBPAGES ──
-function buildSubpages(){
-  const labels=healthData.map(d=>d.date.toLocaleDateString('en-US',{weekday:'short'}));
-  const co=(min,max)=>({responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#6b7a96',font:{size:10}},grid:{color:'rgba(255,255,255,0.03)'}},y:{ticks:{color:'#6b7a96',font:{size:10}},grid:{color:'rgba(255,255,255,0.05)'},min,max}}});
-  const t=healthData[healthData.length-1];
-
-  // Sleep page
-  const sg=document.getElementById('sleep-vitals'); sg.innerHTML='';
-  [
-    {l:'Avg sleep (7 days)',v:avgF(healthData,'sleep'),u:'hours',s:avgF(healthData,'sleep')>=7?'great':'watch',i:`7-day average of ${avgF(healthData,'sleep')}h. ${avgF(healthData,'sleep')>=7?'Within the recommended 7–9h adult range.':'Below the minimum 7h threshold. Accumulated sleep debt is non-trivial.'}`,r:'Target: 7–9h'},
-    {l:'Deep sleep last night',v:t.deep,u:'hours',s:t.deep>=1.5?'great':t.deep>=1?'good':'watch',i:`${t.deep}h of deep sleep. ${t.deep>=1.5?'Optimal — physical repair, immune function, and growth hormone release are maximised during this stage.':'Below the 1.5h target. Alcohol, late caffeine, and irregular bedtimes are the most common reducers of deep sleep.'}`,r:'Target: 1.5–2h'},
-    {l:'REM last night',v:t.rem,u:'hours',s:t.rem>=1.5?'great':t.rem>=1?'good':'watch',i:`${t.rem}h REM. ${t.rem>=1.5?'Strong REM — emotional regulation and memory consolidation are well supported.':'REM was below optimal. Stress and alcohol are the primary suppressors.'}`,r:'Target: 1.5–2h'},
-    {l:'Apnea events last night',v:t.apnea,u:'events',s:t.apnea<=(goals.apnea||2)?'great':t.apnea<=4?'watch':'alert',i:t.apnea<=(goals.apnea||2)?`${t.apnea} events — within acceptable range.`:`${t.apnea} events detected. Side-sleeping, avoiding alcohol, and BMI management are evidence-based interventions.`,r:`Target: ≤${goals.apnea||2}/night`},
-  ].forEach(x=>{const el=document.createElement('div');el.innerHTML=vCard(x.l,x.v,x.u,x.s,x.i,x.r);sg.appendChild(el.firstElementChild);});
-
-  document.getElementById('sleep7-interp').textContent=`7-day average: ${avgF(healthData,'sleep')}h. ${avgF(healthData,'sleep')>=7?'Consistently within recommended range.':'Below optimal. Aim to move bedtime 20–30 minutes earlier this week.'}`;
-  document.getElementById('spo2-interp').textContent=`Average SpO₂: ${avgF(healthData,'spo2')}%. ${avgF(healthData,'spo2')>=96?'Oxygen saturation is consistently healthy.':'Monitor for nights below 92% which may indicate sleep-disordered breathing.'}`;
-  document.getElementById('apnea-interp').textContent=`Total ${healthData.reduce((s,d)=>s+d.apnea,0)} events across 7 nights. ${healthData.reduce((s,d)=>s+d.apnea,0)<=10?'Within acceptable range.':'Above target — document patterns and discuss with your physician if persistent.'}`;
-
-  new Chart(document.getElementById('sleepChart7'),{type:'bar',data:{labels,datasets:[{data:healthData.map(d=>d.sleep),backgroundColor:'rgba(155,114,245,.55)',borderRadius:5}]},options:co(0,10)});
-  new Chart(document.getElementById('spo2Chart'),{type:'line',data:{labels,datasets:[{data:healthData.map(d=>d.spo2),borderColor:'#00b8d9',backgroundColor:'rgba(0,184,217,.07)',tension:.4,pointBackgroundColor:'#00b8d9',pointRadius:3}]},options:co(90,100)});
-  new Chart(document.getElementById('apneaChart'),{type:'bar',data:{labels,datasets:[{data:healthData.map(d=>d.apnea),backgroundColor:healthData.map(d=>d.apnea>2?'rgba(240,82,82,.6)':'rgba(0,214,143,.5)'),borderRadius:4}]},options:co(0,6)});
-
-  // Heart page
-  const hg=document.getElementById('heart-vitals'); hg.innerHTML='';
-  [
-    {l:'Avg resting HR (7 days)',v:avg(healthData,'rhr'),u:'BPM',s:rhrS(avg(healthData,'rhr')),i:iRHR(avg(healthData,'rhr')),r:'Reference: 60–70'},
-    {l:'Avg HRV (7 days)',v:avg(healthData,'hrv'),u:'ms',s:hrvS(avg(healthData,'hrv')),i:iHRV(avg(healthData,'hrv'),profile.age||48),r:'Higher = better'},
-    {l:'SpO₂ overnight',v:t.spo2,u:'%',s:spo2S(t.spo2),i:iSpO2(t.spo2),r:'Normal: 95–100%'},
-    {l:'Cardiovascular age',v:cardioAge(t.rhr,t.hrv,t.spo2,profile.age||48),u:'yrs est.',s:cardioAge(t.rhr,t.hrv,t.spo2,profile.age||48)<=(profile.age||48)?'great':'watch',i:`CV age estimate vs actual age ${profile.age||48}.`,r:`Actual: ${profile.age||48}`},
-  ].forEach(x=>{const el=document.createElement('div');el.innerHTML=vCard(x.l,x.v,x.u,x.s,x.i,x.r);hg.appendChild(el.firstElementChild);});
-
-  document.getElementById('hrv7-interp').textContent=`7-day average: ${avg(healthData,'hrv')}ms. ${avg(healthData,'hrv')>=55?'Nervous system is recovering well between days.':'Trending below optimal. Consistent sleep and stress reduction are the most effective interventions.'}`;
-  document.getElementById('rhr7-interp').textContent=`7-day average: ${avg(healthData,'rhr')} BPM. ${avg(healthData,'rhr')<65?'Excellent — indicative of strong cardiovascular conditioning.':'Within normal range. Aerobic exercise is the most reliable way to lower resting HR over time.'}`;
-  document.getElementById('hr24-interp').textContent='Simulated 24-hour heart rate pattern based on your resting HR baseline and typical daily activity distribution.';
-
-  new Chart(document.getElementById('hrv7Chart'),{type:'line',data:{labels,datasets:[{data:healthData.map(d=>d.hrv),borderColor:'#00d68f',backgroundColor:'rgba(0,214,143,.07)',tension:.4,pointBackgroundColor:'#00d68f',pointRadius:3}]},options:co(20,100)});
-  new Chart(document.getElementById('rhr7Chart'),{type:'line',data:{labels,datasets:[{data:healthData.map(d=>d.rhr),borderColor:'#f05252',backgroundColor:'rgba(240,82,82,.07)',tension:.4,pointBackgroundColor:'#f05252',pointRadius:3}]},options:co(45,90)});
-
-  // 24hr HR
-  const hr24=Array.from({length:24},(_,i)=>{const base=t.rhr;const active=i>=8&&i<=20;return Math.round(base+(active?Math.random()*25:Math.random()*5));});
-  new Chart(document.getElementById('hr24Chart'),{type:'line',data:{labels:Array.from({length:24},(_,i)=>`${i}:00`),datasets:[{data:hr24,borderColor:'#f05252',backgroundColor:'rgba(240,82,82,.06)',tension:.4,pointRadius:0,fill:true}]},options:{...co(40,140),scales:{x:{ticks:{color:'#6b7a96',font:{size:9},maxTicksLimit:8},grid:{color:'rgba(255,255,255,.03)'}},y:{ticks:{color:'#6b7a96',font:{size:10}},grid:{color:'rgba(255,255,255,.05)'},min:40,max:140}}}});
-
-  // Activity page
-  const ag=document.getElementById('activity-vitals'); ag.innerHTML='';
-  [
-    {l:'Avg steps (7 days)',v:avg(healthData,'steps').toLocaleString(),u:'/day',s:avg(healthData,'steps')>=(goals.steps||8000)?'great':'watch',i:iSteps(avg(healthData,'steps'),goals.steps||8000),r:`Goal: ${(goals.steps||8000).toLocaleString()}`},
-    {l:'Calories today',v:t.calories,u:'kcal',s:'good',i:'Active calories above basal metabolic rate. Reflects energy expended through movement.',r:'Movement calories only'},
-    {l:'Distance today',v:t.distance,u:'miles',s:'good',i:`${t.distance} miles via daily movement — approximately ${Math.round(t.distance*20)} minutes of walking equivalent.`,r:'Step + stride estimate'},
-    {l:'Active hours',v:Math.round(t.steps/1200),u:'hours',s:Math.round(t.steps/1200)>=6?'great':'good',i:`${Math.round(t.steps/1200)} hours with meaningful movement. Breaking up sedentary blocks reduces insulin resistance and blood pressure independently of formal exercise.`,r:'Hours with >250 steps'},
-  ].forEach(x=>{const el=document.createElement('div');el.innerHTML=vCard(x.l,x.v,x.u,x.s,x.i,x.r);ag.appendChild(el.firstElementChild);});
-
-  document.getElementById('steps7-interp').textContent=`7-day average: ${avg(healthData,'steps').toLocaleString()} steps. ${avg(healthData,'steps')>=(goals.steps||8000)?'Consistently meeting your target — this volume has documented cardiovascular and longevity benefits.':'Building the consistency habit matters more than perfection. Aim for one more 10-minute walk per day this week.'}`;
-  new Chart(document.getElementById('steps7Chart'),{type:'bar',data:{labels,datasets:[{data:healthData.map(d=>d.steps),backgroundColor:healthData.map(d=>d.steps>=(goals.steps||8000)?'rgba(0,214,143,.6)':'rgba(59,130,246,.5)'),borderRadius:5}]},options:co(0,Math.max(...healthData.map(d=>d.steps))*1.2)});
-}
-
-// ── WEEKLY MODAL ──
-function openWeeklyReport(){
-  const t=healthData[healthData.length-1];
-  const w=new Date(), ws=new Date(w); ws.setDate(w.getDate()-6);
-  document.getElementById('modal-week-label').textContent=ws.toLocaleDateString('en-US',{month:'long',day:'numeric'})+' – '+w.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
-
-  document.getElementById('week-stats').innerHTML=[
-    {l:'Avg readiness',v:avg(healthData,'readiness')+'/100',c:'var(--green)',i:avg(healthData,'readiness')>=80?'Strong recovery week.':'Below optimal recovery.'},
-    {l:'Avg sleep',v:avgF(healthData,'sleep')+'h/night',c:'var(--purple)',i:avgF(healthData,'sleep')>=7?'Within recommended range.':'Below 7h minimum.'},
-    {l:'Avg steps',v:avg(healthData,'steps').toLocaleString(),c:'var(--cyan)',i:avg(healthData,'steps')>=(goals.steps||8000)?'Goal met on average.':'Below daily target.'},
-    {l:'Avg HRV',v:avg(healthData,'hrv')+' ms',c:'var(--green)',i:avg(healthData,'hrv')>=55?'Nervous system stable.':'Below baseline HRV.'},
-    {l:'Apnea events',v:healthData.reduce((s,d)=>s+d.apnea,0)+' total',c:healthData.reduce((s,d)=>s+d.apnea,0)>10?'var(--amber)':'var(--text)',i:'Total airway events this week.'},
-    {l:'Airway score',v:avg(healthData,'airway')+'/100',c:'var(--cyan)',i:avg(healthData,'airway')>=80?'Breathing stable overnight.':'Some disruption detected.'},
-  ].map(s=>`<div class="wstat"><div class="wstat-label">${s.l}</div><div class="wstat-val" style="color:${s.c}">${s.v}</div><div class="wstat-interp">${s.i}</div></div>`).join('');
-
-  const best=healthData.reduce((b,d)=>d.sleep>b.sleep?d:b);
-  document.getElementById('week-insights').innerHTML=[
-    {c:'',t:'Recovery pattern',b:`Best recovery day scored ${healthData.reduce((b,d)=>d.readiness>b.readiness?d:b).readiness}/100, preceded by ${best.sleep}h sleep with ${best.deep}h deep. Sleep quality remains the single strongest driver of readiness.`},
-    {c:healthData.reduce((s,d)=>s+d.apnea,0)>8?'warn':'',t:'Airway observation',b:healthData.reduce((s,d)=>s+d.apnea,0)>8?`${healthData.reduce((s,d)=>s+d.apnea,0)} total airway events is above target. Alcohol consumption, late meals, and supine sleeping position are the most addressable contributing factors.`:`${healthData.reduce((s,d)=>s+d.apnea,0)} total airway events — within acceptable weekly range. No structural breathing concern at this level.`},
-    {c:avg(healthData,'hrv')<50?'warn':'',t:'Cardiovascular trend',b:`HRV averaged ${avg(healthData,'hrv')}ms, resting HR ${avg(healthData,'rhr')} BPM. ${avg(healthData,'hrv')>=55?'Both metrics are within healthy parameters.':'HRV is below age-adjusted norms. Consistent bedtimes and reduced evening stimulants have the highest evidence base for improvement.'}`},
-  ].map(p=>`<div class="insight ${p.c}"><div class="insight-title">${p.t}</div><div class="insight-body">${p.b}</div></div>`).join('');
-
-  document.getElementById('week-goals').innerHTML=[
-    {l:'Daily steps',v:avg(healthData,'steps'),g:goals.steps||8000,f:v=>v.toLocaleString(),inv:false},
-    {l:'Sleep duration',v:avgF(healthData,'sleep'),g:goals.sleep||7.5,f:v=>v+'h',inv:false},
-    {l:'SpO₂ stability',v:avgF(healthData,'spo2'),g:goals.spo2||92,f:v=>v+'%',inv:false},
-    {l:'Apnea events/night',v:+(healthData.reduce((s,d)=>s+d.apnea,0)/7).toFixed(1),g:goals.apnea||2,f:v=>v,inv:true},
-  ].map(it=>{
-    const pct=it.inv?Math.max(0,Math.min(100,(1-it.v/it.g)*100)):Math.min(100,it.v/it.g*100);
-    const col=pct>=80?'var(--green)':pct>=50?'var(--amber)':'var(--red)';
-    return`<div class="goal-row"><div class="goal-label">${it.l}</div><div class="goal-bar-wrap"><div class="goal-bar-fill" style="width:${Math.round(pct)}%;background:${col};"></div></div><div class="goal-vals">${it.f(it.v)} / ${it.f(it.g)}</div></div>`;
-  }).join('');
-
-  // Reset encounter generation so it reruns each weekly open
-  const ec=document.getElementById('encounter-content');
-  if(ec) ec.dataset.generated='';
-  // Start on briefing tab
-  encTab('brief');
-  document.getElementById('weeklyModal').classList.add('open');
-}
-function closeWeekly(){document.getElementById('weeklyModal').classList.remove('open');}
-
-// ── ENCOUNTER TABS ──
-function encTab(tab){
-  ['brief','encounter','chat'].forEach(t=>{
-    document.getElementById('epanel-'+t).classList.toggle('active',t===tab);
-    document.getElementById('etab-'+t).classList.toggle('active',t===tab);
-  });
-  if(tab==='encounter') generateEncounter();
-  if(tab==='chat') initSageChat();
-}
-
-// ── CLINICAL ENCOUNTER GENERATOR ──
-async function generateEncounter(){
-  const el=document.getElementById('encounter-content');
-  // Don't regenerate if already done this session
-  if(el.dataset.generated==='1') return;
-  el.innerHTML='<div class="enc-generating"><div class="enc-spinner"></div>Dr. Sage is reviewing your complete history and generating your clinical encounter document...</div>';
-
-  const t=healthData[healthData.length-1];
-  const age=profile.age||48;
-  const prevEncounters=JSON.parse(localStorage.getItem('sh_encounters')||'[]');
-  const prevActions=JSON.parse(localStorage.getItem('sh_actions')||'[]');
-  const completedActions=prevActions.filter(a=>a.done).map(a=>a.title);
-  const openActions=prevActions.filter(a=>!a.done).map(a=>a.title);
-
-  const prompt=`You are Dr. Sage, a clinical AI physician conducting a formal weekly health encounter. Generate a structured clinical encounter document in JSON. Be specific, evidence-based, and clinically precise.
-
-Patient: ${profile.name||'Frank'}, ${age}yo ${profile.sex||'Male'}, ${profile.weight||185}lbs. Known conditions: ${profile.conditions||'None reported'}.
-
-Current biometrics:
-- Readiness: ${avg(healthData,'readiness')}/100 | HRV: ${avg(healthData,'hrv')}ms | RHR: ${avg(healthData,'rhr')} BPM
-- Sleep avg: ${avgF(healthData,'sleep')}h | Deep sleep: ${t.deep}h | REM: ${t.rem}h
-- SpO₂: ${t.spo2}% | Apnea events this week: ${healthData.reduce((s,d)=>s+d.apnea,0)} total
-- Steps avg: ${avg(healthData,'steps').toLocaleString()}/day | BP trend: ${bp(t.rhr,t.hrv)} (algorithm estimate)
-- Cardio age estimate: ${cardioAge(t.rhr,t.hrv,t.spo2,age)} years
-
-Prior encounters: ${prevEncounters.length} on record.
-Previously completed action items: ${completedActions.join(', ')||'None'}.
-Open action items not yet completed: ${openActions.join(', ')||'None'}.
-Prior discussion topics: ${prevEncounters.length>0?prevEncounters[0].chiefConcerns||'None':'No prior encounters'}.
-
-Generate a JSON object with exactly this structure:
-{
-  "chiefConcerns": ["string", ...],
-  "findings": [{"icon":"emoji","label":"metric name","value":"reading","status":"normal|borderline|abnormal","interpretation":"1-2 sentence clinical interpretation"},...],
-  "impression": "2-3 sentence overall clinical impression paragraph",
-  "differentials": [{"condition":"name","likelihood":"low|possible|likely","rationale":"brief reason"},...],
-  "orderedTests": [
-    {"name":"test name","priority":"urgent|routine|optional","reason":"why ordered based on data","how":"exactly how the patient orders or gets this test — be specific (e.g. 'Request a lipid panel at any Quest Diagnostics or LabCorp walk-in. No fasting required for basic panel.')","category":"lab|imaging|wearable|referral"}
-  ],
-  "plan": [
-    {"step":"action item","timeframe":"now|this week|this month|ongoing","rationale":"clinical reason"}
-  ],
-  "followUp": "specific follow-up instruction",
-  "priorActionReview": "1-2 sentences reviewing what was completed vs still open from prior action items"
-}
-
-Be specific. For orderedTests, include real actionable guidance — how to actually order the test (telehealth, walk-in lab, pharmacy, their doctor). Include 3-6 tests based on what the data actually warrants. Only include urgent tests if genuinely clinically indicated.`;
-
-  try{
-    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:2000,messages:[{role:'user',content:prompt}]})});
-    const data=await res.json();
-    let text=data.content?.[0]?.text||'{}';
-    text=text.replace(/```json|```/g,'').trim();
-    const enc=JSON.parse(text);
-    renderEncounter(enc, el);
-    saveEncounter(enc);
-    el.dataset.generated='1';
-  }catch(e){
-    el.innerHTML=`<div style="color:var(--muted);font-size:13px;padding:16px 0;">Unable to generate clinical encounter — please check your API configuration. Error: ${e.message}</div>`;
-  }
-}
-
-function renderEncounter(enc, el){
-  const orderedTests=JSON.parse(localStorage.getItem('sh_test_status')||'{}');
-
-  let html=`<div class="encounter-card">`;
-
-  // Chief concerns
-  if(enc.chiefConcerns?.length){
-    html+=`<div class="enc-section"><div class="enc-label"><div class="enc-label-dot" style="background:var(--cyan)"></div>Chief concerns</div>`;
-    html+=enc.chiefConcerns.map(c=>`<div class="enc-finding"><div class="enc-finding-icon">◉</div><div class="enc-finding-body">${c}</div></div>`).join('');
-    html+=`</div>`;
-  }
-
-  // Findings
-  if(enc.findings?.length){
-    html+=`<div class="enc-section"><div class="enc-label"><div class="enc-label-dot" style="background:var(--green)"></div>Clinical findings</div>`;
-    html+=enc.findings.map(f=>{
-      const col=f.status==='normal'?'var(--green)':f.status==='borderline'?'var(--amber)':'var(--red)';
-      return`<div class="enc-finding"><div class="enc-finding-icon">${f.icon}</div><div class="enc-finding-body"><strong>${f.label}: <span style="color:${col}">${f.value}</span></strong><span class="enc-sub">${f.interpretation}</span></div></div>`;
-    }).join('');
-    html+=`</div>`;
-  }
-
-  // Impression
-  if(enc.impression){
-    html+=`<div class="enc-section"><div class="enc-label"><div class="enc-label-dot" style="background:var(--purple)"></div>Clinical impression</div><div style="font-size:13px;line-height:1.7;color:#bcc8e0;background:rgba(155,114,245,.05);border-left:2px solid var(--purple);padding:10px 14px;border-radius:0 8px 8px 0;">${enc.impression}</div></div>`;
-  }
-
-  // Differentials
-  if(enc.differentials?.length){
-    html+=`<div class="enc-section"><div class="enc-label"><div class="enc-label-dot" style="background:var(--amber)"></div>Differential considerations</div>`;
-    html+=enc.differentials.map(d=>{
-      const col=d.likelihood==='likely'?'var(--amber)':d.likelihood==='possible'?'var(--cyan)':'var(--muted)';
-      return`<div class="enc-finding"><div class="enc-finding-icon">◈</div><div class="enc-finding-body"><strong>${d.condition}</strong> <span style="color:${col};font-size:11px;font-weight:600;">[${d.likelihood}]</span><span class="enc-sub">${d.rationale}</span></div></div>`;
-    }).join('');
-    html+=`</div>`;
-  }
-
-  html+=`</div>`;
-
-  // Tests ordered
-  if(enc.orderedTests?.length){
-    html+=`<div style="margin-bottom:16px;"><div class="enc-label" style="margin-bottom:10px;"><div class="enc-label-dot" style="background:var(--red)"></div>Tests & referrals ordered</div>`;
-    html+=enc.orderedTests.map((test,i)=>{
-      const key=`test_${i}_${test.name.replace(/\s/g,'_')}`;
-      const done=orderedTests[key]||false;
-      return`<div class="test-order" style="${done?'opacity:.5':''}">
-        <span class="test-priority pri-${test.priority}">${test.priority}</span>
-        <div class="test-info">
-          <div class="test-name" style="${done?'text-decoration:line-through;color:var(--muted)':''}">${test.name}</div>
-          <div class="test-reason">${test.reason}</div>
-          <div class="test-how">📋 How to order: ${test.how}</div>
-        </div>
-        <div class="test-done"><input type="checkbox" ${done?'checked':''} onchange="markTestDone('${key}',this.checked)" title="Mark as ordered/completed"></div>
-      </div>`;
-    }).join('');
-    html+=`</div>`;
-  }
-
-  // Plan
-  if(enc.plan?.length){
-    html+=`<div class="encounter-card" style="margin-bottom:12px;"><div class="enc-label"><div class="enc-label-dot" style="background:var(--green)"></div>Treatment & management plan</div>`;
-    html+=enc.plan.map((p,i)=>`<div class="plan-item"><div class="plan-num">${i+1}</div><div class="plan-text"><strong>${p.step}</strong><span class="plan-timeframe">⏱ ${p.timeframe} · ${p.rationale}</span></div></div>`).join('');
-    html+=`</div>`;
-  }
-
-  // Prior action review
-  if(enc.priorActionReview){
-    html+=`<div style="background:rgba(0,184,217,.05);border:1px solid rgba(0,184,217,.15);border-radius:9px;padding:11px 14px;font-size:12px;color:#a5f3fc;line-height:1.6;margin-bottom:12px;">📂 <strong>Prior action review:</strong> ${enc.priorActionReview}</div>`;
-  }
-
-  // Follow-up
-  if(enc.followUp){
-    html+=`<div style="background:rgba(0,214,143,.05);border:1px solid rgba(0,214,143,.15);border-radius:9px;padding:11px 14px;font-size:12px;color:var(--green);line-height:1.6;margin-bottom:12px;">📅 <strong>Follow-up:</strong> ${enc.followUp}</div>`;
-  }
-
-  // Disclaimer
-  html+=`<div class="enc-disclaimer">⚠ This clinical encounter document is generated by an AI wellness system using wearable sensor data. It is not a medical diagnosis, does not constitute medical advice, and does not replace evaluation by a licensed physician. Tests and referrals listed are suggestions based on biometric patterns — please discuss with your doctor before ordering. In an emergency, call 911 or go to your nearest ER.</div>`;
-
-  el.innerHTML=html;
-}
-
-function markTestDone(key, checked){
-  const ts=JSON.parse(localStorage.getItem('sh_test_status')||'{}');
-  ts[key]=checked;
-  localStorage.setItem('sh_test_status',JSON.stringify(ts));
-}
-
-function saveEncounter(enc){
-  const encounters=JSON.parse(localStorage.getItem('sh_encounters')||'[]');
-  encounters.unshift({
-    date:new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}),
-    enc,
-    scores:{readiness:avg(healthData,'readiness'),hrv:avg(healthData,'hrv'),rhr:avg(healthData,'rhr'),sleep:avgF(healthData,'sleep')}
-  });
-  localStorage.setItem('sh_encounters',JSON.stringify(encounters.slice(0,20)));
-  populateHistory();
-  // Also extract plan items as action items
-  if(enc.plan?.length){
-    const existing=JSON.parse(localStorage.getItem('sh_actions')||'[]');
-    const date=new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
-    const newItems=enc.plan.map(p=>({id:Date.now()+Math.random(),title:p.step,desc:p.rationale+' ('+p.timeframe+')',tag:'general',metric:null,target:null,done:false,autoCheck:false,evidence:null,dateAssigned:date,weekData:{...healthData[healthData.length-1]}}));
-    localStorage.setItem('sh_actions',JSON.stringify([...newItems,...existing]));
-  }
-}
-
-function initSageChat(){
-  chatMessages=[]; document.getElementById('chatArea').innerHTML='';
-  const t=healthData[healthData.length-1], name=profile.name||'Frank';
-  const prevEnc=JSON.parse(localStorage.getItem('sh_encounters')||'[]');
-  const openActions=JSON.parse(localStorage.getItem('sh_actions')||'[]').filter(a=>!a.done).map(a=>a.title);
-  const histCtx=prevEnc.length>0?`You have ${prevEnc.length} prior encounter(s). Last visit (${prevEnc[0].date}): "${prevEnc[0].enc?.impression||'see records'}". Open items: ${openActions.slice(0,3).join(', ')||'none'}.`:'First encounter on record.';
-  const opening=`Good ${new Date().getHours()<12?'morning':'afternoon'}, ${name}. I've reviewed your data and generated your clinical encounter. ${histCtx} Readiness averaged ${avg(healthData,'readiness')}/100, HRV ${avg(healthData,'hrv')}ms, resting HR ${avg(healthData,'rhr')} BPM this week. ${t.apnea>2?`I flagged ${t.apnea} airway events last night — that warrants discussion. `:''}What questions do you have about your findings, the ordered tests, or your plan?`;
-  chatMessages.push({role:'assistant',content:opening});
-  addBubble('sage',opening);
-}
-
-
-function addBubble(who,text){
-  const a=document.getElementById('chatArea');
-  const d=document.createElement('div'); d.className='chat-msg'+(who==='user'?' user':'');
-  d.innerHTML=`<div class="chat-av ${who==='sage'?'sage':'you'}">${who==='sage'?'🧠':(profile.name||'F')[0].toUpperCase()}</div><div class="chat-bubble">${text}</div>`;
-  a.appendChild(d); a.scrollTop=a.scrollHeight;
-}
-function showTyping(){const a=document.getElementById('chatArea');const d=document.createElement('div');d.className='chat-msg';d.id='typing';d.innerHTML=`<div class="chat-av sage">🧠</div><div class="chat-bubble"><div class="typing"><div class="td"></div><div class="td"></div><div class="td"></div></div></div>`;a.appendChild(d);a.scrollTop=a.scrollHeight;}
-function removeTyping(){const t=document.getElementById('typing');if(t)t.remove();}
-
-async function sendChat(){
-  const inp=document.getElementById('chatInput'), msg=inp.value.trim(); if(!msg)return;
-  inp.value=''; document.getElementById('chatSendBtn').disabled=true;
-  addBubble('user',msg); chatMessages.push({role:'user',content:msg}); showTyping();
-  const prevEnc=JSON.parse(localStorage.getItem('sh_encounters')||'[]');
-  const openActs=JSON.parse(localStorage.getItem('sh_actions')||'[]').filter(a=>!a.done).map(a=>a.title);
-  const encCtx=prevEnc.length>0?`Prior encounters: ${prevEnc.length}. Last encounter (${prevEnc[0].date}) impression: "${prevEnc[0].enc?.impression||''}". Tests previously ordered: ${prevEnc[0].enc?.orderedTests?.map(x=>x.name).join(', ')||'none'}.`:'No prior encounters.';
-  const sys=`You are Dr. Sage, a clinical AI physician in SageHealth. Precise, evidence-based, direct. You have full access to the patient's history and encounter records.
-
-You do NOT diagnose or prescribe. You interpret biometric trends, explain clinical findings, help the patient understand their tests and plan, and refer to a real physician when appropriate.
-
-Patient: ${profile.name||'Frank'}, ${profile.age||48}yo ${profile.sex||'Male'}, ${profile.weight||185}lbs. Conditions: ${profile.conditions||'None'}.
-${encCtx}
-Open action items: ${openActs.join(', ')||'None'}.
-
-This week's biometrics:
-- Readiness: ${avg(healthData,'readiness')}/100 | HRV: ${avg(healthData,'hrv')}ms | RHR: ${avg(healthData,'rhr')} BPM
-- Sleep: ${avgF(healthData,'sleep')}h avg | Deep: ${t.deep}h | REM: ${t.rem}h
-- SpO₂: ${t.spo2}% | Apnea events: ${healthData.reduce((s,d)=>s+d.apnea,0)} this week
-- Steps: ${avg(healthData,'steps').toLocaleString()}/day | CV age est: ${cardioAge(t.rhr,t.hrv,t.spo2,profile.age||48)}
-
-Rules: Reference specific findings and history. If patient asks about a test, explain what it measures and why it was ordered. Keep responses to 4-6 sentences. Ask one targeted follow-up. Refer to real physician when clinically indicated. Add disclaimer on first response.`;
-
-  try{
-    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,system:sys,messages:chatMessages})});
-    const data=await res.json(); removeTyping();
-    const reply=data.content?.[0]?.text||'Connection issue — please try again.';
-    chatMessages.push({role:'assistant',content:reply}); addBubble('sage',reply);
-    if(voiceOn)speak(reply);
-    if(/wrap|done|bye|thank|finish/i.test(msg))saveConsultation(reply);
-  }catch(e){removeTyping();addBubble('sage','Connection issue — please check your API key configuration.');}
-  document.getElementById('chatSendBtn').disabled=false;
-}
-function toggleChatVoice(){voiceOn=!voiceOn;const b=document.getElementById('chatVoiceBtn');b.textContent=voiceOn?'🔊 Voice on':'🔇 Voice';b.classList.toggle('on',voiceOn);}
-
-// ── VOICE ──
-function speak(text,onEnd){
-  if(!window.speechSynthesis)return;
-  window.speechSynthesis.cancel();
-  const clean=text.replace(/<[^>]*>/g,'').trim();
-  const u=new SpeechSynthesisUtterance(clean);
-  u.rate=0.92; u.pitch=1.0;
-  const voices=window.speechSynthesis.getVoices();
-  const pref=voices.find(v=>/samantha|karen|daniel|alex/i.test(v.name))||voices.find(v=>v.lang==='en-US')||voices[0];
-  if(pref)u.voice=pref; if(onEnd)u.onend=onEnd;
-  window.speechSynthesis.speak(u);
-}
-function stopSpeech(){if(window.speechSynthesis)window.speechSynthesis.cancel();}
-
-// ── WALKTHROUGH ──
-function buildWtSteps(){
-  const t=healthData[healthData.length-1], age=profile.age||48, name=profile.name||'Frank', ca=cardioAge(t.rhr,t.hrv,t.spo2,age);
-  return[
-    {title:'Readiness',text:`Good ${new Date().getHours()<12?'morning':'afternoon'}, ${name}. Your readiness score today is ${t.readiness} out of 100. ${t.readiness>=85?'That is an excellent reading — your body is fully recovered and you have strong capacity for physical and mental output today.':t.readiness>=70?'That is a good reading. Your body handled yesterday demands well. A normal active day is appropriate.':t.readiness>=55?'That is a moderate reading. Your body is still processing yesterday stress. Lighter activity is advisable.':'That is a low reading — your body is fatigued. Rest is clinically the most productive choice today.'}`},
-    {title:'Sleep',text:`Last night you slept ${t.sleep} hours, with ${t.deep} hours of deep sleep and ${t.rem} hours of REM. ${t.deep>=1.5?'Your deep sleep was excellent. This is the stage where physical repair occurs — muscles recover, immune cells activate, and growth hormone is released.':'Your deep sleep of '+t.deep+' hours fell below the optimal 1.5 hour threshold. The most common reducers are alcohol within three hours of bed, irregular bedtimes, and late caffeine.'} ${t.rem>=1.5?'REM sleep was also strong — this is when your brain consolidates memory and regulates emotional response.':'REM at '+t.rem+' hours was slightly below target. Chronic stress is the primary suppressor of REM sleep.'}`},
-    {title:'Heart & HRV',text:`Your resting heart rate was ${t.rhr} beats per minute. ${t.rhr<60?'That is excellent — a resting heart rate below 60 is typical of well-conditioned cardiovascular systems.':t.rhr<70?'That is within the healthy reference range — your heart is pumping efficiently at rest.':'That is mildly elevated. Common causes are dehydration, caffeine, stress, or reduced sleep quality.'} Heart rate variability — the millisecond variation between consecutive beats — was ${t.hrv} milliseconds. ${t.hrv>=60?'This is above average for your age group, indicating excellent autonomic nervous system recovery.':t.hrv>=45?'This is within the normal reference range.':'This is below the age-adjusted norm, suggesting accumulated fatigue or elevated physiological stress.'}`},
-    {title:'Breathing & oxygen',text:`Your blood oxygen level overnight was ${t.spo2} percent. ${t.spo2>=97?'That is optimal — your red blood cells are fully saturated and oxygen delivery to all tissues is unrestricted.':t.spo2>=95?'That is within the normal healthy range of 95 to 100 percent.':'That is mildly below the normal threshold. Repeated overnight readings below 95 percent can indicate sleep-disordered breathing worth monitoring.'} You had ${t.apnea} airway events detected. ${t.apnea===0?'No airway disruptions — excellent.':t.apnea<=2?'Within the acceptable range.':'Above the two-event target. Side-sleeping and avoiding alcohol before bed reduce airway events for most people.'}`},
-    {title:'Activity',text:`You have taken ${t.steps.toLocaleString()} steps today — ${Math.round(t.steps/(goals.steps||8000)*100)} percent of your ${(goals.steps||8000).toLocaleString()} step goal. ${t.steps>=(goals.steps||8000)?'Goal achieved. Research consistently links 8,000 or more daily steps to significantly lower cardiovascular disease risk and all-cause mortality.':t.steps>=(goals.steps||8000)*0.75?'You are close to your target. A short walk after your next meal would close the gap.':'You are below target. Adding a 10-minute walk in the morning and another after dinner adds approximately 2,500 steps with minimal effort.'} Active calories: ${t.calories}. Distance covered: ${t.distance} miles.`},
-    {title:'Cardiovascular age',text:`Based on your HRV, resting heart rate, and blood oxygen data, your cardiovascular system is performing like someone who is ${ca} years old. Your actual age is ${age}. ${ca<age?'Your heart metrics indicate biological youth — a direct result of your fitness habits and recovery quality. The gap between your biological and chronological cardiovascular age is a meaningful health advantage.':ca===age?'Your cardiovascular markers are consistent with your actual age — a healthy baseline to build from.':'There is room to narrow this gap. The three most evidence-based interventions are increasing daily steps, improving sleep consistency, and reducing chronic stress.'} That concludes your daily health overview, ${name}.`}
-  ];
-}
-function startWalkthrough(){wtSteps=buildWtSteps();wtIdx=0;document.getElementById('wtOverlay').classList.add('open');renderWt();const pips=document.getElementById('wtPips');pips.innerHTML=wtSteps.map((_,i)=>`<div class="wt-pip" id="wp${i}"></div>`).join('');}
-function renderWt(){
-  const s=wtSteps[wtIdx];
-  document.getElementById('wtBody').textContent=s.text;
-  document.getElementById('wtStep').textContent=`Step ${wtIdx+1} of ${wtSteps.length} · ${s.title}`;
-  document.getElementById('wtPrev').style.opacity=wtIdx===0?.3:1;
-  document.getElementById('wtPrev').disabled=wtIdx===0;
-  document.getElementById('wtNext').textContent=wtIdx===wtSteps.length-1?'Finish ✓':'Next →';
-  wtSteps.forEach((_,i)=>{const p=document.getElementById('wp'+i);if(p)p.classList.toggle('on',i<=wtIdx);});
-  if(wtVoiceOn)speakWt();
-}
-function speakWt(){const btn=document.getElementById('wtVoiceBtn');btn.classList.add('speaking');speak(wtSteps[wtIdx].text,()=>btn.classList.remove('speaking'));}
-function wtNav(dir){stopSpeech();if(dir===1&&wtIdx===wtSteps.length-1){closeWt();return;}wtIdx=Math.max(0,Math.min(wtSteps.length-1,wtIdx+dir));renderWt();}
-function closeWt(){stopSpeech();document.getElementById('wtOverlay').classList.remove('open');awardBadge('first_steps','👟 First steps','Completed your first Dr. Sage walkthrough.');}
-function toggleWtVoice(){wtVoiceOn=!wtVoiceOn;const b=document.getElementById('wtVoiceBtn');b.textContent=wtVoiceOn?'🔊':'🔇';b.classList.remove('speaking');if(!wtVoiceOn)stopSpeech();else speakWt();}
-
-// ── RECORDS ──
-function extractActions(assessment,log){
-  const templates=[
-    {p:/side.?sleep|sleep.*side/i,title:'Sleep on your side',desc:'Reduces airway compression. Use a pillow behind your back.',tag:'airway',metric:'apnea',target:'decrease'},
-    {p:/alcohol|drink/i,title:'Reduce evening alcohol',desc:'Avoid alcohol within 3 hours of bed — it suppresses deep sleep and relaxes the airway.',tag:'sleep',metric:'deep',target:'increase'},
-    {p:/walk|step|movement|sedentary/i,title:'Hit your daily step goal',desc:`Aim for ${(goals.steps||8000).toLocaleString()} steps/day. Two 10-minute walks is sufficient.`,tag:'activity',metric:'steps',target:'increase'},
-    {p:/bedtime|consistent.*sleep/i,title:'Consistent bedtime',desc:'Same bedtime within 30 minutes each night. The single highest-impact sleep intervention.',tag:'sleep',metric:'sleepScore',target:'increase'},
-    {p:/hrv|stress/i,title:'Monitor HRV trend',desc:'Three consecutive days below baseline warrants attention and recovery focus.',tag:'heart',metric:'hrv',target:'increase'},
-    {p:/caffeine|coffee/i,title:'Cut caffeine after 2pm',desc:'Caffeine half-life is 6 hours. Afternoon caffeine measurably reduces deep sleep.',tag:'sleep',metric:'deep',target:'increase'},
-    {p:/doctor|physician|medical/i,title:'See your doctor',desc:'Dr. Sage flagged something worth discussing with a licensed physician.',tag:'general',metric:null,target:null},
-    {p:/hydrat/i,title:'Improve daily hydration',desc:'Dehydration elevates resting HR and reduces HRV. 8 glasses before 6pm.',tag:'heart',metric:'rhr',target:'decrease'},
-  ];
-  const all=[...log.map(m=>m.content),assessment].join(' ');
-  const date=new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
-  const found=templates.filter(t=>t.p.test(all)).map(t=>({id:Date.now()+Math.random(),title:t.title,desc:t.desc,tag:t.tag,metric:t.metric,target:t.target,done:false,autoCheck:false,evidence:null,dateAssigned:date,weekData:{...healthData[healthData.length-1]}}));
-  found.push({id:Date.now()+.5,title:'Review next week with Dr. Sage',desc:'Check in on these items during your next Monday consultation.',tag:'general',metric:null,target:null,done:false,autoCheck:false,evidence:null,dateAssigned:date,weekData:null});
-  return found;
-}
-function checkEvidence(item){
-  if(!item.metric||item.done)return item;
-  const t=healthData[healthData.length-1], b=item.weekData; if(!b)return item;
-  let ev=null;
-  if(item.target==='increase'&&t[item.metric]>b[item.metric]*1.05)ev=`Data confirms improvement: ${item.metric==='steps'?t[item.metric].toLocaleString()+' vs '+b[item.metric].toLocaleString()+' steps':t[item.metric]+' vs '+b[item.metric]} at baseline`;
-  else if(item.target==='decrease'&&t[item.metric]<b[item.metric]*.95)ev=`Data confirms improvement: ${t[item.metric]} vs ${b[item.metric]} at baseline`;
-  return ev?{...item,autoCheck:true,done:true,evidence:ev}:item;
-}
-function saveConsultation(assessment){
-  const entry={date:new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}),assessment,scores:{readiness:avg(healthData,'readiness'),sleep:avgF(healthData,'sleep'),hrv:avg(healthData,'hrv'),airway:avg(healthData,'airway')}};
-  consultHistory.unshift(entry); localStorage.setItem('sh_history',JSON.stringify(consultHistory));
-  const tr=JSON.parse(localStorage.getItem('sh_transcripts')||'[]');
-  tr.unshift({date:entry.date,messages:[...chatMessages],scores:entry.scores});
-  localStorage.setItem('sh_transcripts',JSON.stringify(tr));
-  const ex=JSON.parse(localStorage.getItem('sh_actions')||'[]');
-  const ni=extractActions(assessment,chatMessages);
-  localStorage.setItem('sh_actions',JSON.stringify([...ni,...ex]));
-  populateHistory();
-  showToast('📋 Action plan created',`Dr. Sage assigned ${ni.length} follow-up items.`);
-}
-function toggleAction(id){
-  const items=JSON.parse(localStorage.getItem('sh_actions')||'[]');
-  const i=items.findIndex(x=>String(x.id)===String(id));
-  if(i>=0&&!items[i].autoCheck){items[i].done=!items[i].done;localStorage.setItem('sh_actions',JSON.stringify(items));populateHistory();}
-}
-function switchTab(tab){
-  ['actions','encounters','transcripts','assessments'].forEach(t=>{
-    document.getElementById('historyTab-'+t).style.display=t===tab?'block':'none';
-    const b=document.getElementById('tab-'+t);if(b)b.classList.toggle('active',t===tab);
-  });
-}
-function toggleTranscript(i){const b=document.getElementById('tb'+i);const a=document.getElementById('ta'+i);if(b){const o=b.classList.toggle('open');if(a)a.textContent=o?'▲':'▼';}}
-function toggleEncounter(i){const b=document.getElementById('henc'+i);const btn=b?.previousElementSibling?.querySelector('.he-expand');if(b){const o=b.classList.toggle('open');if(btn)btn.textContent=o?'▲ collapse':'▼ expand';}}
-function populateHistory(){
-  const stored=localStorage.getItem('sh_history'); if(stored)consultHistory=JSON.parse(stored);
-  let actions=JSON.parse(localStorage.getItem('sh_actions')||'[]');
-  actions=actions.map(checkEvidence); localStorage.setItem('sh_actions',JSON.stringify(actions));
-  const al=document.getElementById('action-items-list'),ae=document.getElementById('action-empty');
-  if(!actions.length){if(al)al.innerHTML='';if(ae)ae.style.display='block';}
-  else{
-    if(ae)ae.style.display='none';
-    const open=actions.filter(a=>!a.done),done=actions.filter(a=>a.done);
-    let html='';
-    if(open.length){html+=`<div class="sec-label">Open (${open.length})</div>`;html+=open.map(a=>`<div class="action-card"><div class="ac-check" onclick="toggleAction(${a.id})"></div><div><div class="ac-title">${a.title}</div><div class="ac-desc">${a.desc}</div><div class="ac-meta"><span class="ac-tag tag-${a.tag}">${a.tag}</span><span class="ac-date">Assigned ${a.dateAssigned}</span></div></div></div>`).join('');}
-    if(done.length){html+=`<div class="sec-label">Completed (${done.length})</div>`;html+=done.map(a=>`<div class="action-card done"><div class="ac-check ${a.autoCheck?'auto':'checked'}" onclick="toggleAction(${a.id})">✓</div><div><div class="ac-title">${a.title}</div><div class="ac-desc">${a.desc}</div>${a.evidence?`<div class="ac-evidence">✓ ${a.evidence}</div>`:''}<div class="ac-meta"><span class="ac-tag tag-${a.tag}">${a.tag}</span><span class="ac-date">${a.dateAssigned}</span></div></div></div>`).join('');}
-    if(al)al.innerHTML=html;
-  }
-  const tr=JSON.parse(localStorage.getItem('sh_transcripts')||'[]');
-  const tl=document.getElementById('transcript-list'),te=document.getElementById('transcript-empty');
-  if(!tr.length){if(tl)tl.innerHTML='';if(te)te.style.display='block';}
-  else{if(te)te.style.display='none';if(tl)tl.innerHTML=tr.map((t,i)=>`<div class="transcript-card"><div class="tc-header" onclick="toggleTranscript(${i})"><div><div class="tc-date">Consultation · ${t.date}</div><div class="tc-prev">${t.messages.length} messages · Readiness ${t.scores.readiness}/100 · HRV ${t.scores.hrv}ms</div></div><span id="ta${i}">▼</span></div><div class="tc-body" id="tb${i}">${t.messages.map(m=>`<div class="t-msg ${m.role==='user'?'user':''}"><div class="t-av ${m.role==='user'?'you':'sage'}">${m.role==='user'?(profile.name||'F')[0].toUpperCase():'🧠'}</div><div class="t-bubble">${m.content}</div></div>`).join('')}</div></div>`).join('');}
-  // Encounters
-  const encounters=JSON.parse(localStorage.getItem('sh_encounters')||'[]');
-  const enl=document.getElementById('encounter-list'), ene=document.getElementById('encounter-empty');
-  if(!encounters.length){if(enl)enl.innerHTML='';if(ene)ene.style.display='block';}
-  else{
-    if(ene)ene.style.display='none';
-    if(enl)enl.innerHTML=encounters.map((e,i)=>`
-      <div class="history-encounter">
-        <div class="he-header">
-          <div><div class="he-date">${e.date}</div><div class="he-title">Clinical encounter · Readiness ${e.scores.readiness}/100 · HRV ${e.scores.hrv}ms</div></div>
-          <button class="he-expand" onclick="toggleEncounter(${i})">▼ expand</button>
-        </div>
-        <div class="he-body" id="henc${i}">
-          <div style="font-size:13px;color:#bcc8e0;line-height:1.7;margin-bottom:10px;">${e.enc?.impression||''}</div>
-          ${e.enc?.orderedTests?.length?`<div style="font-size:11px;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em;font-weight:600;">Tests ordered</div>`+e.enc.orderedTests.map(t=>`<div style="font-size:12px;padding:5px 0;border-bottom:1px solid var(--border);"><span class="test-priority pri-${t.priority}" style="margin-right:8px;">${t.priority}</span>${t.name}</div>`).join(''):''}
-          ${e.enc?.plan?.length?`<div style="font-size:11px;color:var(--muted);margin:10px 0 6px;text-transform:uppercase;letter-spacing:.06em;font-weight:600;">Plan</div>`+e.enc.plan.map((p,j)=>`<div style="font-size:12px;padding:5px 0;border-bottom:1px solid var(--border);">${j+1}. ${p.step} <span style="color:var(--muted);">(${p.timeframe})</span></div>`).join(''):''}
-        </div>
-      </div>`).join('');
-  }
-
-  if(!consultHistory.length){if(hl)hl.innerHTML='';if(he)he.style.display='block';}
-  else{if(he)he.style.display='none';if(hl)hl.innerHTML=consultHistory.map(h=>`<div class="history-card"><div class="hc-date">${h.date}</div><div style="font-size:14px;font-weight:600;">Weekly clinical assessment</div><div class="hc-body">${h.assessment}</div><div class="hc-scores"><span class="hc-score" style="color:var(--green)">Readiness ${h.scores.readiness}</span><span class="hc-score" style="color:var(--purple)">Sleep ${h.scores.sleep}h</span><span class="hc-score" style="color:var(--cyan)">HRV ${h.scores.hrv}ms</span><span class="hc-score" style="color:var(--amber)">Airway ${h.scores.airway}</span></div></div>`).join('');}
-}
-
-// ── BADGES ──
-function awardBadge(id,title,desc){
-  const earned=JSON.parse(localStorage.getItem('sh_badges')||'[]');
-  if(!earned.includes(id)){earned.push(id);localStorage.setItem('sh_badges',JSON.stringify(earned));showToast(title,desc);speak(`Congratulations, ${profile.name||'Frank'}. You earned the ${title} badge.`);}
-}
-
-// ── TOAST ──
-function showToast(title,body){
-  document.getElementById('toastTitle').textContent=title;
-  document.getElementById('toastBody').textContent=body;
-  const t=document.getElementById('toast'); t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'),5000);
-}
-
-// ── SETTINGS ──
-function populateSettings(){
-  document.getElementById('s_name').value=profile.name||'';document.getElementById('s_age').value=profile.age||'';document.getElementById('s_weight').value=profile.weight||'';document.getElementById('s_height').value=profile.height||'';document.getElementById('s_sex').value=profile.sex||'Male';document.getElementById('s_conditions').value=profile.conditions||'';document.getElementById('s_steps').value=goals.steps||8000;document.getElementById('s_sleep').value=goals.sleep||7.5;document.getElementById('s_apnea').value=goals.apnea||2;document.getElementById('s_spo2').value=goals.spo2||92;
-}
-function saveSettings(){
-  profile={name:document.getElementById('s_name').value,age:parseInt(document.getElementById('s_age').value),weight:parseInt(document.getElementById('s_weight').value),height:parseFloat(document.getElementById('s_height').value),sex:document.getElementById('s_sex').value,conditions:document.getElementById('s_conditions').value};
-  goals={steps:parseInt(document.getElementById('s_steps').value),sleep:parseFloat(document.getElementById('s_sleep').value),apnea:parseInt(document.getElementById('s_apnea').value),spo2:parseInt(document.getElementById('s_spo2').value)};
-  localStorage.setItem('sh_profile',JSON.stringify(profile));localStorage.setItem('sh_goals',JSON.stringify(goals));showToast('✓ Saved','Settings updated.');
-}
-
-// ── NAV ──
-function showPage(id,el){
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-  document.getElementById('page-'+id).classList.add('active');
-  if(el)el.classList.add('active');
-}
-
-// ── BOOT ──
-window.addEventListener('load',()=>{
-  const sp=localStorage.getItem('sh_profile'),sg=localStorage.getItem('sh_goals');
-  if(sp&&sg){profile=JSON.parse(sp);goals=JSON.parse(sg);initApp();}
-});
-</script>
+<script src="/js/app.js"></script>
 </body>
 </html>
