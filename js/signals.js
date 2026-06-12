@@ -500,6 +500,24 @@ function buildSignalsPanel(data, profile, goals) {
     category: s.category,
     action: s.action
   }))));
+
+  // Update header signal badge
+  const badge = document.getElementById('signal-status-badge');
+  if (badge) {
+    if (fired.length > 0) {
+      const urgentCount = fired.filter(s => s.level === 'urgent').length;
+      const label = urgentCount > 0
+        ? `🚨 ${urgentCount} urgent signal${urgentCount > 1 ? 's' : ''} — scroll down`
+        : `⚠ ${fired.length} signal${fired.length > 1 ? 's' : ''} detected — scroll down`;
+      badge.textContent = label;
+      badge.style.display = 'inline-flex';
+      badge.style.background = urgentCount > 0 ? 'var(--red-bg)' : 'var(--amber-bg)';
+      badge.style.color = urgentCount > 0 ? 'var(--red)' : 'var(--amber)';
+      badge.style.borderColor = urgentCount > 0 ? 'rgba(192,57,43,.25)' : 'rgba(180,83,9,.25)';
+    } else {
+      badge.style.display = 'none';
+    }
+  }
 }
 
 /* ── SIGNAL ACTIONS ───────────────────────────────── */

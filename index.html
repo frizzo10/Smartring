@@ -537,7 +537,19 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
 <!-- DASHBOARD -->
 <div class="page active" id="page-dashboard">
   <div class="dash-header">
-    <div><div class="dash-title" id="dashGreet">Good afternoon</div><div class="dash-sub" id="dashDate">Friday, June 12, 2026</div></div>
+    <div>
+      <div class="dash-title" id="dashGreet">Good afternoon</div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:5px;flex-wrap:wrap;">
+        <div class="dash-sub" id="dashDate">Friday, June 12, 2026</div>
+        <span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;background:var(--blue-bg);color:var(--blue);border:1px solid rgba(29,111,164,.25);">
+          <span style="width:6px;height:6px;border-radius:50%;background:#10b981;animation:ecgp 2s infinite;display:inline-block;"></span>
+          TK30 monitoring active
+        </span>
+        <span id="signal-status-badge" style="display:none;font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;background:var(--amber-bg);color:var(--amber);border:1px solid rgba(180,83,9,.25);cursor:pointer;" onclick="document.getElementById('signals-panel').scrollIntoView({behavior:'smooth'})">
+          ⚠ signals detected — scroll down
+        </span>
+      </div>
+    </div>
     <div class="hdr-btns">
       <button class="btn-sm" onclick="startWt()">🎙️ Walkthrough</button>
       <button class="btn-sm" onclick="openWeekly()">📋 Weekly report</button>
