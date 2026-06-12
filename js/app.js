@@ -74,6 +74,8 @@ function initApp(){
   populateHistory();
   populateSettings();
   setGreeting();
+  expireOldDismissals();
+  buildSignalsPanel(data, profile, goals);
   const today=new Date(),isMon=today.getDay()===1,lw=localStorage.getItem('sh_nl'),tw=today.toISOString().slice(0,10);
   if(isMon&&lw!==tw){localStorage.setItem('sh_nl',tw);setTimeout(()=>openWeekly(),1400);}
 }
@@ -318,6 +320,8 @@ async function generateEncounter(){
   const t=data[data.length-1],age=profile.age||48;
   const prevEnc=JSON.parse(localStorage.getItem('sh_encounters')||'[]');
   const openActs=JSON.parse(localStorage.getItem('sh_actions')||'[]').filter(a=>!a.done).map(a=>a.title);
+  const activeSigs=JSON.parse(localStorage.getItem('sh_active_signals')||'[]');
+  const sigSummary=activeSigs.length>0?`Active signals: ${activeSigs.map(s=>s.title+' ('+s.level+')').join(', ')}.`:'No active signals.';
   const prompt=`You are SageHealth's clinical AI generating a formal encounter JSON. Evidence-based, specific.
 Patient: ${profile.name||'Frank'}, ${age}yo ${profile.sex||'Male'}, ${profile.weight||185}lbs. Conditions: ${profile.conditions||'None'}.
 Prior encounters: ${prevEnc.length}. Open items: ${openActs.join(', ')||'None'}.
@@ -327,6 +331,7 @@ Wosheng TK30 biometrics this week:
 - Sleep: ${avgF(data,'sleep')}h avg | Deep: ${t.deep}h | REM: ${t.rem}h
 - SpO₂: ${avgF(data,'spo2')}% | Apnea: ${data.reduce((s,d)=>s+d.apnea,0)} events/week
 - Steps: ${avg(data,'steps').toLocaleString()}/day
+${sigSummary}
 Return ONLY valid JSON (no markdown):
 {"chiefConcerns":["string"],"findings":[{"icon":"emoji","label":"string","value":"string","status":"normal|borderline|abnormal","interpretation":"string"}],"impression":"string","orderedTests":[{"name":"string","priority":"urgent|routine|optional","reason":"string","how":"specific patient instructions"}],"plan":[{"step":"string","timeframe":"now|this week|this month|ongoing","rationale":"string"}],"followUp":"string","priorActionReview":"string"}`;
   try{
@@ -416,6 +421,8 @@ async function generateDoctorReport(){
   const t=data[data.length-1],age=profile.age||48,name=profile.name||'Frank';
   const drReports=JSON.parse(localStorage.getItem('sh_drreports')||'[]');
   const prevData=drReports.length>0?drReports[0]:null;
+  const activeSigsRpt=JSON.parse(localStorage.getItem('sh_active_signals')||'[]');
+  const sigSummaryRpt=activeSigsRpt.length>0?`SageHealth active signals: ${activeSigsRpt.map(s=>s.title+' ('+s.level+') — recommended: '+s.action).join('; ')}.`:'No active signals this week.';
   const prompt=`You are SageHealth generating a physician-ready patient report. Be clinical, concise, formatted for a doctor to read before an appointment.
 Patient: ${name}, ${age}yo ${profile.sex||'Male'}, ${profile.weight||185}lbs. Conditions: ${profile.conditions||'None'}.
 Current week TK30 data:
@@ -423,6 +430,7 @@ Current week TK30 data:
 - HRV: ${avg(data,'hrv')}ms | RHR: ${avg(data,'rhr')} BPM | Sleep: ${avgF(data,'sleep')}h/night | Apnea: ${data.reduce((s,d)=>s+d.apnea,0)} events/week
 - Steps: ${avg(data,'steps').toLocaleString()}/day
 ${prevData?`Prior week: BP ${prevData.bpSys}/${prevData.bpDia}, SpO₂ ${prevData.spo2}%, HRV ${prevData.hrv}ms, Sleep ${prevData.sleep}h`:'No prior data on file.'}
+${sigSummaryRpt}
 Return ONLY valid JSON (no markdown):
 {"patientSummary":"2-3 sentence overview","keyFindings":[{"metric":"string","current":"string","previous":"string","trend":"improving|stable|worsening","note":"string"}],"concernsForDoctor":["string"],"recommendedDiscussion":["string"],"lifestyle":"brief lifestyle summary paragraph","disclaimer":"standard disclaimer"}`;
   try{

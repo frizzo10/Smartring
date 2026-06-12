@@ -386,6 +386,42 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
 .toast-title{font-size:13px;font-weight:600;color:var(--green);margin-bottom:2px;}
 .toast-body{font-size:12px;color:var(--muted);line-height:1.4;}
 
+/* ── SIGNALS PANEL ── */
+.signals-panel{margin-bottom:16px;}
+.signals-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.signals-title{font-size:13px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:7px;}
+.signals-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:8px;background:rgba(245,158,11,.15);color:var(--amber);}
+.signals-badge.clear{background:rgba(0,214,143,.1);color:var(--green);}
+.signals-all-clear{background:rgba(0,214,143,.04);border:1px solid rgba(0,214,143,.12);border-radius:12px;padding:13px 17px;display:flex;align-items:center;gap:10px;font-size:13px;color:var(--muted);}
+.sig-card{background:var(--panel);border-radius:13px;padding:16px 19px;margin-bottom:9px;border-left:3px solid var(--amber);border:1px solid var(--border);}
+.sig-card.sig-urgent{border-left:3px solid var(--red);background:rgba(240,82,82,.03);}
+.sig-card.sig-watch{border-left:3px solid var(--amber);background:rgba(245,158,11,.03);}
+.sig-card.sig-info{border-left:3px solid var(--cyan);background:rgba(0,184,217,.03);}
+.sig-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:8px;}
+.sig-title-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.sig-icon{font-size:18px;flex-shrink:0;}
+.sig-title{font-size:14px;font-weight:700;color:var(--text);}
+.sig-level{font-size:10px;font-weight:700;padding:2px 8px;border-radius:7px;text-transform:uppercase;}
+.sig-level.urgent{background:rgba(240,82,82,.15);color:var(--red);}
+.sig-level.watch{background:rgba(245,158,11,.15);color:var(--amber);}
+.sig-level.info{background:rgba(0,184,217,.12);color:var(--cyan);}
+.sig-watching{font-size:10px;color:var(--muted);margin-top:2px;}
+.sig-body{font-size:13px;color:#8296b8;line-height:1.75;margin-bottom:11px;}
+.sig-body strong{color:var(--text);}
+.sig-drivers{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px;}
+.sig-driver{font-size:11px;padding:3px 9px;border-radius:7px;background:var(--panel2);color:var(--muted);}
+.sig-driver.flagged{background:rgba(245,158,11,.1);color:var(--amber);}
+.sig-driver.red{background:rgba(240,82,82,.1);color:var(--red);}
+.sig-action{background:var(--panel2);border-radius:9px;padding:11px 14px;margin-bottom:10px;}
+.sig-action-label{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600;margin-bottom:5px;}
+.sig-action-text{font-size:13px;line-height:1.65;}
+.sig-action-text strong{color:var(--green);}
+.sig-btns{display:flex;gap:8px;flex-wrap:wrap;}
+.sig-btn-did{background:rgba(0,214,143,.08);border:1px solid rgba(0,214,143,.22);color:var(--green);font-size:12px;font-weight:600;border-radius:8px;padding:6px 14px;cursor:pointer;}
+.sig-btn-sage{background:rgba(155,114,245,.08);border:1px solid rgba(155,114,245,.22);color:var(--purple);font-size:12px;font-weight:600;border-radius:8px;padding:6px 14px;cursor:pointer;}
+.sig-btn-dismiss{background:transparent;border:1px solid var(--border2);color:var(--muted);font-size:12px;border-radius:8px;padding:6px 14px;cursor:pointer;}
+.sig-disclaimer{font-size:11px;color:var(--muted);margin-top:8px;line-height:1.5;font-style:italic;}
+
 /* ── RESPONSIVE ── */
 @media(max-width:900px){
   .sidebar{width:52px;padding:14px 7px;}
@@ -522,6 +558,8 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
     </div>
     <div id="heroEcgReading" style="font-size:13px;color:#7a92b5;line-height:1.7;margin-top:10px;min-height:0;"></div>
   </div>
+  <!-- SIGNALS PANEL -->
+  <div class="signals-panel" id="signals-panel"></div>
   <!-- Deep dive cards -->
   <div id="dash-metrics"></div>
 </div>
@@ -754,6 +792,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
 
 <div id="toast"><div class="toast-title" id="toastTitle"></div><div class="toast-body" id="toastBody"></div></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="/js/signals.js"></script>
 <script src="/js/app.js"></script>
 </body>
 </html>
