@@ -865,16 +865,7 @@ function buildSignalsPanel(data, profile, goals) {
             style="display:flex;align-items:center;gap:8px;background:linear-gradient(135deg,var(--blue),var(--cyan));color:white;border:none;border-radius:10px;padding:10px 20px;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 3px 10px rgba(29,111,164,.25);">
             🎤 Talk to Dr. Sage
           </button>
-          <button onclick="toggleAnnotation('${sig.id}')"
-            style="background:var(--bg);border:1px solid var(--border2);color:var(--muted);border-radius:10px;padding:10px 14px;font-size:12px;cursor:pointer;">
-            ✏️ Add context
-          </button>
           ${isAck ? '<span style="font-size:12px;color:var(--green);font-weight:600;display:flex;align-items:center;gap:4px;">✓ Commitment saved</span>' : ''}
-        </div>
-        <!-- Annotation panel -->
-        <div id="annotation-${sig.id}" style="display:none;margin-top:10px;">
-          <div style="font-size:12px;color:var(--muted);margin-bottom:6px;">Tell Dr. Sage what you think is causing this — she'll factor it in.</div>
-          ${getAnnotationUI(sig.id, sig.title)}
         </div>
         <div class="sig-disclaimer">⚠ ${sig.disclaimer}</div>
       </div>`;
