@@ -693,12 +693,14 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
     <button class="tab-btn" id="tab-transcripts" onclick="switchTab('transcripts')">Transcripts</button>
     <button class="tab-btn" id="tab-assessments" onclick="switchTab('assessments')">Assessments</button>
     <button class="tab-btn" id="tab-drreports" onclick="switchTab('drreports')">Doctor reports</button>
+    <button class="tab-btn" id="tab-commitments" onclick="switchTab('commitments')">Commitments</button>
   </div>
   <div id="historyTab-actions"><div id="action-items-list"></div><div id="action-empty" style="display:none;color:var(--muted);font-size:13px;padding:13px 0;">No action items yet.</div></div>
   <div id="historyTab-encounters" style="display:none;"><div id="encounter-list"></div><div id="encounter-empty" style="display:none;color:var(--muted);font-size:13px;padding:13px 0;">No encounters yet.</div></div>
   <div id="historyTab-transcripts" style="display:none;"><div id="transcript-list"></div><div id="transcript-empty" style="display:none;color:var(--muted);font-size:13px;padding:13px 0;">No transcripts yet.</div></div>
   <div id="historyTab-assessments" style="display:none;"><div id="history-list"></div><div id="assessment-empty" style="display:none;color:var(--muted);font-size:13px;padding:13px 0;">No assessments yet.</div></div>
   <div id="historyTab-drreports" style="display:none;"><div id="drreport-list"></div><div id="drreport-empty" style="display:none;color:var(--muted);font-size:13px;padding:13px 0;">No doctor reports yet. Use "Contact doctor" to generate your first one.</div></div>
+  <div id="historyTab-commitments" style="display:none;"><div id="commitments-list"></div><div id="commitments-empty" style="display:none;padding:30px 0;text-align:center;"><div style="font-size:32px;margin-bottom:10px;">🤝</div><div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:6px;">No commitments yet</div><div style="font-size:13px;color:var(--muted);max-width:320px;margin:0 auto;line-height:1.6;">Toggle a signal on the dashboard and tap "Talk to Dr. Sage" to start a voice consultation. Your commitment gets saved here automatically.</div></div></div>
 </div>
 
 <!-- SETTINGS PAGE -->
@@ -903,6 +905,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
 
 <div id="toast"><div class="toast-title" id="toastTitle"></div><div class="toast-body" id="toastBody"></div></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="/js/commitments.js"></script>
 <script src="/js/voice-consult.js"></script>
 <script src="/js/app.js"></script>
 <script src="/js/signals.js"></script>

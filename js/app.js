@@ -82,6 +82,7 @@ function initApp(){
   setGreeting();
   expireOldDismissals();
   buildSignalsPanel(data, profile, goals);
+  if(typeof runCommitmentFollowUps==='function') runCommitmentFollowUps(data,profile);
   const today=new Date(),isMon=today.getDay()===1,lw=localStorage.getItem('sh_nl'),tw=today.toISOString().slice(0,10);
   if(isMon&&lw!==tw){localStorage.setItem('sh_nl',tw);setTimeout(()=>openWeekly(),1400);}
 }
@@ -571,7 +572,7 @@ function sendToDr(){
 }
 
 /* ─── RECORDS ───────────────────────────────────── */
-function switchTab(tab){['actions','encounters','transcripts','assessments','drreports'].forEach(t=>{const el=document.getElementById('historyTab-'+t);if(el)el.style.display=t===tab?'block':'none';const b=document.getElementById('tab-'+t);if(b)b.classList.toggle('active',t===tab);});}
+function switchTab(tab){if(tab==='commitments'&&typeof renderCommitmentsTab==='function')setTimeout(renderCommitmentsTab,50);['actions','encounters','transcripts','assessments','drreports','commitments'].forEach(t=>{const el=document.getElementById('historyTab-'+t);if(el)el.style.display=t===tab?'block':'none';const b=document.getElementById('tab-'+t);if(b)b.classList.toggle('active',t===tab);});}
 function toggleTranscript(i){const b=document.getElementById('tb'+i),a=document.getElementById('ta'+i);if(b){const o=b.classList.toggle('open');if(a)a.textContent=o?'▲':'▼';}}
 function toggleEncounter(i){const b=document.getElementById('henc'+i);if(b){const o=b.classList.toggle('open');const btn=document.getElementById('hebtn'+i);if(btn)btn.textContent=o?'▲ collapse':'▼ expand';}}
 function toggleAction(id){const items=JSON.parse(localStorage.getItem('sh_actions')||'[]');const i=items.findIndex(x=>String(x.id)===String(id));if(i>=0&&!items[i].autoCheck){items[i].done=!items[i].done;localStorage.setItem('sh_actions',JSON.stringify(items));populateHistory();}}
