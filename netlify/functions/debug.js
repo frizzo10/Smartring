@@ -15,3 +15,5 @@ exports.handler = async (event) => {
     })
   };
 };
+
+// Also export a TTS test
