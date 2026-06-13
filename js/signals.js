@@ -478,7 +478,11 @@ function buildSignalsPanel(data, profile, goals) {
           <div class="sig-action-text">${sig.actionHow}</div>
         </div>
         <div class="sig-btns">
-          <button onclick="openVoiceConsult('${sig.id}', '${sig.title}', '${sig.askSage}')"
+          <button
+            data-sig-id="${sig.id}"
+            data-sig-title="${sig.title}"
+            data-sig-question="${sig.askSage}"
+            onclick="openVoiceConsultFromBtn(this)"
             style="display:flex;align-items:center;gap:8px;background:linear-gradient(135deg,var(--blue),var(--cyan));color:white;border:none;border-radius:10px;padding:10px 20px;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 3px 10px rgba(29,111,164,.25);">
             🎤 Talk to Dr. Sage
           </button>

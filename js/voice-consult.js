@@ -456,3 +456,11 @@ function closeVoiceConsult() {
 
   document.getElementById('voiceModal').style.display = 'none';
 }
+
+/* ── BUTTON HELPER — reads data attributes safely ── */
+function openVoiceConsultFromBtn(btn) {
+  const id    = btn.getAttribute('data-sig-id');
+  const title = btn.getAttribute('data-sig-title');
+  const q     = btn.getAttribute('data-sig-question');
+  openVoiceConsult(id, title, q);
+}
