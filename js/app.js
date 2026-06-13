@@ -101,6 +101,7 @@ function initApp(){
   expireOldDismissals();
   buildSignalsPanel(data, profile, goals);
   if(typeof runCommitmentFollowUps==='function') runCommitmentFollowUps(data,profile);
+  if(typeof checkTestFollowUps==='function') setTimeout(checkTestFollowUps, 5000);
 
   // Build state map — clean structured context for all AI calls
   const firedSigsForMap = JSON.parse(localStorage.getItem('sh_active_signals') || '[]');
@@ -417,15 +418,16 @@ function toggleVoice(){voiceOn=!voiceOn;const b=document.getElementById('chatVoi
 /* ─── WALKTHROUGH ───────────────────────────────── */
 function buildWtSteps(){
   const t=data[data.length-1],age=profile.age||48,name=profile.name||'Frank';
-  const ca=Math.max(25,age+(t.rhr<60?-3:t.rhr>72?3:0)+(t.hrv>60?-2:t.hrv<40?2:0)+(t.spo2<95?2:0));
+  const gradeMap={'A':'excellent','B':'good','C':'fair','D':'needs attention'};
+  const stateMap=typeof loadStateMap==='function'?loadStateMap():null;
+  const grade=stateMap?.health_grade||'B';
   return[
-    {title:'Overview',text:`Good ${new Date().getHours()<12?'morning':'afternoon'}, ${name}. SageHealth sits between your health coach and your doctor. We monitor your TK30 ring data daily, track trends over time, and generate reports you can send your physician before every appointment. Today's readiness is ${t.readiness} out of 100.`},
-    {title:'Blood pressure',text:`Your blood pressure today is ${t.bpSys} over ${t.bpDia} millimeters of mercury. ${iBP(t.bpSys,t.bpDia)} This is measured by your TK30 ring using pulse wave velocity — meaningful for trend tracking. For clinical accuracy, confirm with an arm cuff.`},
-    {title:'Blood oxygen',text:`SpO₂ is ${t.spo2} percent. ${iSpO2(t.spo2)} You had ${t.apnea} airway events overnight. ${t.apnea===0?'Clean night.':t.apnea<=2?'Within acceptable range.':'Above target — side-sleeping and avoiding alcohol before bed are the most effective interventions.'}`},
-    {title:'Body temperature',text:`Body temperature overnight was ${t.tempF} degrees Fahrenheit. Your baseline is ${t.tempBaseF}°F. Deviation today is ${(t.tempDev*9/5)>=0?'+':''}${(t.tempDev*9/5).toFixed(1)}°F. ${iTemp(t.tempF,t.tempDev,t.tempBaseF)} This is the earliest illness warning available — your ring detects it 12 to 48 hours before you feel symptoms.`},
-    {title:'Heart rate & HRV',text:`Resting heart rate was ${t.rhr} beats per minute — ${t.rhr<60?'excellent, in the athletic range':t.rhr<70?'healthy':'mildly elevated'}. HRV was ${t.hrv} milliseconds — your body's internal stress meter. At ${t.hrv}ms you're ${t.hrv>=60?'above average, excellent recovery':t.hrv>=45?'within normal range':'slightly below optimal'}.`},
-    {title:'Sleep',text:`You slept ${t.sleep} hours with ${t.deep} hours of deep sleep and ${t.rem} hours of REM. ${iSleep(t.sleepScore,t.sleep,t.deep,t.rem)} Check the Sleep page for your 7-night trend.`},
-    {title:'Doctor reports',text:`${name}, SageHealth builds a complete health picture over time. When you're ready, hit "Contact doctor" to generate a physician-ready report with your trends, findings, and what to discuss. After your appointment, tell us what your doctor said — we update your record and follow up on any recommended tests.`},
+    {title:'Welcome',text:`Hi ${name}. I am Dr. Sage, your personal health advisor. I live inside your SageHealth app and I watch your ring data every single day. My job is not to replace your doctor — it is to make sure that every time you see your doctor, you arrive prepared, informed, and with 90 days of data they can actually use. Let me show you around.`},
+    {title:'What SageHealth does',text:`Your TK30 ring measures your heart rate, heart rate variability, blood pressure, blood oxygen, skin temperature, and sleep — continuously, while you sleep. I analyze those patterns daily. When I notice something worth paying attention to, I tell you what it means, what to ask your doctor, and I document it in a report they can read in 60 seconds.`},
+    {title:'Your health today',text:`Here is where you stand today, ${name}. Your overall health grade is ${grade} — ${gradeMap[grade]||'good'}. Your readiness is ${t.readiness} out of 100. Blood pressure is ${t.bpSys} over ${t.bpDia}. HRV is ${t.hrv} milliseconds. These numbers tell a story — and the longer you wear the ring, the clearer that story gets.`},
+    {title:'How I talk to you',text:`When I notice a pattern — a temperature spike, a blood pressure trend, a change in your sleep — I will let you know directly. You can tap my name to start a voice conversation. I will ask you what is going on in your life. We will build a plan together. And I will check back in to see if it is working.`},
+    {title:'The doctor report',text:`This is the feature I am most proud of. Every time you have a doctor's appointment, tap Download Doctor Report. I will generate a clean, clinical PDF with your trends, my findings, and specific questions worth raising. Your doctor will actually read it — because it is concise, data-backed, and formatted the way they think. That moment — handing your doctor a real report — is what this is all for.`},
+    {title:'What to do now',text:`${name}, here is what I'd suggest. Wear your ring every night. Open the app every morning. When a signal appears on your dashboard, talk to me about it. And before your next doctor's visit — download the report. The longer you do this, the better prepared you will be. I am watching. I will be here when something matters.`},
   ];
 }
 function startWt(){wtSteps=buildWtSteps();wtIdx=0;document.getElementById('wtOverlay').classList.add('open');const pips=document.getElementById('wtPips');pips.innerHTML=wtSteps.map((_,i)=>`<div class="wt-pip" id="wp${i}"></div>`).join('');renderWt();}
@@ -720,6 +722,7 @@ async function generateDoctorReport() {
         profile,
         signals: firedSignals,
         commitments,
+        testResults: JSON.parse(localStorage.getItem('sh_test_results') || '{}'),
         reportDate: today
       })
     });
