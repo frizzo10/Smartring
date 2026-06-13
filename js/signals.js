@@ -382,6 +382,385 @@ const SIGNAL_PATTERNS = [
     disclaimer: 'Sleep stage data from ring sensors is an estimate. Clinical sleep studies provide the most accurate staging.'
   },
 
+  // ── VASOVAGAL SYNCOPE / ORTHOSTATIC HYPOTENSION ────────
+  {
+    id: 'vasovagal_syncope',
+    level: 'watch',
+    icon: '💫',
+    title: 'Vasovagal syncope risk',
+    category: 'Cardiovascular',
+    detect(data) {
+      const t = data[data.length-1];
+      const prev = data[data.length-2] || t;
+      // Sudden BP dip + reflexive HR spike after inactivity
+      const bpDrop = (prev.bpSys - t.bpSys) > 8;
+      const hrSpike = (t.rhr - prev.rhr) > 6;
+      const lowSteps = t.steps < 3000;
+      return bpDrop && hrSpike && lowSteps;
+    },
+    watchingFor: 'Blood pressure drops paired with sudden HR spikes following periods of inactivity',
+    narrative(data) {
+      const t = data[data.length-1];
+      const prev = data[data.length-2] || t;
+      const drop = prev.bpSys - t.bpSys;
+      return `Your ring detected a <strong>sharp drop in blood pressure (${drop} mmHg) paired with a reflexive heart rate spike</strong> following a period of low activity. This pattern is associated with vasovagal syncope — the mechanism behind fainting when standing up too quickly or after prolonged sitting. Your nervous system is overcompensating. It's worth knowing about before it catches you off guard.`;
+    },
+    drivers(data) {
+      const t = data[data.length-1];
+      const prev = data[data.length-2] || t;
+      return [
+        { label: `BP drop ${prev.bpSys}→${t.bpSys} mmHg`, flagged: true },
+        { label: `HR spike ${prev.rhr}→${t.rhr} BPM`, flagged: true },
+        { label: `Steps ${t.steps.toLocaleString()} (low activity)`, flagged: t.steps < 3000 },
+      ];
+    },
+    action: 'Stand up slowly. Stay hydrated. Test with a simple stand-up check.',
+    actionHow: `<strong>Right now:</strong> When rising from sitting or lying, pause at the edge for 10 seconds before standing fully. Drink 16oz of water — dehydration makes this significantly worse. <strong>To test:</strong> Sit for 5 minutes, stand up, note if you feel dizzy or see spots. If yes, mention it to your doctor — they can do a simple tilt-table test. <strong>Longer term:</strong> Compression socks and increased salt + water intake reduce episodes in most people.`,
+    askSage: 'My blood pressure dropped suddenly and my heart rate spiked — what does that mean?',
+    disclaimer: 'This pattern is a risk indicator, not a diagnosis of vasovagal syncope. Only a physician can diagnose.'
+  },
+
+  // ── PAROXYSMAL AFIB DETECTION ──────────────────────────
+  {
+    id: 'afib_paroxysmal',
+    level: 'urgent',
+    icon: '⚡',
+    title: 'Paroxysmal AFib detection',
+    category: 'Cardiovascular',
+    detect(data) {
+      const t = data[data.length-1];
+      const prev = data[data.length-2] || t;
+      // Sudden erratic HRV spike (high variability) + elevated HR at rest
+      const erraticHRV = t.hrv > prev.hrv * 1.5 && t.hrv > 80;
+      const elevatedHR = t.rhr > 72;
+      const recentDrop = prev.hrv < 55;
+      return erraticHRV && elevatedHR && recentDrop;
+    },
+    watchingFor: 'Irregular R-R intervals — sudden erratic HRV spikes with elevated resting HR at rest',
+    narrative(data) {
+      const t = data[data.length-1];
+      const prev = data[data.length-2] || t;
+      return `Your ring detected an unusual pattern last night — <strong>a sudden spike in HRV variability (${prev.hrv}ms → ${t.hrv}ms) paired with an elevated resting heart rate of ${t.rhr} BPM while at rest</strong>. This pattern — erratic beat-to-beat variation at an elevated rate — is consistent with intermittent atrial fibrillation. Paroxysmal AFib comes and goes, which is why most people don't know they have it. It significantly increases stroke risk. This needs a proper ECG reading today.`;
+    },
+    drivers(data) {
+      const t = data[data.length-1];
+      const prev = data[data.length-2] || t;
+      return [
+        { label: `HRV jumped ${prev.hrv}→${t.hrv}ms (erratic)`, flagged: true, urgent: true },
+        { label: `RHR ${t.rhr} BPM at rest`, flagged: t.rhr > 72, urgent: true },
+        { label: `Prior HRV ${prev.hrv}ms (baseline)`, flagged: false },
+      ];
+    },
+    action: 'Get a clinical ECG today — do not wait',
+    actionHow: `<strong>Today:</strong> A KardiaMobile (AliveCor) personal ECG device costs $89 and gives you a medical-grade single-lead ECG in 30 seconds. Available on Amazon with next-day delivery. Alternatively, walk into any urgent care — they can do a 12-lead ECG on the spot, usually $50-100 without insurance. <strong>Do not ignore this signal.</strong> Paroxysmal AFib is intermittent — it may not show on your next reading, but documenting it is important. Untreated AFib is one of the leading causes of stroke.`,
+    askSage: 'My ring detected an unusual heart rhythm pattern last night — how worried should I be?',
+    disclaimer: 'Ring PPG sensors cannot definitively diagnose AFib. This is a screening signal requiring clinical ECG confirmation. If you feel palpitations, chest pain, or shortness of breath, call 911.'
+  },
+
+  // ── CARDIOVASCULAR RECOVERY DECLINE ───────────────────
+  {
+    id: 'cv_recovery_decline',
+    level: 'info',
+    icon: '📉',
+    title: 'Cardiovascular recovery declining',
+    category: 'Fitness & Recovery',
+    detect(data) {
+      if (data.length < 5) return false;
+      // HRR proxy: resting HR trending up while readiness trending down over 14 days
+      const earlyRHR = avg(data.slice(0,3), 'rhr');
+      const recentRHR = avg(data.slice(-3), 'rhr');
+      const earlyReady = avg(data.slice(0,3), 'readiness');
+      const recentReady = avg(data.slice(-3), 'readiness');
+      return (recentRHR - earlyRHR) >= 3 && (earlyReady - recentReady) >= 8;
+    },
+    watchingFor: 'Heart rate recovery trend — RHR rising + readiness falling over the past week',
+    narrative(data) {
+      const earlyRHR = avg(data.slice(0,3), 'rhr');
+      const recentRHR = avg(data.slice(-3), 'rhr');
+      const earlyReady = avg(data.slice(0,3), 'readiness');
+      const recentReady = avg(data.slice(-3), 'readiness');
+      return `Over the past week your resting heart rate has <strong>climbed from ${earlyRHR} to ${recentRHR} BPM</strong> while your readiness score has <strong>dropped from ${earlyReady} to ${recentReady}</strong>. This trajectory — heart working harder, body recovering less — is the signature of declining cardiovascular fitness. It could be overtraining, cumulative fatigue, illness onset, or deconditioning. The direction matters more than any single number.`;
+    },
+    drivers(data) {
+      return [
+        { label: `RHR ${avg(data.slice(0,3),'rhr')}→${avg(data.slice(-3),'rhr')} BPM`, flagged: true },
+        { label: `Readiness ${avg(data.slice(0,3),'readiness')}→${avg(data.slice(-3),'readiness')}`, flagged: true },
+        { label: `HRV ${avg(data.slice(0,3),'hrv')}→${avg(data.slice(-3),'hrv')}ms`, flagged: avg(data.slice(-3),'hrv') < avg(data.slice(0,3),'hrv') },
+      ];
+    },
+    action: 'Two recovery days, then reintroduce zone 2 cardio',
+    actionHow: `<strong>Days 1-2:</strong> Complete rest — walk only, no structured exercise. Prioritize 8h sleep. <strong>Day 3 onwards:</strong> Reintroduce exercise at 60% of normal intensity. Zone 2 cardio (conversational pace) specifically improves heart rate recovery faster than high-intensity work. <strong>Track weekly:</strong> If RHR doesn't begin declining within 10 days of recovery, see your doctor — a thyroid panel and basic cardiac workup are appropriate.`,
+    askSage: 'My heart rate has been rising and my recovery has been declining — what is happening?',
+    disclaimer: 'Cardiovascular recovery metrics are estimates based on resting HR and readiness proxies, not clinical heart rate recovery testing.'
+  },
+
+  // ── HORMONAL / OVULATION SHIFT ─────────────────────────
+  {
+    id: 'hormonal_ovulation',
+    level: 'info',
+    icon: '🌸',
+    title: 'Hormonal / ovulation shift',
+    category: 'Metabolic Health',
+    detect(data, profile) {
+      if (profile.sex !== 'Female') return false;
+      if (data.length < 5) return false;
+      // Biphasic temperature shift: dip then sustained rise
+      const temps = data.map(d => d.tempC);
+      const mid = Math.floor(temps.length / 2);
+      const firstHalf = temps.slice(0, mid);
+      const secondHalf = temps.slice(mid);
+      const avgFirst = firstHalf.reduce((s,t)=>s+t,0)/firstHalf.length;
+      const avgSecond = secondHalf.reduce((s,t)=>s+t,0)/secondHalf.length;
+      const shift = avgSecond - avgFirst;
+      return shift >= 0.25; // ~0.5°F sustained rise
+    },
+    watchingFor: 'Biphasic overnight temperature pattern — dip then sustained rise indicating luteal phase',
+    narrative(data, profile) {
+      const temps = data.map(d => d.tempF);
+      const avgTemp = avgF(data, 'tempF');
+      return `Your overnight body temperature has shown a <strong>sustained upward shift this week</strong> — averaging ${avgTemp}°F — consistent with the luteal phase following ovulation. The TK30's overnight temperature sensor can detect the biphasic shift that indicates hormonal changes across your cycle. Irregularities in this pattern — especially an absent temperature rise — can indicate anovulatory cycles worth discussing with your OB/GYN.`;
+    },
+    drivers(data) {
+      return [
+        { label: `Avg temp ${avgF(data,'tempF')}°F (elevated)`, flagged: true },
+        { label: `Temp trend rising`, flagged: true },
+        { label: `Consistent overnight pattern`, flagged: false },
+      ];
+    },
+    action: 'Log this pattern — bring it to your next OB/GYN visit',
+    actionHow: `This temperature pattern is consistent with normal luteal phase. <strong>To track your cycle:</strong> The ring's temperature data is the same method used by fertility apps like Natural Cycles (FDA-cleared). Log this week's readings in a cycle tracking app to build your personal baseline. <strong>When to mention to your doctor:</strong> If the temperature rise is absent for 2+ consecutive cycles, or if the pattern is highly irregular, mention it — it can indicate hormonal imbalance or anovulation.`,
+    askSage: 'My overnight temperature has been elevated this week in a pattern — what does that mean for my cycle?',
+    disclaimer: 'Temperature-based cycle tracking is an informational tool, not a contraceptive method or diagnostic. Consult your physician for reproductive health concerns.'
+  },
+
+  // ── CIRCADIAN PHASE DELAY ──────────────────────────────
+  {
+    id: 'circadian_phase_delay',
+    level: 'watch',
+    icon: '🕐',
+    title: 'Circadian phase delay',
+    category: 'Sleep Health',
+    detect(data) {
+      // Proxy: high RHR that doesn't drop until late + poor deep sleep early night
+      const t = data[data.length-1];
+      const avgRHR = avg(data, 'rhr');
+      const highNightHR = t.rhr > avgRHR + 4;
+      const lowDeep = t.deep < 0.8;
+      const lateSleep = avgF(data,'sleep') < 6.5;
+      return highNightHR && lowDeep && lateSleep;
+    },
+    watchingFor: 'Sleep onset latency — elevated HR late into sleep cycle + poor early-night deep sleep',
+    narrative(data) {
+      const t = data[data.length-1];
+      return `Your ring detected signs of <strong>delayed sleep phase</strong> — your resting heart rate stayed elevated at ${t.rhr} BPM late into the night instead of dropping early, and your deep sleep of ${t.deep}h was concentrated later than optimal. This is your internal clock running behind your actual bedtime. It is common in night owls, people with late screen exposure, or those whose schedule has recently shifted. Left uncorrected it compounds into chronic sleep debt.`;
+    },
+    drivers(data) {
+      const t = data[data.length-1];
+      return [
+        { label: `RHR ${t.rhr} BPM late in sleep`, flagged: true },
+        { label: `Deep sleep ${t.deep}h (late-shifted)`, flagged: t.deep < 0.8 },
+        { label: `Sleep avg ${avgF(data,'sleep')}h`, flagged: avgF(data,'sleep') < 6.5 },
+      ];
+    },
+    action: 'Light exposure reset — 10 minutes of bright light within 30 minutes of waking',
+    actionHow: `<strong>This morning:</strong> Go outside for 10 minutes within 30 minutes of waking. Morning bright light is the strongest signal your circadian clock responds to — it shifts your sleep phase earlier within 2-3 days. <strong>Tonight:</strong> No screens 60 minutes before bed, or use blue-light blocking glasses. Dim your lights after 9pm. <strong>Consistency:</strong> Same wake time every day — even weekends — is the most powerful circadian anchor. Your ring will show the shift in your HRV and deep sleep timing within a week.`,
+    askSage: 'My sleep pattern seems to be shifted late — what can I do to reset my circadian rhythm?',
+    disclaimer: 'Circadian phase assessment from ring data is an estimate. Formal diagnosis of circadian rhythm disorders requires clinical evaluation.'
+  },
+
+  // ── UPPER AIRWAY RESISTANCE ────────────────────────────
+  {
+    id: 'upper_airway_resistance',
+    level: 'watch',
+    icon: '🫁',
+    title: 'Upper airway resistance',
+    category: 'Sleep Health',
+    detect(data) {
+      const t = data[data.length-1];
+      // SpO2 near-dips (not full apnea) + elevated apnea events + poor REM
+      const spo2Watch = t.spo2 < 96 && t.spo2 >= 93;
+      const apneaWatch = t.apnea >= 1 && t.apnea <= 3;
+      const remLow = t.rem < 1.3;
+      return spo2Watch && apneaWatch && remLow;
+    },
+    watchingFor: 'Minor SpO₂ dips + micro-arousals during REM — precursor pattern to full sleep apnea',
+    narrative(data) {
+      const t = data[data.length-1];
+      return `Your ring picked up a subtle but significant pattern — <strong>SpO₂ dipping to ${t.spo2}% with ${t.apnea} airway events</strong> that don't quite reach full apnea threshold, paired with fragmented REM sleep of only ${t.rem}h. This is upper airway resistance syndrome — your airway is narrowing during sleep without fully collapsing. It's the precursor to obstructive sleep apnea, and the stage where intervention is most effective. Most people at this stage are dismissively told they don't have apnea — but their sleep quality and daytime energy tell a different story.`;
+    },
+    drivers(data) {
+      const t = data[data.length-1];
+      return [
+        { label: `SpO₂ ${t.spo2}% (near-dipping)`, flagged: t.spo2 < 96 },
+        { label: `${t.apnea} airway events`, flagged: t.apnea >= 1 },
+        { label: `REM ${t.rem}h (fragmented)`, flagged: t.rem < 1.3 },
+      ];
+    },
+    action: 'Side sleeping + nasal strips tonight — home sleep study this week',
+    actionHow: `<strong>Tonight:</strong> Sleep on your side — it reduces airway resistance by 30-40% in most people. Try a nasal dilator strip (Breathe Right, $10 at any pharmacy). <strong>This week:</strong> Order a home sleep study — WatchPAT ONE or Lofta mail you a device. Upper airway resistance syndrome is frequently missed by standard sleep studies. Request that the physician specifically evaluate for UARS, not just apnea-hypopnea index (AHI). <strong>Do not use alcohol or sedatives</strong> — they relax airway muscles significantly.`,
+    askSage: 'My ring is showing minor breathing disruptions during sleep — what is upper airway resistance and should I be concerned?',
+    disclaimer: 'Ring-based detection cannot diagnose UARS. A formal sleep study is required. This is a screening signal only.'
+  },
+
+  // ── AUTONOMIC BURNOUT PATTERN ──────────────────────────
+  {
+    id: 'autonomic_burnout',
+    level: 'watch',
+    icon: '🔋',
+    title: 'Autonomic burnout pattern',
+    category: 'Mental Health & Recovery',
+    detect(data, profile) {
+      if (data.length < 5) return false;
+      const age = profile.age || 48;
+      const hrvNorm = 65 - age * 0.5;
+      // Progressive multi-day HRV decline + RHR creeping up + low activity
+      const hrvTrend = data.map(d => d.hrv);
+      const declining = hrvTrend.every((v,i) => i===0 || v <= hrvTrend[i-1] + 3);
+      const avgRHR = avg(data,'rhr');
+      const avgSteps = avg(data,'steps');
+      const avgHRV = avg(data,'hrv');
+      return declining && avgRHR > 70 && avgHRV < hrvNorm - 10 && avgSteps < 6000;
+    },
+    watchingFor: 'Progressive daily HRV decline + rising RHR + low activity — sympathetic overactivation pattern',
+    narrative(data, profile) {
+      const age = profile.age || 48;
+      const hrvNorm = Math.round(65 - age * 0.5);
+      const avgHRV = avg(data, 'hrv');
+      const avgRHR = avg(data, 'rhr');
+      return `Your ring has tracked a <strong>progressive decline in HRV every day this week</strong> — now at ${avgHRV}ms against your age-expected norm of ~${hrvNorm}ms — while your resting heart rate has climbed to ${avgRHR} BPM. Even on low-activity days your nervous system is not recovering. This is autonomic burnout — your sympathetic nervous system (fight-or-flight) is chronically overactivated and your parasympathetic (rest-and-recover) is losing ground. The body keeps going but the tank is emptying.`;
+    },
+    drivers(data, profile) {
+      const age = profile.age || 48;
+      const hrvNorm = Math.round(65 - age * 0.5);
+      return [
+        { label: `HRV ${avg(data,'hrv')}ms declining daily`, flagged: true, urgent: false },
+        { label: `RHR ${avg(data,'rhr')} BPM creeping up`, flagged: avg(data,'rhr') > 70 },
+        { label: `Steps ${avg(data,'steps').toLocaleString()}/day (low)`, flagged: avg(data,'steps') < 6000 },
+        { label: `Age norm HRV ~${hrvNorm}ms`, flagged: false },
+      ];
+    },
+    action: 'Full rest protocol — 72 hours minimum before reassessing',
+    actionHow: `<strong>The next 3 days:</strong> No structured exercise. No alcohol. 8+ hours sleep with consistent bedtime. Cold exposure (cold shower, cold water on face) activates the parasympathetic system — try 30 seconds of cold water on your face and neck morning and evening. <strong>Breathwork:</strong> 4-7-8 breathing (inhale 4, hold 7, exhale 8) for 5 minutes before bed directly activates the vagus nerve and raises HRV measurably within 20 minutes. <strong>If this persists beyond 2 weeks</strong> with no improvement, consider talking to your doctor about burnout evaluation — cortisol testing is a reasonable next step.`,
+    askSage: 'My HRV has been declining every single day this week. What is happening to my nervous system?',
+    disclaimer: 'Autonomic burnout is a clinical concept. This signal is observational. Diagnosis requires clinical evaluation.'
+  },
+
+  // ── SUBSTANCE CLEARANCE STRAIN ─────────────────────────
+  {
+    id: 'substance_clearance',
+    level: 'info',
+    icon: '🍷',
+    title: 'Substance clearance strain',
+    category: 'Mental Health & Recovery',
+    detect(data) {
+      const t = data[data.length-1];
+      // Elevated temp + flat high HR all night + near-zero deep and REM
+      const tempSpike = t.tempDev > 0.45;
+      const flatHighHR = t.rhr > 72;
+      const noDeep = t.deep < 0.6;
+      const noREM = t.rem < 0.7;
+      return tempSpike && flatHighHR && noDeep && noREM;
+    },
+    watchingFor: 'Temperature spike + flat elevated HR all night + near-total deep/REM suppression',
+    narrative(data) {
+      const t = data[data.length-1];
+      const devF = ((t.tempDev||0) * 9/5).toFixed(1);
+      return `Last night your ring recorded a pattern consistent with <strong>alcohol or substance metabolism strain</strong> — body temperature +${devF}°F above baseline, heart rate ${t.rhr} BPM staying flat all night instead of dropping, and deep sleep of only ${t.deep}h with REM of ${t.rem}h. Alcohol is the most common cause. Even moderate consumption (2-3 drinks) produces this signature. Your liver metabolizing alcohol raises core temperature, keeps your heart rate elevated, and almost completely eliminates deep and REM sleep — regardless of how fast you fell asleep.`;
+    },
+    drivers(data) {
+      const t = data[data.length-1];
+      const devF = ((t.tempDev||0) * 9/5).toFixed(1);
+      return [
+        { label: `Temp +${devF}°F above baseline`, flagged: true },
+        { label: `HR ${t.rhr} BPM flat all night`, flagged: t.rhr > 72 },
+        { label: `Deep sleep ${t.deep}h`, flagged: t.deep < 0.6, urgent: true },
+        { label: `REM ${t.rem}h`, flagged: t.rem < 0.7, urgent: true },
+      ];
+    },
+    action: 'Hydrate aggressively today — give your body 48 hours',
+    actionHow: `<strong>Today:</strong> 2-3 liters of water with electrolytes (Liquid IV, LMNT, or just water + a pinch of salt). Avoid caffeine for 6 hours — it compounds the cardiac strain. A light walk helps clear acetaldehyde (the toxic byproduct of alcohol metabolism). <strong>The data:</strong> Your ring just showed you exactly what one night of drinking costs you in sleep quality. That's information most people never get. Over time, this data tends to be more persuasive than any health advice.`,
+    askSage: 'My ring showed a terrible sleep pattern last night with high temperature and no deep sleep — what happened?',
+    disclaimer: 'This is an observational pattern, not a diagnosis. Many factors can cause this signature. This information is non-judgmental and educational only.'
+  },
+
+  // ── CIRCADIAN DISRUPTION ALERT ─────────────────────────
+  {
+    id: 'circadian_disruption',
+    level: 'info',
+    icon: '✈️',
+    title: 'Circadian disruption alert',
+    category: 'Sleep Health',
+    detect(data) {
+      if (data.length < 4) return false;
+      // RHR nadir and temp nadir shifting — proxy for jet lag / shift work
+      const earlyTemp = avgF(data.slice(0,3), 'tempC');
+      const recentTemp = avgF(data.slice(-3), 'tempC');
+      const earlyRHR = avg(data.slice(0,3), 'rhr');
+      const recentRHR = avg(data.slice(-3), 'rhr');
+      // Both shifting in the same direction significantly
+      const tempShift = Math.abs(recentTemp - earlyTemp) > 0.25;
+      const rhrShift = Math.abs(recentRHR - earlyRHR) > 4;
+      return tempShift && rhrShift;
+    },
+    watchingFor: 'Body temperature nadir and resting HR baseline shifting — jet lag or shift work pattern',
+    narrative(data) {
+      const earlyTemp = avgF(data.slice(0,3), 'tempF');
+      const recentTemp = avgF(data.slice(-3), 'tempF');
+      const earlyRHR = avg(data.slice(0,3), 'rhr');
+      const recentRHR = avg(data.slice(-3), 'rhr');
+      return `Your overnight temperature baseline has shifted from ${earlyTemp}°F to ${recentTemp}°F, and your resting heart rate pattern has moved from ${earlyRHR} to ${recentRHR} BPM — both indicators that your <strong>internal circadian clock has been disrupted</strong>. This is the biometric signature of jet lag, shift work, or a major schedule change. Your body's temperature and heart rate rhythms are anchored to your internal clock — when they shift, metabolic function, sleep architecture, and immune response all take a measurable hit.`;
+    },
+    drivers(data) {
+      return [
+        { label: `Temp baseline shifted ${avgF(data.slice(0,3),'tempF')}→${avgF(data.slice(-3),'tempF')}°F`, flagged: true },
+        { label: `RHR shifted ${avg(data.slice(0,3),'rhr')}→${avg(data.slice(-3),'rhr')} BPM`, flagged: true },
+        { label: `Pattern duration: ${data.length} days`, flagged: false },
+      ];
+    },
+    action: 'Morning light + consistent anchor times — 3-day reset protocol',
+    actionHow: `<strong>Day 1:</strong> Set your wake time for the timezone you want to be in and stick to it regardless of how you feel. 10 minutes of outdoor light within 30 minutes of waking. <strong>Melatonin:</strong> 0.5mg (low dose) 90 minutes before your target sleep time — this is more effective than the 5-10mg doses commonly sold. <strong>Avoid:</strong> Napping longer than 20 minutes, alcohol, and bright screens after 9pm. <strong>Your ring will confirm recovery</strong> — watch for your temperature nadir to stabilize and your RHR to return to baseline over 3-5 days.`,
+    askSage: 'My body temperature and heart rate patterns have shifted this week — could this be jet lag or something else?',
+    disclaimer: 'Circadian rhythm assessment from consumer rings is approximate. Travel history and schedule changes provide important context.'
+  },
+
+  // ── THERMAL / DEHYDRATION STRAIN ───────────────────────
+  {
+    id: 'thermal_dehydration',
+    level: 'watch',
+    icon: '🌡️',
+    title: 'Thermal / dehydration strain',
+    category: 'Fitness & Recovery',
+    detect(data) {
+      const t = data[data.length-1];
+      // Elevated temp + slightly low BP + elevated RHR — without immune activation markers
+      const tempElevated = t.tempDev > 0.28;
+      const bpLow = t.bpSys < 115;
+      const hrElevated = t.rhr > 68;
+      const noImmune = t.tempDev < 0.6; // not high enough for immune activation
+      return tempElevated && (bpLow || hrElevated) && noImmune;
+    },
+    watchingFor: 'Overnight temperature elevated without immune markers + BP trending low + HR elevated — heat/dehydration pattern',
+    narrative(data) {
+      const t = data[data.length-1];
+      const devF = ((t.tempDev||0) * 9/5).toFixed(1);
+      return `Your overnight data shows a pattern distinct from illness — <strong>temperature +${devF}°F above baseline, blood pressure at ${t.bpSys}/${t.bpDia} mmHg (trending low), and resting HR of ${t.rhr} BPM</strong>. Unlike immune activation, this combination without respiratory changes suggests thermal strain or dehydration. Your body is working harder to maintain core temperature while blood volume is reduced. This is common after intense exercise in heat, hot environments, or simply not drinking enough water yesterday.`;
+    },
+    drivers(data) {
+      const t = data[data.length-1];
+      const devF = ((t.tempDev||0) * 9/5).toFixed(1);
+      return [
+        { label: `Temp +${devF}°F (non-immune)`, flagged: true },
+        { label: `BP ${t.bpSys}/${t.bpDia} mmHg (low-normal)`, flagged: t.bpSys < 115 },
+        { label: `RHR ${t.rhr} BPM (elevated)`, flagged: t.rhr > 68 },
+      ];
+    },
+    action: 'Hydrate with electrolytes now — cool environment today',
+    actionHow: `<strong>Right now:</strong> 500ml of water with electrolytes before anything else — sodium and potassium are both depleted with dehydration and heat. Plain water alone can dilute electrolytes further. <strong>Today:</strong> Target 3 liters total fluid intake. Avoid alcohol and excessive caffeine. If you exercised hard yesterday in heat, your fluid deficit may be 1-2 liters. <strong>Cool down:</strong> A cool (not cold) shower lowers core temperature faster than cold water. Avoid intense exercise until your overnight temp returns to baseline. <strong>Warning sign:</strong> If you feel dizzy, have a headache, or your urine is dark yellow — drink immediately and rest.`,
+    askSage: 'My ring shows elevated temperature and heart rate but not the illness pattern — could this be dehydration?',
+    disclaimer: 'Dehydration and heat strain assessment from ring data is approximate. Severe symptoms require immediate medical attention.'
+  },
+
+
 ];
 
 /* ── HELPERS: avg and avgF defined in app.js ── */
