@@ -347,44 +347,25 @@ function sageSpeak(text) {
   });
 }
 
-/* ── ELEVENLABS TTS ──────────────────────────────── */
+/* ── AZURE TTS ──────────────────────────────────── */
 async function elevenLabsSpeak(text) {
   return new Promise(async (resolve, reject) => {
     try {
-      // engine label set after response
       const res = await fetch('/.netlify/functions/tts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text })
       });
 
-      if (!res.ok) { reject(new Error('TTS failed')); return; }
+      if (!res.ok) { reject(new Error('TTS ' + res.status)); return; }
 
-      const data = await res.json();
-      if (!data.audio) { reject(new Error('No audio')); return; }
-
-      // Decode base64 to audio
-      const binary = atob(data.audio);
-      const bytes = new Uint8Array(binary.length);
-      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-      const blob = new Blob([bytes.buffer], { type: 'audio/mpeg' });
+      // Response is now audio/mpeg directly — get as blob
+      const blob = await res.blob();
       const url = URL.createObjectURL(blob);
-
       const audio = new Audio();
-      audio.preload = 'auto';
       vcState.currentAudio = audio;
 
-      setVcStatus('Dr. Sage is speaking — Jenny Neural · Azure · tap mic to interrupt', 'speaking');
-
-      audio.oncanplaythrough = () => {
-        const p = audio.play();
-        if (p) p.catch(err => {
-          console.log('Safari blocked play:', err.message);
-          URL.revokeObjectURL(url);
-          vcState.currentAudio = null;
-          reject(err);
-        });
-      };
+      setVcStatus('Dr. Sage is speaking — Jenny Neural · Azure · tap to interrupt', 'speaking');
 
       audio.onended = () => {
         URL.revokeObjectURL(url);
@@ -394,16 +375,14 @@ async function elevenLabsSpeak(text) {
         setVcStatus('Tap the mic to respond', '');
         resolve();
       };
-
-      audio.onerror = (e) => {
-        console.log('Audio error:', e);
+      audio.onerror = () => {
         URL.revokeObjectURL(url);
         vcState.currentAudio = null;
-        reject(new Error('Audio playback failed'));
+        reject(new Error('Audio error'));
       };
-
       audio.src = url;
-      audio.load();
+      const p = audio.play();
+      if (p) p.catch(reject);
 
     } catch(e) {
       reject(e);

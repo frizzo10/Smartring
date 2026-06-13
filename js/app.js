@@ -381,7 +381,29 @@ function sageReadsECG(){
 }
 
 /* ─── VOICE ─────────────────────────────────────── */
-function speak(text,onEnd){if(!window.speechSynthesis)return;window.speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text.replace(/<[^>]*>/g,'').trim());u.rate=.92;u.pitch=1;const voices=window.speechSynthesis.getVoices();const pref=voices.find(v=>/samantha|karen|daniel|alex/i.test(v.name))||voices.find(v=>v.lang==='en-US')||voices[0];if(pref)u.voice=pref;if(onEnd)u.onend=onEnd;window.speechSynthesis.speak(u);}
+async function speak(text,onEnd){
+  const clean=text.replace(/<[^>]*>/g,'').replace(/[*_`#]/g,'').trim();
+  try{
+    const res=await fetch('/.netlify/functions/tts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:clean})});
+    if(!res.ok)throw new Error('TTS '+res.status);
+    setVoiceIndicator('azure-jenny');
+    const blob=await res.blob();
+    const url=URL.createObjectURL(blob);
+    const audio=new Audio();
+    audio.onended=()=>{URL.revokeObjectURL(url);if(onEnd)onEnd();};
+    audio.onerror=()=>{URL.revokeObjectURL(url);if(onEnd)onEnd();};
+    audio.src=url;
+    const p=audio.play();if(p)p.catch(()=>{URL.revokeObjectURL(url);if(onEnd)onEnd();});
+  }catch(e){
+    if(!window.speechSynthesis)return;
+    window.speechSynthesis.cancel();
+    const u=new SpeechSynthesisUtterance(clean);u.rate=.88;u.pitch=1;
+    const voices=window.speechSynthesis.getVoices();
+    const pref=voices.find(v=>/samantha|karen|daniel|alex/i.test(v.name))||voices.find(v=>v.lang==='en-US')||voices[0];
+    if(pref)u.voice=pref;if(onEnd)u.onend=onEnd;
+    window.speechSynthesis.speak(u);
+  }
+}
 function stopSpeech(){if(window.speechSynthesis)window.speechSynthesis.cancel();}
 function toggleVoice(){voiceOn=!voiceOn;const b=document.getElementById('chatVoiceBtn');b.textContent=voiceOn?'🔊':'🔇';b.classList.toggle('on',voiceOn);}
 
