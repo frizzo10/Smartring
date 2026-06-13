@@ -144,7 +144,7 @@ function buildDashboard(){
     return{grade:'D',label:'Needs attention',color:'var(--red)',bg:'var(--red-bg)',desc:'Multiple metrics outside healthy range'};
   })();
 
-  let br=`Readiness <strong>${t.readiness}/100</strong>.` BP <strong>${t.bpSys}/${t.bpDia}</strong> mmHg. SpO₂ <strong>${t.spo2}%</strong>. Temp <strong>${t.tempF}°F</strong>${t.tempDev>0.4?` <span class="warn">(+${(t.tempDev*9/5).toFixed(1)}°F above baseline — monitor)</span>`:' (baseline normal)'}. HRV <strong>${t.hrv}ms</strong>. `;
+  let br=`Readiness <strong>${t.readiness}/100</strong>. BP <strong>${t.bpSys}/${t.bpDia}</strong> mmHg. SpO₂ <strong>${t.spo2}%</strong>. Temp <strong>${t.tempF}°F</strong>${t.tempDev>0.4?` <span class="warn">(+${(t.tempDev*9/5).toFixed(1)}°F above baseline — monitor)</span>`:' (baseline normal)'}. HRV <strong>${t.hrv}ms</strong>. `;
   if(t.apnea>2)br+=`<span class="warn">⚠ ${t.apnea} airway events overnight.</span> `;
   const sl=Math.max(0,stepsGoal-t.steps);
   br+=sl>0?`<span class="warn">${sl.toLocaleString()} steps to goal.</span>`:`Step goal achieved. `;
