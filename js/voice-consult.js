@@ -64,14 +64,34 @@ function pickVoice() {
 /* ── DR. SAGE OPENING MESSAGE ────────────────────── */
 async function openingMessage(sigId, sigTitle, askQuestion) {
   const name = (typeof profile !== 'undefined' && profile.name) ? profile.name : 'Frank';
-  const t = (typeof data !== 'undefined') ? data[data.length - 1] : {};
-
-  const systemPrompt = buildSystemPrompt(sigId, sigTitle);
   const opening = `Hi ${name}. I've been watching your health data and wanted to talk with you about something I noticed — ${sigTitle.toLowerCase()}. ${askQuestion} I want to understand what's actually going on in your life before we talk about any kind of plan. Can you tell me a bit about how you've been feeling lately?`;
 
   addVcMessage('sage', opening);
   vcState.messages.push({ role: 'assistant', content: opening });
-  await sageSpeak(opening);
+
+  // Safari iOS blocks autoplay — require user gesture first
+  // Show a tap-to-hear button instead of autoplaying
+  const isSafariIOS = /iP(hone|ad|od)/.test(navigator.userAgent) && /WebKit/.test(navigator.userAgent);
+  if (isSafariIOS) {
+    setVcStatus('Tap 🔊 to hear Dr. Sage, or tap the mic to respond', '');
+    // Add a hear button
+    const hearBtn = document.createElement('button');
+    hearBtn.id = 'vc-hear-btn';
+    hearBtn.style.cssText = 'display:block;margin:8px auto 0;background:var(--blue-bg);border:1px solid rgba(29,111,164,.3);color:var(--blue);border-radius:10px;padding:8px 20px;font-size:13px;font-weight:600;cursor:pointer;';
+    hearBtn.textContent = '🔊 Hear Dr. Sage';
+    hearBtn.onclick = async () => {
+      hearBtn.remove();
+      setVcStatus('Dr. Sage is speaking — tap mic to interrupt', 'speaking');
+      setMicState('speaking');
+      vcState.isSpeaking = true;
+      await sageSpeak(opening);
+    };
+    const statusEl = document.getElementById('vc-status');
+    if (statusEl) statusEl.after(hearBtn);
+  } else {
+    // Desktop / Android — autoplay works fine
+    await sageSpeak(opening);
+  }
 }
 
 /* ── TOGGLE MIC ──────────────────────────────────── */
@@ -96,8 +116,25 @@ function toggleMic() {
   }
 }
 
+/* ── UNLOCK AUDIO ON FIRST GESTURE (Safari iOS) ─── */
+function unlockAudio() {
+  // Play a silent buffer to unlock Safari's audio context
+  // Must be called from a user gesture (tap)
+  if (window._audioUnlocked) return;
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const buf = ctx.createBuffer(1, 1, 22050);
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    src.connect(ctx.destination);
+    src.start(0);
+    ctx.resume().then(() => { window._audioUnlocked = true; });
+  } catch(e) {}
+}
+
 /* ── START LISTENING ─────────────────────────────── */
 function startListening() {
+  unlockAudio(); // Unlock audio context on first mic tap
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SpeechRecognition) {
     setVcStatus('Voice input not supported in this browser. Try Chrome or Safari.', '');
