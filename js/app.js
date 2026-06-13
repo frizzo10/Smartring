@@ -58,7 +58,13 @@ function iHRV(v,age){const exp=Math.round(65-age*.5);if(v>=exp+10)return`HRV of 
 function iSpO2(v){if(v>=97)return`SpO₂ of ${v}% is optimal. Your red blood cells are fully loaded with oxygen.`;if(v>=95)return`SpO₂ of ${v}% is normal. Lungs and circulation are working well.`;if(v>=92)return`SpO₂ of ${v}% is mildly below normal. Repeated readings below 95% during sleep can indicate breathing disruptions.`;return`SpO₂ of ${v}% is below the safe threshold. This requires medical attention.`;}
 function iBP(s,d){if(s<120)return`Blood pressure ${s}/${d} mmHg is optimal. Cardiovascular disease risk is lowest here.`;if(s<130)return`Blood pressure ${s}/${d} mmHg is normal. Heart is pumping at a healthy pressure.`;if(s<140)return`Blood pressure ${s}/${d} is elevated (Stage 1). Hydration, salt reduction, and daily movement are your primary levers.`;return`Blood pressure ${s}/${d} mmHg is in the high range. Consistent readings above 140 should be discussed with your doctor.`;}
 function iTemp(t,dev,base){if(Math.abs(dev)<=0.3)return`Body temp ${t}°F is within your personal baseline. No inflammatory signals overnight.`;if(dev>0.3&&dev<=0.5)return`Temp ${t}°F is slightly above baseline (+${(dev*9/5).toFixed(1)}°F). Watch zone — could be early immune activation.`;if(dev>0.5)return`Temp ${t}°F is ${(dev*9/5).toFixed(1)}°F above baseline — your ring's illness early warning. Expect symptoms in 12–48 hours if this continues.`;return`Temp slightly below baseline. Typical during high-quality deep sleep.`;}
-function iSleep(score,h,deep,rem){if(score>=85)return`${h}h sleep with ${deep}h deep and ${rem}h REM — excellent architecture. Physical repair and memory consolidation both supported.`;if(score>=70)return`${h}h with ${deep}h deep sleep — good overall. Deep sleep slightly below the 1.5h target.`;return`${h}h with ${deep}h deep sleep — below target. Sleep debt is cumulative.`;}
+function iSleep(score,h,deep,rem,data){
+  const avgDeep=data?avgF(data,'deep'):deep;const avgRem=data?avgF(data,'rem'):rem;const avgSleep=data?avgF(data,'sleep'):h;
+  const trend=data&&data.length>3?(data[data.length-1].deep>data[0].deep?'↑ improving':'↓ declining'):'';
+  if(score>=85)return`${h}h sleep last night with ${deep}h deep and ${rem}h REM — excellent. 7-day averages: ${avgSleep}h total, ${avgDeep}h deep, ${avgRem}h REM. Deep sleep is physical repair. REM is memory and emotion. Both are strong ${trend}.`;
+  if(score>=70)return`${h}h last night with ${deep}h deep sleep. 7-day average: ${avgDeep}h deep (target 1.5h). ${trend?'Trend: '+trend+'.':''} Consistent bedtime is the highest-impact change you can make.`;
+  return`${h}h last night with ${deep}h deep — below target. 7-day average: ${avgDeep}h deep. Sleep debt builds night over night. Each hour below optimal affects mood, metabolism, and immune function. ${trend?'Trend: '+trend+'.':''}`;
+}
 function iSteps(v,goal){const p=Math.round(v/goal*100);if(p>=100)return`Goal achieved: ${v.toLocaleString()} steps. Research links 8,000+ daily steps to significantly lower all-cause mortality.`;if(p>=75)return`${v.toLocaleString()} steps — ${p}% of goal. A 15-minute walk closes the gap.`;return`${v.toLocaleString()} steps — below target. Prolonged sitting independently raises cardiovascular risk.`;}
 
 /* ─── CHART CONFIG ──────────────────────────────── */
@@ -85,6 +91,23 @@ function setGreeting(){
   document.getElementById('dashDate').textContent=new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
   document.getElementById('sav').textContent=n[0].toUpperCase();
   document.getElementById('sname').textContent=n;
+  // Daily streak
+  const today2=new Date().toISOString().slice(0,10);
+  const lastCheck=localStorage.getItem('sh_last_checkin');
+  const streak=parseInt(localStorage.getItem('sh_streak')||'0');
+  if(lastCheck!==today2){
+    const yesterday=new Date(); yesterday.setDate(yesterday.getDate()-1);
+    const yStr=yesterday.toISOString().slice(0,10);
+    const newStreak=lastCheck===yStr?streak+1:1;
+    localStorage.setItem('sh_streak',newStreak.toString());
+    localStorage.setItem('sh_last_checkin',today2);
+    if(newStreak>1&&typeof showToast!=='undefined'){
+      setTimeout(()=>showToast('🔥 '+newStreak+' day streak!','Keep showing up — consistency is the whole game.'),1200);
+    }
+  }
+  const currentStreak=parseInt(localStorage.getItem('sh_streak')||'1');
+  const streakEl=document.getElementById('streak-badge');
+  if(streakEl)streakEl.textContent='🔥 '+currentStreak+' day streak';
 }
 
 /* ─── DASHBOARD ─────────────────────────────────── */
@@ -94,11 +117,39 @@ function buildDashboard(){
 
   // Briefing
   const ca=Math.max(25,age+(t.rhr<60?-3:t.rhr>72?3:0)+(t.hrv>60?-2:t.hrv<40?2:0)+(t.spo2<95?2:0));
-  let br=`Readiness <strong>${t.readiness}/100</strong>. BP <strong>${t.bpSys}/${t.bpDia}</strong> mmHg. SpO₂ <strong>${t.spo2}%</strong>. Temp <strong>${t.tempF}°F</strong>${t.tempDev>0.4?` <span class="warn">(+${(t.tempDev*9/5).toFixed(1)}°F above baseline — monitor)</span>`:' (baseline normal)'}. HRV <strong>${t.hrv}ms</strong>. `;
+  // Overall health grade A-D
+  const grade=(()=>{
+    let pts=0,max=0;
+    const age=profile.age||48;
+    // HRV vs age norm
+    const hrvNorm=65-age*.5; pts+=t.hrv>=hrvNorm+5?4:t.hrv>=hrvNorm?3:t.hrv>=hrvNorm-10?2:1; max+=4;
+    // RHR
+    pts+=t.rhr<60?4:t.rhr<70?3:t.rhr<80?2:1; max+=4;
+    // BP
+    pts+=t.bpSys<120?4:t.bpSys<130?3:t.bpSys<140?2:1; max+=4;
+    // SpO2
+    pts+=t.spo2>=97?4:t.spo2>=95?3:t.spo2>=92?2:1; max+=4;
+    // Sleep
+    pts+=t.sleep>=(goals.sleep||7.5)?4:t.sleep>=6.5?3:t.sleep>=5.5?2:1; max+=4;
+    // Deep sleep
+    pts+=t.deep>=1.5?4:t.deep>=1?3:t.deep>=0.7?2:1; max+=4;
+    // Steps
+    pts+=t.steps>=(goals.steps||8000)?4:t.steps>=6000?3:t.steps>=4000?2:1; max+=4;
+    // Temp
+    pts+=Math.abs(t.tempDev)<=0.3?4:Math.abs(t.tempDev)<=0.5?3:Math.abs(t.tempDev)<=0.8?2:1; max+=4;
+    const pct=pts/max;
+    if(pct>=0.875)return{grade:'A',label:'Excellent',color:'var(--green)',bg:'var(--green-bg)',desc:'All metrics in optimal range'};
+    if(pct>=0.75)return{grade:'B',label:'Good',color:'var(--blue)',bg:'var(--blue-bg)',desc:'Most metrics healthy, minor areas to watch'};
+    if(pct>=0.55)return{grade:'C',label:'Fair',color:'var(--amber)',bg:'var(--amber-bg)',desc:'Several metrics need attention'};
+    return{grade:'D',label:'Needs attention',color:'var(--red)',bg:'var(--red-bg)',desc:'Multiple metrics outside healthy range'};
+  })();
+
+  let br=`Readiness <strong>${t.readiness}/100</strong>.` BP <strong>${t.bpSys}/${t.bpDia}</strong> mmHg. SpO₂ <strong>${t.spo2}%</strong>. Temp <strong>${t.tempF}°F</strong>${t.tempDev>0.4?` <span class="warn">(+${(t.tempDev*9/5).toFixed(1)}°F above baseline — monitor)</span>`:' (baseline normal)'}. HRV <strong>${t.hrv}ms</strong>. `;
   if(t.apnea>2)br+=`<span class="warn">⚠ ${t.apnea} airway events overnight.</span> `;
   const sl=Math.max(0,stepsGoal-t.steps);
   br+=sl>0?`<span class="warn">${sl.toLocaleString()} steps to goal.</span>`:`Step goal achieved. `;
   if(ca<age)br+=`CV age estimate <strong>${ca}</strong> — ${age-ca} yrs younger than actual.`;
+  br+=` <span style="display:inline-flex;align-items:baseline;gap:5px;margin-left:4px;"><span style="font-size:15px;font-weight:800;color:${grade.color};">${grade.grade}</span><span style="font-size:11px;color:${grade.color};font-weight:600;">${grade.label}</span></span>`;
   document.getElementById('dailySummary').innerHTML=br;
 
   // 5 metric cards: steps, BP, SpO2, temp°F, HR (HR+HRV combined)
@@ -129,7 +180,9 @@ function buildDashboard(){
 
   function scale(val,min,max,zones){
     const pct=Math.max(0,Math.min(100,(val-min)/(max-min)*100));
-    return`<div class="dd-scale"><div class="dd-scale-track">${zones.map(z=>`<div style="flex:${z.to-z.from};background:${z.c};opacity:.65;"></div>`).join('')}</div><div style="position:relative;height:12px;"><div class="dd-scale-marker" style="left:${pct}%;"></div></div><div class="dd-scale-labels"><span>${min}</span><span>${max}</span></div></div>`;
+    const segs=zones.map(z=>`<div style="flex:${z.to-z.from};background:${z.c};opacity:.7;" title="${z.label||''}"></div>`).join('');
+    const labels=zones.map(z=>z.label?`<span style="flex:${z.to-z.from};text-align:center;font-size:9px;color:var(--muted);">${z.label}</span>`:'').join('');
+    return`<div class="dd-scale"><div class="dd-scale-track">${segs}</div><div style="position:relative;height:12px;"><div class="dd-scale-marker" style="left:${pct}%;"></div></div><div class="dd-scale-labels" style="display:flex;">${labels}</div><div style="display:flex;justify-content:space-between;font-size:9px;color:#aaa;margin-top:1px;"><span>${min}</span><span>You: ${val}</span><span>${max}</span></div></div>`;
   }
   function stat3(a,b,c){return[a,b,c].map(s=>`<div class="dd-stat"><div class="dd-stat-val" style="color:${s[2]||'var(--text)'}">${s[0]}</div><div class="dd-stat-label">${s[1]}</div></div>`).join('');}
   function ddCard(opts){
@@ -139,16 +192,16 @@ function buildDashboard(){
 
   setTimeout(()=>{
     document.getElementById('dd-r1').innerHTML=
-      ddCard({name:'Blood pressure (TK30)',value:t.bpSys+'/'+t.bpDia,unit:'mmHg',status:bpSt(t.bpSys),what:'Pressure your heart exerts on artery walls with each beat.',why:iBP(t.bpSys,t.bpDia),extra:scale(t.bpSys,80,160,[{from:0,to:25,c:'#9b72f5'},{from:25,to:31,c:'#00d68f'},{from:31,to:44,c:'#f59e0b'},{from:44,to:56,c:'#f05252'}]),cid:'dd-bp',bottom:stat3([avg(data,'bpSys')+' mmHg','7-day sys avg','var(--pink)'],[avg(data,'bpDia')+' mmHg','7-day dia avg','var(--purple)'],['<120/80','Optimal','var(--muted)'])})+
-      ddCard({name:'Blood oxygen SpO₂',value:t.spo2+'%',unit:'',status:spo2St(t.spo2),what:'Percentage of red blood cells carrying oxygen to organs and muscles.',why:iSpO2(t.spo2),extra:scale(t.spo2,85,100,[{from:0,to:7,c:'#f05252'},{from:7,to:10,c:'#f59e0b'},{from:10,to:15,c:'#00d68f'}]),cid:'dd-spo2',bottom:stat3([avgF(data,'spo2')+'%','7-day avg','var(--cyan)'],[t.apnea,'Apnea events',t.apnea>2?'var(--amber)':'var(--green)'],['95–100%','Normal','var(--muted)'])});
+      ddCard({name:'Blood pressure',value:t.bpSys+'/'+t.bpDia,unit:'mmHg',status:bpSt(t.bpSys),what:'Pressure your heart exerts on artery walls with each beat.',why:iBP(t.bpSys,t.bpDia),extra:scale(t.bpSys,80,160,[{from:0,to:25,c:'#9b72f5',label:'Low'},{from:25,to:31,c:'#00d68f',label:'Optimal'},{from:31,to:44,c:'#f59e0b',label:'Elevated'},{from:44,to:56,c:'#f05252',label:'High'}]),cid:'dd-bp',bottom:stat3([avg(data,'bpSys')+' mmHg','7-day sys avg','var(--pink)'],[avg(data,'bpDia')+' mmHg','7-day dia avg','var(--purple)'],['<120/80','Optimal','var(--muted)'])})+
+      ddCard({name:'Blood oxygen level (SpO₂)',value:t.spo2+'%',unit:'',status:spo2St(t.spo2),what:'Percentage of red blood cells carrying oxygen to organs and muscles.',why:iSpO2(t.spo2),extra:scale(t.spo2,85,100,[{from:0,to:7,c:'#f05252',label:'Danger'},{from:7,to:10,c:'#f59e0b',label:'Watch'},{from:10,to:15,c:'#00d68f',label:'Normal'}]),cid:'dd-spo2',bottom:stat3([avgF(data,'spo2')+'%','7-day avg','var(--cyan)'],[t.apnea,'Apnea events',t.apnea>2?'var(--amber)':'var(--green)'],['95–100%','Normal','var(--muted)'])});
 
     document.getElementById('dd-r2').innerHTML=
-      ddCard({name:'Body temperature (TK30)',value:t.tempF+'°F',unit:'',status:tempSt(t.tempDev),what:'Overnight skin temperature — the earliest illness warning available.',why:iTemp(t.tempF,t.tempDev,t.tempBaseF),extra:`<div style="font-size:12px;color:var(--muted);margin-top:8px;">Baseline: ${t.tempBaseF}°F · Deviation: <strong style="color:${t.tempDev>0.4?'var(--amber)':'var(--green)'}">${(t.tempDev*9/5)>=0?'+':''}${(t.tempDev*9/5).toFixed(1)}°F</strong></div>`,cid:'dd-temp',bottom:stat3([avgF(data,'tempF')+'°F','7-day avg','var(--amber)'],[t.tempBaseF+'°F','Baseline','var(--muted)'],[(t.tempDev>=0?'+':'')+((t.tempDev*9/5).toFixed(1))+'°F','Dev today',t.tempDev>0.4?'var(--amber)':'var(--green)'])})+
-      ddCard({name:'Resting heart rate',value:t.rhr,unit:'BPM',status:rhrSt(t.rhr),what:'How fast your heart beats completely at rest.',why:iRHR(t.rhr),extra:scale(t.rhr,40,110,[{from:0,to:20,c:'#9b72f5'},{from:20,to:30,c:'#00d68f'},{from:30,to:50,c:'#f59e0b'},{from:50,to:70,c:'#f05252'}]),cid:'dd-rhr',bottom:stat3([avg(data,'rhr')+' BPM','7-day avg','var(--cyan)'],[Math.min(...data.map(d=>d.rhr))+' BPM','Lowest','var(--green)'],['60–70 BPM','Reference','var(--muted)'])});
+      ddCard({name:'Overnight body temperature',value:t.tempF+'°F',unit:'',status:tempSt(t.tempDev),what:'Overnight skin temperature — the earliest illness warning available.',why:iTemp(t.tempF,t.tempDev,t.tempBaseF),extra:`<div style="font-size:12px;color:var(--muted);margin-top:8px;">Baseline: ${t.tempBaseF}°F · Deviation: <strong style="color:${t.tempDev>0.4?'var(--amber)':'var(--green)'}">${(t.tempDev*9/5)>=0?'+':''}${(t.tempDev*9/5).toFixed(1)}°F</strong></div>`,cid:'dd-temp',bottom:stat3([avgF(data,'tempF')+'°F','7-day avg','var(--amber)'],[t.tempBaseF+'°F','Baseline','var(--muted)'],[(t.tempDev>=0?'+':'')+((t.tempDev*9/5).toFixed(1))+'°F','Dev today',t.tempDev>0.4?'var(--amber)':'var(--green)'])})+
+      ddCard({name:'Resting heart rate',value:t.rhr,unit:'BPM',status:rhrSt(t.rhr),what:'How fast your heart beats completely at rest.',why:iRHR(t.rhr),extra:scale(t.rhr,40,110,[{from:0,to:20,c:'#9b72f5',label:'Athletic'},{from:20,to:30,c:'#00d68f',label:'Healthy'},{from:30,to:50,c:'#f59e0b',label:'Elevated'},{from:50,to:70,c:'#f05252',label:'High'}]),cid:'dd-rhr',bottom:stat3([avg(data,'rhr')+' BPM','7-day avg','var(--cyan)'],[Math.min(...data.map(d=>d.rhr))+' BPM','Lowest','var(--green)'],['60–70 BPM','Reference','var(--muted)'])});
 
     document.getElementById('dd-r3').innerHTML=
-      ddCard({name:'Heart rate variability (HRV)',value:t.hrv,unit:'ms',status:hrvSt(t.hrv),what:'Tiny gaps between heartbeats. More variation = healthier nervous system.',why:iHRV(t.hrv,age),extra:scale(t.hrv,10,100,[{from:0,to:30,c:'#f05252'},{from:30,to:50,c:'#f59e0b'},{from:50,to:60,c:'#00b8d9'},{from:60,to:40,c:'#00d68f'}]),cid:'dd-hrv',bottom:stat3([avg(data,'hrv')+' ms','7-day avg','var(--green)'],[Math.max(...data.map(d=>d.hrv))+' ms','Best','var(--green)'],[Math.round(65-age*.5)+' ms','Age norm','var(--muted)'])})+
-      ddCard({name:'Sleep last night',value:t.sleep+'h',unit:'',status:ssSt(t.sleepScore),what:'Total sleep and the quality of your sleep stages.',why:iSleep(t.sleepScore,t.sleep,t.deep,t.rem),extra:`<div class="sleep-bar">${[{c:'#6d5bd0',f:t.deep*.5},{c:'#a78bfa',f:t.light*.4},{c:'#6d5bd0',f:t.deep*.5},{c:'#00b8d9',f:t.rem*.6},{c:'#e2e8f0',f:.25},{c:'#00b8d9',f:t.rem*.4},{c:'#a78bfa',f:t.light*.6}].map(s=>`<div style="flex:${s.f};background:${s.c};border-radius:3px;"></div>`).join('')}</div><div class="sleep-leg">${[['#6d5bd0','Deep'],['#a78bfa','Light'],['#00b8d9','REM'],['#e2e8f0','Awake']].map(([c,l])=>`<div class="sl-i"><div class="sl-d" style="background:${c};"></div>${l}</div>`).join('')}</div>`,cid:'dd-sleep',bottom:stat3([t.deep+'h','Deep','#7c5ddb'],[t.rem+'h','REM','var(--cyan)'],[avgF(data,'sleep')+'h','7-day avg','var(--muted)'])});
+      ddCard({name:'Stress & recovery score (HRV)',value:t.hrv,unit:'ms',status:hrvSt(t.hrv),what:'Tiny gaps between heartbeats. More variation = healthier nervous system.',why:iHRV(t.hrv,age),extra:scale(t.hrv,10,100,[{from:0,to:30,c:'#f05252',label:'Low'},{from:30,to:50,c:'#f59e0b',label:'Fair'},{from:50,to:60,c:'#00b8d9',label:'Good'},{from:60,to:40,c:'#00d68f',label:'Excellent'}]),cid:'dd-hrv',bottom:stat3([avg(data,'hrv')+' ms','7-day avg','var(--green)'],[Math.max(...data.map(d=>d.hrv))+' ms','Best','var(--green)'],[Math.round(65-age*.5)+' ms','Age norm','var(--muted)'])})+
+      ddCard({name:'Sleep last night',value:t.sleep+'h',unit:'',status:ssSt(t.sleepScore),what:'Total sleep and the quality of your sleep stages.',why:iSleep(t.sleepScore,t.sleep,t.deep,t.rem,data),extra:`<div class="sleep-bar">${[{c:'#6d5bd0',f:t.deep*.5},{c:'#a78bfa',f:t.light*.4},{c:'#6d5bd0',f:t.deep*.5},{c:'#00b8d9',f:t.rem*.6},{c:'#e2e8f0',f:.25},{c:'#00b8d9',f:t.rem*.4},{c:'#a78bfa',f:t.light*.6}].map(s=>`<div style="flex:${s.f};background:${s.c};border-radius:3px;"></div>`).join('')}</div><div class="sleep-leg">${[['#6d5bd0','Deep'],['#a78bfa','Light'],['#00b8d9','REM'],['#e2e8f0','Awake']].map(([c,l])=>`<div class="sl-i"><div class="sl-d" style="background:${c};"></div>${l}</div>`).join('')}</div>`,cid:'dd-sleep',bottom:stat3([t.deep+'h','Deep','#7c5ddb'],[t.rem+'h','REM','var(--cyan)'],[avgF(data,'sleep')+'h','7-day avg','var(--muted)'])});
 
     const mk=(id,vals,color,type,min,max)=>{const el=document.getElementById(id);if(!el)return;new Chart(el,{type:type||'line',data:{labels,datasets:[{data:vals,borderColor:color,backgroundColor:color+'18',tension:.4,pointBackgroundColor:color,pointRadius:3,fill:true,borderRadius:type==='bar'?4:0}]},options:chartOpts(min,max)});};
     mk('dd-bp',data.map(d=>d.bpSys),'#ec4899','line',90,160);
@@ -172,7 +225,7 @@ function buildSubpages(){
   const mkBar=(id,vals,colors,min,max)=>new Chart(document.getElementById(id),{type:'bar',data:{labels,datasets:[{data:vals,backgroundColor:colors,borderRadius:5}]},options:chartOpts(min,max)});
 
   // Heart page
-  document.getElementById('heart-vitals').innerHTML=vc('Resting HR',t.rhr,'BPM',rhrSt(t.rhr),iRHR(t.rhr),'Ref: 60–70 BPM')+vc('HRV (RMSSD)',t.hrv,'ms',hrvSt(t.hrv),iHRV(t.hrv,age),'Higher = better')+vc('Blood pressure',t.bpSys+'/'+t.bpDia,'mmHg',bpSt(t.bpSys),iBP(t.bpSys,t.bpDia),'Optimal: <120/80')+vc('Resp. rate',t.resp,'/min',t.resp<18?'good':'watch',`${t.resp} breaths/min — ${t.resp<18?'within normal range':'slightly elevated'}.`,'Normal: 12–20');
+  document.getElementById('heart-vitals').innerHTML=vc('Resting HR',t.rhr,'BPM',rhrSt(t.rhr),iRHR(t.rhr),'Ref: 60–70 BPM')+vc('Stress & recovery (HRV)',t.hrv,'ms',hrvSt(t.hrv),iHRV(t.hrv,age),'Higher = better')+vc('Blood pressure',t.bpSys+'/'+t.bpDia,'mmHg',bpSt(t.bpSys),iBP(t.bpSys,t.bpDia),'Optimal: <120/80')+vc('Resp. rate',t.resp,'/min',t.resp<18?'good':'watch',`${t.resp} breaths/min — ${t.resp<18?'within normal range':'slightly elevated'}.`,'Normal: 12–20');
   document.getElementById('hrv7-sub').textContent=`7-day avg ${avg(data,'hrv')}ms. ${avg(data,'hrv')>=55?'Nervous system recovering well.':'Below optimal.'}`;
   document.getElementById('rhr7-sub').textContent=`7-day avg ${avg(data,'rhr')} BPM. ${avg(data,'rhr')<65?'Excellent cardiovascular conditioning.':'Within normal range.'}`;
   document.getElementById('bp7-sub').textContent=`Systolic avg ${avg(data,'bpSys')} mmHg. ${avg(data,'bpSys')<130?'Healthy range.':'Elevated — hydration, salt, movement are your levers.'}`;
@@ -190,7 +243,7 @@ function buildSubpages(){
   mkLine('temp7Chart',data.map(d=>d.tempF),'#f59e0b',96,100);
 
   // Vitals page
-  document.getElementById('vitals-row').innerHTML=vc('Blood pressure',t.bpSys+'/'+t.bpDia,'mmHg',bpSt(t.bpSys),iBP(t.bpSys,t.bpDia),'TK30 cuffless estimate')+vc('Body temp',t.tempF,'°F',tempSt(t.tempDev),iTemp(t.tempF,t.tempDev,t.tempBaseF),'Baseline: '+t.tempBaseF+'°F')+vc('SpO₂',t.spo2,'%',spo2St(t.spo2),iSpO2(t.spo2),'Normal: 95–100%')+vc('Resp. rate',t.resp,'/min',t.resp<18?'good':'watch',`${t.resp} breaths/min overnight.`,'Normal: 12–20');
+  document.getElementById('vitals-row').innerHTML=vc('Blood pressure',t.bpSys+'/'+t.bpDia,'mmHg',bpSt(t.bpSys),iBP(t.bpSys,t.bpDia),'TK30 cuffless estimate')+vc('Overnight temp',t.tempF,'°F',tempSt(t.tempDev),iTemp(t.tempF,t.tempDev,t.tempBaseF),'Baseline: '+t.tempBaseF+'°F')+vc('Blood oxygen',t.spo2,'%',spo2St(t.spo2),iSpO2(t.spo2),'Normal: 95–100%')+vc('Resp. rate',t.resp,'/min',t.resp<18?'good':'watch',`${t.resp} breaths/min overnight.`,'Normal: 12–20');
   document.getElementById('bpsys-sub').textContent=`Systolic 7-day avg: ${avg(data,'bpSys')} mmHg.`;
   document.getElementById('tempv-sub').textContent=`7-day avg: ${avgF(data,'tempF')}°F — deviations from personal baseline are the most valuable signal.`;
   mkLine('bpSysChart',data.map(d=>d.bpSys),'#ec4899',90,160);

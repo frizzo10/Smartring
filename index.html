@@ -586,6 +586,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
           <span style="width:6px;height:6px;border-radius:50%;background:#10b981;animation:ecgp 2s infinite;display:inline-block;"></span>
           TK30 monitoring active
         </span>
+        <span id="streak-badge" style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;background:#fff7ed;color:#c2410c;border:1px solid rgba(194,65,12,.2);">🔥 1 day streak</span>
         <span id="signal-status-badge" style="display:none;font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;background:var(--amber-bg);color:var(--amber);border:1px solid rgba(180,83,9,.25);cursor:pointer;" onclick="document.getElementById('signals-panel').scrollIntoView({behavior:'smooth'})">
           ⚠ signals detected — scroll down
         </span>
@@ -604,7 +605,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
   </div>
   <!-- SIGNALS PANEL -->
   <div class="signals-panel" id="signals-panel"><div style="background:var(--panel);border:1px solid var(--border2);border-radius:12px;padding:14px 18px;box-shadow:var(--shadow);color:var(--muted);font-size:13px;">⏳ Loading health signals...</div></div>
-  <!-- 5 metric cards: steps, BP, SpO2, temp°F, HR+HRV -->
+  <!-- 5 metric cards -->
   <div class="metrics-row" id="metrics-row"></div>
   <!-- ECG HERO -->
   <div class="ecg-hero">
@@ -657,7 +658,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
 
 <!-- SLEEP PAGE -->
 <div class="page" id="page-sleep">
-  <div class="page-hdr"><div class="page-title">Sleep analysis</div><div class="page-sub">What happened overnight — and what it means for today</div></div>
+  <div class="page-hdr"><div class="page-title">Sleep analysis</div><div class="page-sub">Nightly patterns and 7-day trends — because one night means nothing, a week tells a story</div></div>
   <div class="vitals-row" id="sleep-vitals"></div>
   <div class="chart-panel"><div class="cp-title">7-night sleep duration</div><div class="cp-sub" id="sleep7-sub"></div><div style="position:relative;height:160px;"><canvas id="sleep7Chart"></canvas></div></div>
   <div class="two-col">
@@ -678,7 +679,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
 
 <!-- ACTIVITY PAGE -->
 <div class="page" id="page-activity">
-  <div class="page-hdr"><div class="page-title">Activity &amp; movement</div><div class="page-sub">Steps, calories, distance — and whether it was enough</div></div>
+  <div class="page-hdr"><div class="page-title">Activity &amp; movement</div><div class="page-sub">Steps, swimming, cycling, elevation — all movement counts</div></div>
   <div class="vitals-row" id="act-vitals"></div>
   <div class="chart-panel"><div class="cp-title">Daily steps — 7 days</div><div class="cp-sub" id="steps7-sub"></div><div style="position:relative;height:160px;"><canvas id="steps7Chart"></canvas></div></div>
 </div>
