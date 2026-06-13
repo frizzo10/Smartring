@@ -1,10 +1,10 @@
 /* ─────────────────────────────────────────────────────
    SageHealth TTS proxy
-   Primary:  ElevenLabs Rachel (21m00Tc8r5r5hJfvQ5ar)
+   Primary:  ElevenLabs Rachel (c3QefzBhE1Cx4Yl23IV3)
    Fallback: Azure Aria Neural
    ───────────────────────────────────────────────────── */
 
-const ELEVEN_VOICE_ID = '21m00Tc8r5r5hJfvQ5ar'; // Rachel
+const ELEVEN_VOICE_ID = 'c3QefzBhE1Cx4Yl23IV3'; // Rachel
 
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') {
