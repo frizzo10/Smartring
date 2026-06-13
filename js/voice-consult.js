@@ -70,20 +70,54 @@ async function openingMessage(sigId, sigTitle, askQuestion) {
   setVcStatus('Dr. Sage is thinking...', '');
   setMicState('thinking');
 
+  // Build signal-specific context for the opening
+  // Pull the actual signal object to get its narrative and drivers
+  const sig = (typeof SIGNAL_PATTERNS !== 'undefined')
+    ? SIGNAL_PATTERNS.find(s => s.id === sigId) : null;
+
+  const sigNarrative = sig && typeof sig.narrative === 'function'
+    ? sig.narrative(data || [], profile || {}).replace(/<[^>]*>/g, '').slice(0, 200)
+    : '';
+
+  const sigAction = sig ? sig.action : '';
+
+  // Build metric context specific to this signal type
+  const metricCtx = {
+    metabolic_pattern:    `RHR ${t.rhr||'--'} BPM, HRV ${t.hrv||'--'}ms, BP ${t.bpSys||'--'}/${t.bpDia||'--'}, deep sleep ${t.deep||'--'}h, steps ${(t.steps||0).toLocaleString()}`,
+    sleep_apnea_pattern:  `SpO2 ${t.spo2||'--'}%, REM ${t.rem||'--'}h, sleep ${t.sleep||'--'}h, apnea events ${t.apnea||0}`,
+    bp_elevated:          `BP ${t.bpSys||'--'}/${t.bpDia||'--'} mmHg, trend over 7 days`,
+    immune_activation:    `Temp +${((t.tempDev||0)*9/5).toFixed(1)}°F above baseline, HRV ${t.hrv||'--'}ms`,
+    chronic_stress:       `HRV ${t.hrv||'--'}ms (7-day avg), RHR ${t.rhr||'--'} BPM, readiness ${t.readiness||'--'}`,
+    cv_age_drift:         `RHR ${t.rhr||'--'} BPM, HRV ${t.hrv||'--'}ms, SpO2 ${t.spo2||'--'}%`,
+    sleep_architecture:   `Deep sleep ${t.deep||'--'}h, REM ${t.rem||'--'}h, total ${t.sleep||'--'}h`,
+    thyroid_pattern:      `Temp avg ${t.tempF||'--'}°F, RHR ${t.rhr||'--'} BPM, HRV ${t.hrv||'--'}ms`,
+    vasovagal_syncope:    `BP ${t.bpSys||'--'}/${t.bpDia||'--'} mmHg, RHR ${t.rhr||'--'} BPM, steps ${(t.steps||0).toLocaleString()}`,
+    afib_paroxysmal:      `HRV ${t.hrv||'--'}ms (erratic spike), RHR ${t.rhr||'--'} BPM at rest`,
+    cv_recovery_decline:  `RHR trending up, readiness ${t.readiness||'--'}, HRV ${t.hrv||'--'}ms`,
+    hormonal_ovulation:   `Overnight temp ${t.tempF||'--'}°F, trend pattern this week`,
+    circadian_phase_delay:`RHR late in sleep cycle ${t.rhr||'--'} BPM, deep sleep ${t.deep||'--'}h`,
+    upper_airway_resistance: `SpO2 ${t.spo2||'--'}%, apnea events ${t.apnea||0}, REM ${t.rem||'--'}h`,
+    autonomic_burnout:    `HRV declining daily — now ${t.hrv||'--'}ms, RHR ${t.rhr||'--'} BPM`,
+    substance_clearance:  `Temp +${((t.tempDev||0)*9/5).toFixed(1)}°F, RHR flat at ${t.rhr||'--'} BPM, deep ${t.deep||'--'}h, REM ${t.rem||'--'}h`,
+    circadian_disruption: `Temp baseline shifted, RHR pattern shifted, sleep timing unstable`,
+    thermal_dehydration:  `Temp +${((t.tempDev||0)*9/5).toFixed(1)}°F, BP ${t.bpSys||'--'}/${t.bpDia||'--'} mmHg, RHR ${t.rhr||'--'} BPM`,
+  }[sigId] || `HRV ${t.hrv||'--'}ms, RHR ${t.rhr||'--'} BPM, sleep ${t.sleep||'--'}h`;
+
   // Generate a fresh, varied opening via Groq — never the same twice
   const systemPrompt = buildSystemPrompt(sigId, sigTitle);
-  const userMsg = `[OPENING] Generate a SHORT, direct opening for a voice call about: ${sigTitle}.
-Key data: HRV ${t.hrv||'--'}ms, RHR ${t.rhr||'--'} BPM, BP ${t.bpSys||'--'}/${t.bpDia||'--'}, sleep ${t.sleep||'--'}h.
+  const userMsg = `[OPENING] Generate a SHORT opening for a voice health consultation about: "${sigTitle}".
+
+Signal context: ${sigNarrative}
+Relevant metrics: ${metricCtx}
+What to do: ${sigAction}
+
 Rules:
-- MAX 2 sentences. This is voice — be brief.
-- Start differently every time. Never start with "Hi ${name}" followed by the same preamble.
-- Get straight to what you noticed. Mention one specific number.
-- End with ONE direct question about their life, not their data.
-- Vary the opener: sometimes start with the finding, sometimes with a question, sometimes with context.
-- Examples of good openers:
-  "Your HRV dropped 12 points this week while your heart rate crept up — what's been going on?"
-  "Something in your overnight data caught my attention. How has your energy been this week?"
-  "Before we talk about your ${sigTitle.toLowerCase()}, I want to know — how are you actually feeling?"`;
+- MAX 2 sentences. Voice conversation — be brief and direct.
+- NEVER mention heart rate or HRV unless this signal is specifically about those.
+- Use the SPECIFIC metrics relevant to THIS signal (listed above).
+- Vary the structure each time — sometimes lead with the finding, sometimes a question, sometimes context.
+- End with ONE question about their life or how they've been feeling — not about the data.
+- Sound like a physician who noticed something, not an AI reading a report.`;
 
   try {
     const res = await fetch('/.netlify/functions/claude', {
