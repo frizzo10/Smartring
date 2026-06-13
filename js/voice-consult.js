@@ -314,6 +314,7 @@ function sageSpeak(text) {
 async function elevenLabsSpeak(text) {
   return new Promise(async (resolve, reject) => {
     try {
+      setVcStatus('Dr. Sage is speaking — Azure Aria Neural voice', 'speaking');
       const res = await fetch('/.netlify/functions/tts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

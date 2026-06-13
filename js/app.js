@@ -683,6 +683,31 @@ function logRingCharged() {
 function showPage(id,el){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));document.getElementById('page-'+id).classList.add('active');if(el)el.classList.add('active');}
 function navToPage(id){const items=document.querySelectorAll('.nav-item');const map={dashboard:0,heart:1,sleep:2,vitals:3,activity:4,records:5,settings:6};showPage(id,items[map[id]]);}
 
+/* ─── VOICE INDICATOR ──────────────────────────────── */
+function setVoiceIndicator(engine) {
+  // Update the monitoring badge to show which voice is active
+  const badge = document.getElementById('monitor-badge');
+  if (!badge) return;
+  if (engine === 'azure') {
+    badge.innerHTML = '<span style="width:6px;height:6px;border-radius:50%;background:#10b981;animation:ecgp 2s infinite;display:inline-block;"></span> TK30 monitoring · <strong>Aria Neural voice</strong>';
+    badge.style.background = 'var(--green-bg)';
+    badge.style.color = 'var(--green)';
+    badge.style.borderColor = 'rgba(14,159,110,.25)';
+  } else {
+    badge.innerHTML = '<span style="width:6px;height:6px;border-radius:50%;background:var(--amber);animation:ecgp 2s infinite;display:inline-block;"></span> TK30 monitoring · <strong>browser voice</strong> (Azure key missing)';
+    badge.style.background = 'var(--amber-bg)';
+    badge.style.color = 'var(--amber)';
+    badge.style.borderColor = 'rgba(180,83,9,.25)';
+  }
+  // Reset after 8 seconds
+  setTimeout(() => {
+    badge.innerHTML = '<span style="width:6px;height:6px;border-radius:50%;background:#10b981;animation:ecgp 2s infinite;display:inline-block;"></span> TK30 monitoring active';
+    badge.style.background = 'var(--blue-bg)';
+    badge.style.color = 'var(--blue)';
+    badge.style.borderColor = 'rgba(29,111,164,.25)';
+  }, 8000);
+}
+
 /* ─── TOAST ─────────────────────────────────────── */
 function showToast(title,body){document.getElementById('toastTitle').textContent=title;document.getElementById('toastBody').textContent=body;const t=document.getElementById('toast');t.classList.add('show');setTimeout(()=>t.classList.remove('show'),5000);}
 
