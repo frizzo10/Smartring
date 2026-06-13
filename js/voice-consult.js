@@ -221,6 +221,185 @@ function toggleMic() {
   }
 }
 
+
+/* ═══════════════════════════════════════════════════
+   VOICE ONBOARDING — Zero typing, Dr. Sage asks everything
+   ═══════════════════════════════════════════════════ */
+
+const onboardState = {
+  step: 0,
+  collected: {},
+  recognition: null
+};
+
+const ONBOARD_STEPS = [
+  {
+    key: null,
+    ask: (n) => `Hi there. I am Dr. Sage, your personal health advisor. I will be watching your ring data every day and helping you get more out of every doctor visit. First things first — what is your name?`,
+    extract: (text) => ({ name: text.replace(/my name is|i am|i'm|call me/gi,'').trim().split(' ')[0] })
+  },
+  {
+    key: 'name',
+    ask: (n) => `Great to meet you, ${n}. How old are you?`,
+    extract: (text) => ({ age: parseInt(text.match(/\d+/)?.[0]) || null })
+  },
+  {
+    key: 'age',
+    ask: (n) => `Got it. Are you male or female?`,
+    extract: (text) => ({ sex: /female|woman|girl/i.test(text) ? 'Female' : 'Male' })
+  },
+  {
+    key: 'sex',
+    ask: (n) => `Do you have any ongoing health conditions — things like high blood pressure, diabetes, heart issues, or anything else your doctor knows about? Say none if you don't.`,
+    extract: (text) => ({ conditions: /none|no|nothing|nope/i.test(text) ? 'None' : text.trim() })
+  },
+  {
+    key: 'conditions',
+    ask: (n) => `What is the main reason you got SageHealth? Is there a specific health concern, or are you just trying to stay ahead of things?`,
+    extract: (text) => ({ motivation: text.trim() })
+  },
+  {
+    key: 'motivation',
+    ask: (n) => `Last one. How would you describe your current activity level — pretty active, somewhat active, or mostly sedentary?`,
+    extract: (text) => ({
+      activity_level: /very|pretty|quite|active|athletic|gym|exercise/i.test(text) ? 'Active' :
+                      /some|moderate|walk|occasional/i.test(text) ? 'Moderate' : 'Low'
+    })
+  }
+];
+
+async function startVoiceOnboarding() {
+  // Show a minimal modal
+  const modal = document.getElementById('voiceModal');
+  if (!modal) return;
+
+  onboardState.step = 0;
+  onboardState.collected = {};
+
+  // Update modal header
+  const label = document.getElementById('vc-signal-label');
+  if (label) label.textContent = 'Setting up your profile';
+
+  document.getElementById('vc-conversation').innerHTML = '';
+  document.getElementById('vc-commitment-box').style.display = 'none';
+  document.getElementById('vc-btn-commit').style.display = 'none';
+
+  modal.style.display = 'flex';
+  pickVoice();
+
+  await nextOnboardStep();
+}
+
+async function nextOnboardStep() {
+  const step = ONBOARD_STEPS[onboardState.step];
+  if (!step) {
+    await finishOnboarding();
+    return;
+  }
+
+  const name = onboardState.collected.name || '';
+  const question = step.ask(name);
+
+  addVcMessage('sage', question);
+  await sageSpeak(question);
+
+  // After speaking, start listening
+  setTimeout(() => startOnboardListening(), 200);
+}
+
+function startOnboardListening() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    setVcStatus('Voice not available — tap mic to continue', '');
+    return;
+  }
+
+  setVcStatus('Listening...', 'listening');
+  setMicState('listening');
+
+  const rec = new SpeechRecognition();
+  rec.continuous = false;
+  rec.interimResults = false;
+  rec.lang = 'en-US';
+  onboardState.recognition = rec;
+
+  rec.onresult = async (e) => {
+    const text = e.results[0][0].transcript.trim();
+    if (!text) return;
+
+    addVcMessage('user', text);
+    setMicState('thinking');
+    setVcStatus('Got it...', '');
+
+    // Extract data from this response
+    const step = ONBOARD_STEPS[onboardState.step];
+    if (step) {
+      const extracted = step.extract(text);
+      Object.assign(onboardState.collected, extracted);
+
+      // Store motivation as memory
+      if (extracted.motivation && typeof SageMemory !== 'undefined') {
+        await SageMemory.set('motivation', extracted.motivation, 'goals', 'onboarding');
+      }
+      if (extracted.activity_level && typeof SageMemory !== 'undefined') {
+        await SageMemory.set('activity_level', `Activity level: ${extracted.activity_level}`, 'life_context', 'onboarding');
+      }
+    }
+
+    onboardState.step++;
+    await nextOnboardStep();
+  };
+
+  rec.onerror = () => {
+    setMicState('idle');
+    setVcStatus('Tap mic to answer', '');
+    // Show tap-to-answer button
+    document.getElementById('vc-mic').onclick = () => {
+      document.getElementById('vc-mic').onclick = () => toggleMic();
+      startOnboardListening();
+    };
+  };
+
+  rec.start();
+}
+
+async function finishOnboarding() {
+  const { name, age, sex, conditions } = onboardState.collected;
+
+  // Save to profile
+  if (typeof profile !== 'undefined') {
+    if (name) profile.name = name;
+    if (age) profile.age = age;
+    if (sex) profile.sex = sex;
+    if (conditions) profile.conditions = conditions;
+    localStorage.setItem('sh_profile', JSON.stringify(profile));
+  }
+
+  // Sync to Supabase
+  if (typeof SageSync !== 'undefined') {
+    await SageSync.syncProfile();
+  }
+
+  // Save all as memory
+  if (typeof SageMemory !== 'undefined') {
+    if (conditions && conditions !== 'None') {
+      await SageMemory.set('health_conditions', `Known conditions: ${conditions}`, 'health_history', 'onboarding');
+    }
+  }
+
+  const closing = `Perfect. I have everything I need, ${name || 'there'}. I will start watching your ring data today and check in every morning with what I notice. Your first doctor report will be ready after 7 days of data. Welcome to SageHealth.`;
+
+  addVcMessage('sage', closing);
+  await sageSpeak(closing);
+
+  setTimeout(() => {
+    closeVoiceConsult();
+    localStorage.setItem('sage_onboarding_done', '1');
+    if (typeof buildDashboard === 'function') buildDashboard();
+    if (typeof showToast !== 'undefined') showToast('✓ Profile set up', 'Dr. Sage is now watching your data.');
+  }, 1500);
+}
+
 /* ── UNLOCK AUDIO ON FIRST GESTURE (Safari iOS) ─── */
 function unlockAudio() {
   // Play a silent buffer to unlock Safari's audio context
