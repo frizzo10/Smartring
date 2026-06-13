@@ -444,6 +444,47 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
 .sig-btn-dismiss{background:var(--panel);border:1px solid var(--border2);color:var(--muted);font-size:12px;border-radius:8px;padding:6px 14px;cursor:pointer;}
 .sig-disclaimer{font-size:11px;color:var(--muted);margin-top:8px;line-height:1.5;font-style:italic;}
 
+
+/* ── VOICE CONSULTATION ── */
+#voiceModal{display:none;position:fixed;inset:0;background:rgba(30,40,60,.6);backdrop-filter:blur(6px);z-index:850;align-items:center;justify-content:center;padding:20px;}
+.vc-card{background:var(--panel);border-radius:20px;width:100%;max-width:520px;box-shadow:0 20px 60px rgba(0,0,0,.15);overflow:hidden;}
+.vc-head{background:linear-gradient(135deg,var(--blue),var(--cyan));padding:22px 24px 18px;color:white;}
+.vc-head-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px;}
+.vc-sage-name{font-size:16px;font-weight:700;}
+.vc-sage-cred{font-size:12px;opacity:.85;margin-top:2px;}
+.vc-close{background:rgba(255,255,255,.2);border:none;color:white;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;}
+.vc-signal-pill{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.15);border-radius:20px;padding:4px 12px;font-size:12px;font-weight:600;}
+.vc-body{padding:0;}
+.vc-conversation{height:280px;overflow-y:auto;padding:18px 20px;display:flex;flex-direction:column;gap:12px;}
+.vc-msg{display:flex;gap:9px;align-items:flex-start;}
+.vc-msg.user{flex-direction:row-reverse;}
+.vc-av{width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;background:var(--blue-bg);border:1px solid rgba(29,111,164,.2);}
+.vc-av.sage{background:linear-gradient(135deg,var(--blue),var(--cyan));color:white;font-size:14px;}
+.vc-bubble{max-width:82%;background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:9px 13px;font-size:13px;line-height:1.65;color:var(--text);}
+.vc-msg.user .vc-bubble{background:var(--blue-bg);border-color:rgba(29,111,164,.2);}
+.vc-controls{border-top:1px solid var(--border);padding:16px 20px;}
+.vc-status{text-align:center;font-size:12px;color:var(--muted);margin-bottom:12px;min-height:18px;}
+.vc-status.listening{color:var(--red);font-weight:600;}
+.vc-status.speaking{color:var(--blue);font-weight:600;}
+.vc-mic-row{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:12px;}
+.vc-mic{width:64px;height:64px;border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:26px;transition:all .2s;background:var(--blue);box-shadow:0 4px 15px rgba(29,111,164,.3);}
+.vc-mic:hover{transform:scale(1.05);}
+.vc-mic.listening{background:var(--red);box-shadow:0 0 0 8px rgba(192,57,43,.15),0 4px 15px rgba(192,57,43,.3);animation:pulse-mic 1.5s infinite;}
+.vc-mic.speaking{background:var(--green);box-shadow:0 4px 15px rgba(14,159,110,.3);}
+.vc-mic.thinking{background:var(--amber);box-shadow:0 4px 15px rgba(180,83,9,.3);}
+@keyframes pulse-mic{0%,100%{box-shadow:0 0 0 0 rgba(192,57,43,.3),0 4px 15px rgba(192,57,43,.3)}50%{box-shadow:0 0 0 12px rgba(192,57,43,.08),0 4px 15px rgba(192,57,43,.3)}}
+.vc-transcript{font-size:12px;color:var(--muted);text-align:center;min-height:20px;font-style:italic;}
+.vc-action-row{display:flex;gap:8px;}
+.vc-btn-commit{flex:1;background:var(--green);color:white;border:none;border-radius:10px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;display:none;}
+.vc-btn-commit:hover{opacity:.88;}
+.vc-btn-end{flex:1;background:var(--bg);border:1px solid var(--border2);color:var(--muted);border-radius:10px;padding:10px;font-size:13px;cursor:pointer;}
+.vc-commitment-box{background:var(--green-bg);border:1px solid rgba(14,159,110,.25);border-radius:10px;padding:13px 15px;margin:0 20px 16px;}
+.vc-commitment-label{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--green);font-weight:700;margin-bottom:6px;}
+.vc-commitment-text{font-size:13px;line-height:1.65;color:var(--text);}
+.vc-typing{display:flex;gap:4px;align-items:center;padding:9px 13px;}
+.vc-td{width:7px;height:7px;border-radius:50%;background:var(--muted);animation:bounce 1s infinite;}
+.vc-td:nth-child(2){animation-delay:.15s;}.vc-td:nth-child(3){animation-delay:.3s;}
+
 /* ── RESPONSIVE ── */
 @media(max-width:900px){
   .sidebar{width:52px;padding:14px 7px;}
@@ -815,6 +856,41 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
 </div>
 </div>
 
+
+<!-- ════ VOICE CONSULTATION MODAL ════ -->
+<div id="voiceModal">
+<div class="vc-card">
+  <div class="vc-head">
+    <div class="vc-head-top">
+      <div>
+        <div class="vc-sage-name">🧠 Dr. Sage</div>
+        <div class="vc-sage-cred">AI Health Coach · SageHealth</div>
+      </div>
+      <button class="vc-close" onclick="closeVoiceConsult()">✕</button>
+    </div>
+    <div class="vc-signal-pill" id="vc-signal-label">Health consultation</div>
+  </div>
+  <div class="vc-body">
+    <div class="vc-conversation" id="vc-conversation"></div>
+    <div class="vc-commitment-box" id="vc-commitment-box" style="display:none;">
+      <div class="vc-commitment-label">✓ Your commitment</div>
+      <div class="vc-commitment-text" id="vc-commitment-text"></div>
+    </div>
+    <div class="vc-controls">
+      <div class="vc-status" id="vc-status">Tap the mic to speak with Dr. Sage</div>
+      <div class="vc-mic-row">
+        <button class="vc-mic" id="vc-mic" onclick="toggleMic()">🎤</button>
+      </div>
+      <div class="vc-transcript" id="vc-transcript"></div>
+      <div class="vc-action-row" style="margin-top:12px;">
+        <button class="vc-btn-commit" id="vc-btn-commit" onclick="saveCommitment()">✓ Save this commitment</button>
+        <button class="vc-btn-end" onclick="closeVoiceConsult()">End conversation</button>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
 <!-- ════ WALKTHROUGH ════ -->
 <div id="wtOverlay">
 <div id="wtPanel">
@@ -826,6 +902,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
 
 <div id="toast"><div class="toast-title" id="toastTitle"></div><div class="toast-body" id="toastBody"></div></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="/js/voice-consult.js"></script>
 <script src="/js/app.js"></script>
 <script src="/js/signals.js"></script>
 </body>

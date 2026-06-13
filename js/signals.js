@@ -478,8 +478,11 @@ function buildSignalsPanel(data, profile, goals) {
           <div class="sig-action-text">${sig.actionHow}</div>
         </div>
         <div class="sig-btns">
-          <button class="sig-btn-did" onclick="acknowledgeSignal('${sig.id}')">${isAck ? '✓ On it' : 'I am on it'}</button>
-          <button class="sig-btn-sage" onclick="openSignalChat('${sig.id}', '${sig.askSage}')">🧠 Ask Dr. Sage</button>
+          <button onclick="openVoiceConsult('${sig.id}', '${sig.title}', '${sig.askSage}')"
+            style="display:flex;align-items:center;gap:8px;background:linear-gradient(135deg,var(--blue),var(--cyan));color:white;border:none;border-radius:10px;padding:10px 20px;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 3px 10px rgba(29,111,164,.25);">
+            🎤 Talk to Dr. Sage
+          </button>
+          ${isAck ? '<span style="font-size:12px;color:var(--green);font-weight:600;display:flex;align-items:center;gap:4px;">✓ Commitment saved</span>' : ''}
         </div>
         <div class="sig-disclaimer">⚠ ${sig.disclaimer}</div>
       </div>`;
