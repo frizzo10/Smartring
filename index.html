@@ -2,7 +2,13 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="SageHealth">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' rx='40' fill='%231D6FA4'/><text x='96' y='130' font-size='100' text-anchor='middle' fill='white'>⚕</text></svg>">
 <title>SageHealth</title>
 <style>
 :root{
@@ -486,21 +492,136 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
 .vc-td:nth-child(2){animation-delay:.15s;}.vc-td:nth-child(3){animation-delay:.3s;}
 
 /* ── RESPONSIVE ── */
-@media(max-width:900px){
-  .sidebar{width:52px;padding:14px 7px;}
-  .nav-item span,.logo span,.u-name,.u-sub{display:none;}
-  .logo{font-size:13px;padding:0;}
-  .main{margin-left:52px;padding:14px;}
-  .metrics-row{grid-template-columns:repeat(3,1fr);}
-  .dd-head{flex-direction:column;}
-  .dd-chart{min-width:unset;max-width:100%;}
-  .two-col{grid-template-columns:1fr;}
-  .settings-grid{grid-template-columns:1fr;}
-  .ecg-anatomy{grid-template-columns:1fr;}
-  .wk-stats{grid-template-columns:1fr 1fr;}
-  .cdr-urgency{grid-template-columns:1fr;}
-  .ecg-hero-head{flex-direction:column;}
-  .ecg-hero-btns{flex-direction:row;}
+@media(max-width:768px){
+  /* ── iOS NATIVE APP LAYOUT ── */
+
+  /* Hide desktop sidebar completely */
+  .sidebar{ display:none !important; }
+
+  /* Full-width main, safe area insets for notch + home bar */
+  .main{
+    margin-left:0;
+    padding:16px 16px calc(80px + env(safe-area-inset-bottom)) 16px;
+    padding-top:calc(16px + env(safe-area-inset-top));
+  }
+
+  /* Bottom tab bar — iOS native style */
+  #mobile-tab-bar{
+    display:flex !important;
+    position:fixed;
+    bottom:0; left:0; right:0;
+    height:calc(58px + env(safe-area-inset-bottom));
+    padding-bottom:env(safe-area-inset-bottom);
+    background:rgba(255,255,255,0.92);
+    backdrop-filter:blur(20px);
+    -webkit-backdrop-filter:blur(20px);
+    border-top:1px solid rgba(0,0,0,.08);
+    z-index:200;
+    align-items:center;
+    justify-content:space-around;
+  }
+  .mob-tab{
+    display:flex;flex-direction:column;align-items:center;
+    gap:3px;padding:6px 12px;cursor:pointer;
+    border:none;background:transparent;
+    color:var(--muted);font-size:10px;font-weight:500;
+    font-family:var(--font);min-width:48px;
+  }
+  .mob-tab.active{ color:var(--blue); }
+  .mob-tab-icon{ font-size:22px;line-height:1; }
+  .mob-tab.active .mob-tab-icon{ transform:scale(1.1); }
+
+  /* Dashboard header */
+  .dash-header{
+    flex-direction:column;gap:10px;margin-bottom:12px;
+  }
+  .dash-title{ font-size:24px; }
+  .hdr-btns{
+    display:flex;gap:7px;flex-wrap:wrap;
+    width:100%;
+  }
+  .btn-sm{
+    flex:1;justify-content:center;
+    font-size:11px;padding:8px 6px;
+  }
+
+  /* Metric cards — 2 column on mobile */
+  .metrics-row{ grid-template-columns:1fr 1fr;gap:8px; }
+  .mc{ padding:12px 13px; }
+  .mc-val{ font-size:22px; }
+
+  /* ECG hero — stack vertically */
+  .ecg-hero{ padding:15px 16px; }
+  .ecg-hero-head{ flex-direction:column;gap:10px; }
+  .ecg-hero-btns{ display:flex;gap:8px;width:100%; }
+  .ecg-btn-primary,.ecg-btn-sage{
+    flex:1;text-align:center;padding:9px 10px;font-size:12px;
+  }
+  .ecg-hero-vitals{ gap:10px; }
+  .ecg-hv{ padding:7px 12px; }
+
+  /* Signals panel */
+  .signals-header{ flex-direction:column;gap:8px;align-items:flex-start; }
+
+  /* Deep dive cards */
+  .dd-head{ flex-direction:column; }
+  .dd-chart{ min-width:unset;max-width:100%;width:100%; }
+  .dd-val{ font-size:30px; }
+  .dd-bottom{ grid-template-columns:repeat(3,1fr);gap:6px; }
+
+  /* Two-col layouts go single */
+  .two-col{ grid-template-columns:1fr; }
+  .vitals-row{ grid-template-columns:1fr 1fr; }
+
+  /* Weekly modal — full screen on mobile */
+  .wm-card{ border-radius:20px 20px 0 0;max-height:92vh;margin-top:auto; }
+  #weeklyModal{ align-items:flex-end;padding:0; }
+
+  /* Voice modal */
+  .vc-card{ border-radius:20px 20px 0 0;margin-top:auto; }
+  #voiceModal{ align-items:flex-end;padding:0; }
+
+  /* ECG modal */
+  .ecg-card{ border-radius:20px 20px 0 0; }
+  #ecgModal{ align-items:flex-end;padding:0; }
+
+  /* Report + contact modals */
+  .report-card,.cdr-card{
+    border-radius:20px 20px 0 0;margin-top:auto;
+    max-height:90vh;overflow-y:auto;
+  }
+  #reportModal,#contactDrModal{ align-items:flex-end;padding:0; }
+
+  /* Settings */
+  .settings-grid{ grid-template-columns:1fr; }
+
+  /* Records tab bar — scrollable */
+  .tab-bar{
+    width:100%;overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
+    scrollbar-width:none;
+  }
+  .tab-bar::-webkit-scrollbar{ display:none; }
+
+  /* Walkthrough panel */
+  #wtPanel{ width:calc(100vw - 24px);bottom:74px; }
+
+  /* Weekly modal stats */
+  .wk-stats{ grid-template-columns:1fr 1fr; }
+
+  /* Enc anatomy */
+  .ecg-anatomy{ grid-template-columns:1fr; }
+
+  /* Hide desktop streak in header, show compact */
+  .dash-sub{ font-size:11px; }
+
+  /* Briefing */
+  .briefing{ padding:11px 13px; }
+  .briefing-text{ font-size:12px; }
+
+  /* Onboarding */
+  .ob{ padding:24px 20px;border-radius:16px; }
+  .ob-g{ grid-template-columns:1fr; }
 }
 </style>
 </head>
@@ -909,5 +1030,53 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
 <script src="/js/voice-consult.js"></script>
 <script src="/js/app.js"></script>
 <script src="/js/signals.js"></script>
+
+<!-- ════ iOS BOTTOM TAB BAR (mobile only) ════ -->
+<div id="mobile-tab-bar" style="display:none;">
+  <button class="mob-tab active" id="mob-dashboard" onclick="mobileNav('dashboard',this)">
+    <span class="mob-tab-icon">🏠</span>
+    <span>Home</span>
+  </button>
+  <button class="mob-tab" id="mob-heart" onclick="mobileNav('heart',this)">
+    <span class="mob-tab-icon">❤️</span>
+    <span>Heart</span>
+  </button>
+  <button class="mob-tab" id="mob-sleep" onclick="mobileNav('sleep',this)">
+    <span class="mob-tab-icon">🌙</span>
+    <span>Sleep</span>
+  </button>
+  <button class="mob-tab" id="mob-vitals" onclick="mobileNav('vitals',this)">
+    <span class="mob-tab-icon">🌡️</span>
+    <span>Vitals</span>
+  </button>
+  <button class="mob-tab" id="mob-more" onclick="toggleMobileMore()">
+    <span class="mob-tab-icon">⋯</span>
+    <span>More</span>
+  </button>
+</div>
+
+<!-- Mobile "More" sheet -->
+<div id="mobile-more-sheet" style="display:none;position:fixed;bottom:0;left:0;right:0;background:white;border-radius:20px 20px 0 0;z-index:300;padding:20px 20px calc(20px + env(safe-area-inset-bottom));box-shadow:0 -4px 30px rgba(0,0,0,.12);">
+  <div style="width:36px;height:4px;border-radius:2px;background:#d1d9e0;margin:0 auto 18px;"></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+    <button onclick="mobileNav('activity',null);toggleMobileMore()" style="display:flex;flex-direction:column;align-items:center;gap:6px;background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:16px 10px;cursor:pointer;">
+      <span style="font-size:26px;">🏃</span><span style="font-size:12px;font-weight:600;color:var(--text);">Activity</span>
+    </button>
+    <button onclick="mobileNav('records',null);toggleMobileMore()" style="display:flex;flex-direction:column;align-items:center;gap:6px;background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:16px 10px;cursor:pointer;">
+      <span style="font-size:26px;">📋</span><span style="font-size:12px;font-weight:600;color:var(--text);">Records</span>
+    </button>
+    <button onclick="mobileNav('settings',null);toggleMobileMore()" style="display:flex;flex-direction:column;align-items:center;gap:6px;background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:16px 10px;cursor:pointer;">
+      <span style="font-size:26px;">⚙️</span><span style="font-size:12px;font-weight:600;color:var(--text);">Settings</span>
+    </button>
+    <button onclick="openWeekly();toggleMobileMore()" style="display:flex;flex-direction:column;align-items:center;gap:6px;background:var(--blue-bg);border:1px solid rgba(29,111,164,.2);border-radius:14px;padding:16px 10px;cursor:pointer;">
+      <span style="font-size:26px;">📊</span><span style="font-size:12px;font-weight:600;color:var(--blue);">Weekly</span>
+    </button>
+    <button onclick="openContactDr();toggleMobileMore()" style="display:flex;flex-direction:column;align-items:center;gap:6px;background:var(--purple-bg);border:1px solid rgba(109,91,208,.2);border-radius:14px;padding:16px 10px;cursor:pointer;grid-column:1/-1;">
+      <span style="font-size:26px;">🩺</span><span style="font-size:12px;font-weight:600;color:var(--purple);">Contact Doctor</span>
+    </button>
+  </div>
+</div>
+<div id="mob-more-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:299;" onclick="toggleMobileMore()"></div>
+
 </body>
 </html>

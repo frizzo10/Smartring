@@ -607,3 +607,62 @@ function showToast(title,body){document.getElementById('toastTitle').textContent
 
 /* ─── BOOT ──────────────────────────────────────── */
 window.addEventListener('load',()=>{const sp=localStorage.getItem('sh_profile'),sg=localStorage.getItem('sh_goals');if(sp&&sg){profile=JSON.parse(sp);goals=JSON.parse(sg);initApp();}});
+
+/* ── MOBILE NAV ─────────────────────────────────────── */
+function mobileNav(id, btn) {
+  // Navigate page
+  showPage(id, null);
+  // Update bottom tab bar
+  document.querySelectorAll('.mob-tab').forEach(t => t.classList.remove('active'));
+  const tabId = 'mob-' + id;
+  const tab = document.getElementById(tabId);
+  if (tab) tab.classList.add('active');
+  // Scroll to top
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function toggleMobileMore() {
+  const sheet = document.getElementById('mobile-more-sheet');
+  const overlay = document.getElementById('mob-more-overlay');
+  const isOpen = sheet.style.display !== 'none';
+  sheet.style.display = isOpen ? 'none' : 'block';
+  overlay.style.display = isOpen ? 'none' : 'block';
+  // Animate in
+  if (!isOpen) {
+    sheet.style.transform = 'translateY(100%)';
+    sheet.style.transition = 'transform 0.3s cubic-bezier(0.32, 0.72, 0, 1)';
+    requestAnimationFrame(() => { sheet.style.transform = 'translateY(0)'; });
+  }
+}
+
+/* ── ADD TO HOME SCREEN PROMPT ──────────────────────── */
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  // Show install banner after 30 seconds if on mobile
+  if (window.innerWidth <= 768) {
+    setTimeout(showInstallBanner, 30000);
+  }
+});
+
+function showInstallBanner() {
+  if (!deferredPrompt) return;
+  const banner = document.createElement('div');
+  banner.style.cssText = 'position:fixed;top:0;left:0;right:0;background:var(--blue);color:white;padding:12px 16px;display:flex;align-items:center;gap:10px;z-index:9999;font-size:13px;';
+  banner.innerHTML = `
+    <span style="font-size:20px;">⚕</span>
+    <span style="flex:1;">Add SageHealth to your home screen</span>
+    <button onclick="installApp()" style="background:white;color:var(--blue);border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;">Add</button>
+    <button onclick="this.parentElement.remove()" style="background:transparent;border:none;color:rgba(255,255,255,.7);font-size:18px;cursor:pointer;">✕</button>
+  `;
+  document.body.prepend(banner);
+}
+
+async function installApp() {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  const { outcome } = await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  document.querySelector('[onclick="installApp()"]')?.closest('div')?.remove();
+}
