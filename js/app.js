@@ -1,3 +1,21 @@
+/* ─── RING SPECS (from TK30 official spec sheet) ── */
+const TK30_SPECS = {
+  cpu: 'Nordic NRF52832',
+  hrSensor: 'GH3220S + GH3228T',
+  ecgSensor: 'GH3228T',
+  accel: 'SC-7A20H',
+  batteryMah: '15-20mAh',
+  batteryDays: 5,           // with BT connected
+  chargeMins: 60,
+  storeDays: 7,             // on-device storage before data lost
+  waterproof: '5ATM + IP68',
+  bluetooth: '5.0 LE',
+  weightG: 5.0,
+  widthMm: 8,
+  exercises: ['Walking','Running','Swimming','Cycling','Hiking','Workout'],
+  sensors: ['ECG','Blood pressure','SpO₂','HRV','Heart rate','Skin temperature','Steps/activity','Sleep stages']
+};
+
 /* ─── STATE ─────────────────────────────────────── */
 let profile={},goals={},data=[],consultHistory=[],chatMessages=[],voiceOn=false,wtVoiceOn=true,wtIdx=0,wtSteps=[],ecgAnimId=null,ecgHeroAnimId=null,selectedUrgency='routine',reportText='';
 
@@ -164,7 +182,30 @@ function buildDashboard(){
   br+=` <span style="display:inline-flex;align-items:baseline;gap:5px;margin-left:4px;"><span style="font-size:15px;font-weight:800;color:${grade.color};">${grade.grade}</span><span style="font-size:11px;color:${grade.color};font-weight:600;">${grade.label}</span></span>`;
   document.getElementById('dailySummary').innerHTML=br;
 
+  // Battery / sync warning based on days since last sync
+  const lastSync = localStorage.getItem('sh_last_sync');
+  if (lastSync) {
+    const daysSince = Math.round((Date.now() - parseInt(lastSync)) / (1000*60*60*24));
+    if (daysSince >= 2) {
+      const syncWarn = document.createElement('div');
+      syncWarn.style.cssText = 'background:var(--amber-bg);border:1px solid rgba(180,83,9,.2);border-radius:9px;padding:8px 13px;font-size:12px;color:var(--amber);margin-bottom:10px;display:flex;align-items:center;gap:8px;';
+      syncWarn.innerHTML = '<span>⚠️</span><span><strong>Sync your ring.</strong> TK30 stores only 7 days on-device — data older than that is lost. Last sync: ' + daysSince + ' days ago.</span>';
+      const metrics = document.getElementById('metrics-row');
+      if (metrics) metrics.before(syncWarn);
+    }
+  } else {
+    localStorage.setItem('sh_last_sync', Date.now().toString());
+  }
+
   // 5 metric cards: steps, BP, SpO2, temp°F, HR (HR+HRV combined)
+  // Battery estimate based on last charge time
+  const lastCharge = parseInt(localStorage.getItem('sh_last_charge') || Date.now().toString());
+  const hoursUsed = (Date.now() - lastCharge) / (1000 * 60 * 60);
+  const battPct = Math.max(0, Math.round(100 - (hoursUsed / (TK30_SPECS.batteryDays * 24)) * 100));
+  const battSt = battPct > 40 ? 'great' : battPct > 20 ? 'watch' : 'alert';
+  const battCol = battPct > 40 ? 'var(--green)' : battPct > 20 ? 'var(--amber)' : 'var(--red)';
+  const battIcon = battPct > 60 ? '🔋' : battPct > 30 ? '🪫' : '⚡';
+
   const mrow=document.getElementById('metrics-row');
   const cards=[
     {label:'Steps today',val:t.steps.toLocaleString(),sub:Math.min(100,Math.round(t.steps/stepsGoal*100))+'% of goal',st:t.steps>=stepsGoal?'great':t.steps>=stepsGoal*.75?'good':'watch',c:'var(--green)',page:'activity'},
@@ -177,6 +218,27 @@ function buildDashboard(){
     const css=chipCss(s.st);
     return`<div class="mc" onclick="navToPage('${s.page}')"><div class="mc-label">${s.label}</div><div class="mc-val" style="color:${s.c}">${s.val}</div><div class="mc-sub">${s.sub}</div><div class="mc-status" style="color:${css.c}">${slLabel(s.st)}</div></div>`;
   }).join('');
+
+  // Battery card — append after metrics
+  const battCard = document.createElement('div');
+  battCard.style.cssText = 'background:var(--panel);border:1px solid var(--border2);border-radius:11px;padding:13px 15px;box-shadow:var(--shadow);display:flex;align-items:center;gap:12px;margin-bottom:14px;';
+  battCard.innerHTML = `
+    <div style="font-size:24px;">${battIcon}</div>
+    <div style="flex:1;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">
+        <span style="font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:600;">TK30 Ring battery</span>
+        <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:7px;background:${battPct>40?'var(--green-bg)':battPct>20?'var(--amber-bg)':'var(--red-bg)'};color:${battCol};">${battPct > 40 ? 'Good' : battPct > 20 ? 'Charge soon' : 'Charge tonight'}</span>
+      </div>
+      <div style="background:#e2e8f0;border-radius:4px;height:8px;overflow:hidden;margin-bottom:5px;">
+        <div style="height:100%;width:${battPct}%;background:${battCol};border-radius:4px;transition:width .5s;"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);">
+        <span>~${battPct}% estimated · ${Math.max(0,Math.round(TK30_SPECS.batteryDays*24-hoursUsed))}h remaining</span>
+        <button onclick="logRingCharged()" style="background:transparent;border:none;color:var(--blue);font-size:11px;font-weight:600;cursor:pointer;text-decoration:underline;">Charged tonight →</button>
+      </div>
+    </div>
+  `;
+  mrow.after(battCard);
 
   // ECG hero vitals
   document.getElementById('hero-hr').textContent=t.rhr;
@@ -263,7 +325,7 @@ function buildSubpages(){
 
   // Activity page
   document.getElementById('act-vitals').innerHTML=vc('Steps today',t.steps.toLocaleString(),'',t.steps>=(goals.steps||8000)?'great':t.steps>=(goals.steps||8000)*.75?'good':'watch',iSteps(t.steps,goals.steps||8000),'Goal: '+(goals.steps||8000).toLocaleString())+vc('Calories',t.calories,'kcal','good','Active calories above basal metabolic rate.','Movement only')+vc('Distance',t.distance,'miles','good',`${t.distance} miles today.`,'Step estimate')+vc('Active hours',Math.round(t.steps/1200),'hrs',Math.round(t.steps/1200)>=6?'great':'good','Hours with meaningful movement.','Hours >250 steps');
-  document.getElementById('steps7-sub').textContent=`7-day avg ${avg(data,'steps').toLocaleString()} steps.`;
+  document.getElementById('steps7-sub').textContent=`7-day avg ${avg(data,'steps').toLocaleString()} steps. TK30 tracks: ${TK30_SPECS.exercises.join(', ')}.`;
   mkBar('steps7Chart',data.map(d=>d.steps),data.map(d=>d.steps>=(goals.steps||8000)?'rgba(0,214,143,.6)':'rgba(59,130,246,.4)'),0,Math.max(...data.map(d=>d.steps))*1.2);
 }
 
@@ -607,6 +669,14 @@ function saveSettings(){
   profile={name:document.getElementById('s_name').value,age:parseInt(document.getElementById('s_age').value),weight:parseInt(document.getElementById('s_weight').value),height:parseFloat(document.getElementById('s_height').value),sex:document.getElementById('s_sex').value,conditions:document.getElementById('s_conditions').value,drname:document.getElementById('s_drname').value};
   goals={steps:parseInt(document.getElementById('s_steps').value),sleep:parseFloat(document.getElementById('s_sleep').value),apnea:parseInt(document.getElementById('s_apnea').value),spo2:parseInt(document.getElementById('s_spo2').value)};
   localStorage.setItem('sh_profile',JSON.stringify(profile));localStorage.setItem('sh_goals',JSON.stringify(goals));setGreeting();showToast('✓ Saved','Settings updated.');
+}
+
+/* ─── BATTERY ──────────────────────────────────────── */
+function logRingCharged() {
+  localStorage.setItem('sh_last_charge', Date.now().toString());
+  showToast('🔋 Charge logged', 'Battery timer reset. TK30 should last ~5 days from now.');
+  // Re-render the battery bar
+  buildDashboard();
 }
 
 /* ─── NAV ───────────────────────────────────────── */
