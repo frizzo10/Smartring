@@ -865,7 +865,16 @@ function buildSignalsPanel(data, profile, goals) {
             style="display:flex;align-items:center;gap:8px;background:linear-gradient(135deg,var(--blue),var(--cyan));color:white;border:none;border-radius:10px;padding:10px 20px;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 3px 10px rgba(29,111,164,.25);">
             🎤 Talk to Dr. Sage
           </button>
+          <button onclick="toggleAnnotation('${sig.id}')"
+            style="background:var(--bg);border:1px solid var(--border2);color:var(--muted);border-radius:10px;padding:10px 14px;font-size:12px;cursor:pointer;">
+            ✏️ Add context
+          </button>
           ${isAck ? '<span style="font-size:12px;color:var(--green);font-weight:600;display:flex;align-items:center;gap:4px;">✓ Commitment saved</span>' : ''}
+        </div>
+        <!-- Annotation panel -->
+        <div id="annotation-${sig.id}" style="display:none;margin-top:10px;">
+          <div style="font-size:12px;color:var(--muted);margin-bottom:6px;">Tell Dr. Sage what you think is causing this — she'll factor it in.</div>
+          ${getAnnotationUI(sig.id, sig.title)}
         </div>
         <div class="sig-disclaimer">⚠ ${sig.disclaimer}</div>
       </div>`;
@@ -926,4 +935,112 @@ function openSignalChat(sigId, question) {
 
 function expireOldDismissals() {
   // No-op — kept for compatibility
+}
+
+/* ── SIGNAL ANNOTATIONS ─────────────────────────────
+   User adds context to a signal — stored in state map.
+   Dr. Sage reads this before responding.
+   ─────────────────────────────────────────────────── */
+
+// Common explanations per signal category
+const ANNOTATION_SUGGESTIONS = {
+  immune_activation: ['Hot flash', 'Hot room / warm night', 'Exercise late last night', 'Stress, not illness', 'Starting my period', 'Alcohol last night'],
+  bp_elevated:       ['Just had coffee', 'Stressed at work', 'Salty meal', 'White coat effect', 'Active before reading'],
+  sleep_architecture:['Late screen time', 'Partner kept me up', 'Stress / racing thoughts', 'New environment', 'Alcohol'],
+  substance_clearance:['Had a few drinks', 'Late dinner', 'Took medication', 'Ate very spicy food'],
+  thermal_dehydration:['Hot outside', 'Intense workout', 'Didn't drink enough water', 'Hot flash'],
+  chronic_stress:    ['Work deadline', 'Family situation', 'Poor sleep streak', 'Overtraining'],
+  autonomic_burnout: ['Burnout from work', 'Illness recovery', 'Life event', 'Overtraining'],
+  afib_paroxysmal:   ['Caffeine', 'Alcohol', 'Stress', 'Poor sleep', 'Dehydration'],
+  default:           ['Explained by lifestyle', 'One-off event', 'Environmental cause', 'Stress related', 'Other']
+};
+
+function getAnnotationUI(sigId, sigTitle) {
+  const saved = getSigAnnotation(sigId);
+  const suggestions = ANNOTATION_SUGGESTIONS[sigId] || ANNOTATION_SUGGESTIONS.default;
+
+  return `<div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px 14px;">
+    <div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em;">What do you think is causing this?</div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;">
+      ${suggestions.map(s => `<button onclick="selectAnnotation('${sigId}','${s.replace(/'/g,"\\'")}',this)"
+        style="font-size:11px;padding:4px 11px;border-radius:20px;border:1px solid var(--border2);background:${saved===s?'var(--blue)':'var(--panel)'};color:${saved===s?'white':'var(--muted)'};cursor:pointer;">${s}</button>`).join('')}
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <input id="annotation-input-${sigId}" type="text" placeholder="Or type your own explanation..."
+        value="${saved||''}"
+        style="flex:1;border:1px solid var(--border2);border-radius:8px;padding:7px 11px;font-size:12px;font-family:var(--font);color:var(--text);background:var(--panel);outline:none;"
+        onkeydown="if(event.key==='Enter')saveAnnotation('${sigId}')">
+      <button onclick="saveAnnotation('${sigId}')"
+        style="background:var(--blue);color:white;border:none;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;">Save</button>
+      ${saved ? `<button onclick="clearAnnotation('${sigId}')" style="background:none;border:none;color:var(--muted);font-size:11px;cursor:pointer;text-decoration:underline;">Clear</button>` : ''}
+    </div>
+    ${saved ? `<div style="margin-top:8px;font-size:12px;color:var(--green);display:flex;align-items:center;gap:5px;">✓ Dr. Sage knows: "<em>${saved}</em>"</div>` : ''}
+  </div>`;
+}
+
+function toggleAnnotation(sigId) {
+  const panel = document.getElementById('annotation-' + sigId);
+  if (!panel) return;
+  panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+}
+
+function selectAnnotation(sigId, text, btn) {
+  // Highlight selected button
+  const panel = document.getElementById('annotation-' + sigId);
+  if (panel) panel.querySelectorAll('button').forEach(b => {
+    b.style.background = 'var(--panel)'; b.style.color = 'var(--muted)';
+  });
+  btn.style.background = 'var(--blue)'; btn.style.color = 'white';
+  // Set input
+  const input = document.getElementById('annotation-input-' + sigId);
+  if (input) input.value = text;
+  saveAnnotation(sigId, text);
+}
+
+function saveAnnotation(sigId, text) {
+  const input = document.getElementById('annotation-input-' + sigId);
+  const val = text || (input ? input.value.trim() : '');
+  if (!val) return;
+
+  const annotations = JSON.parse(localStorage.getItem('sh_annotations') || '{}');
+  annotations[sigId] = {
+    text: val,
+    date: new Date().toISOString(),
+    sigId
+  };
+  localStorage.setItem('sh_annotations', JSON.stringify(annotations));
+
+  // Update state map with user context
+  updateStateMapAnnotations(annotations);
+
+  if (typeof showToast !== 'undefined') {
+    showToast('✓ Context saved', 'Dr. Sage will factor this in during your consultation.');
+  }
+
+  // Re-render the annotation panel
+  if (typeof data !== 'undefined') buildSignalsPanel(data, profile, goals);
+}
+
+function clearAnnotation(sigId) {
+  const annotations = JSON.parse(localStorage.getItem('sh_annotations') || '{}');
+  delete annotations[sigId];
+  localStorage.setItem('sh_annotations', JSON.stringify(annotations));
+  updateStateMapAnnotations(annotations);
+  if (typeof data !== 'undefined') buildSignalsPanel(data, profile, goals);
+}
+
+function getSigAnnotation(sigId) {
+  const annotations = JSON.parse(localStorage.getItem('sh_annotations') || '{}');
+  return annotations[sigId]?.text || null;
+}
+
+function updateStateMapAnnotations(annotations) {
+  const stateMap = (typeof loadStateMap === 'function') ? loadStateMap() : null;
+  if (!stateMap) return;
+  stateMap.user_annotations = Object.values(annotations).map(a => ({
+    signal: a.sigId,
+    explanation: a.text,
+    date: a.date
+  }));
+  if (typeof saveStateMap === 'function') saveStateMap(stateMap);
 }
