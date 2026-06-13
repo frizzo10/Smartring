@@ -180,7 +180,7 @@ async function handleUserSpeech(text) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
+        model: 'llama-3.3-70b-versatile',
         max_tokens: 350,
         system: systemPrompt,
         messages: vcState.messages
