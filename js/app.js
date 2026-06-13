@@ -83,6 +83,17 @@ function initApp(){
   expireOldDismissals();
   buildSignalsPanel(data, profile, goals);
   if(typeof runCommitmentFollowUps==='function') runCommitmentFollowUps(data,profile);
+
+  // Run notification check after signals are computed
+  const firedSigs = JSON.parse(localStorage.getItem('sh_active_signals') || '[]');
+  if(typeof runNotificationCheck==='function') {
+    runNotificationCheck(data, profile, firedSigs);
+  }
+
+  // Show push permission prompt after first signal fires (delayed)
+  if(firedSigs.length > 0 && typeof showPushPermissionPrompt==='function') {
+    setTimeout(showPushPermissionPrompt, 8000);
+  }
   const today=new Date(),isMon=today.getDay()===1,lw=localStorage.getItem('sh_nl'),tw=today.toISOString().slice(0,10);
   if(isMon&&lw!==tw){localStorage.setItem('sh_nl',tw);setTimeout(()=>openWeekly(),1400);}
 }
