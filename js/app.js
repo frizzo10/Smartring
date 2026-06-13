@@ -335,7 +335,7 @@ ${sigSummary}
 Return ONLY valid JSON (no markdown):
 {"chiefConcerns":["string"],"findings":[{"icon":"emoji","label":"string","value":"string","status":"normal|borderline|abnormal","interpretation":"string"}],"impression":"string","orderedTests":[{"name":"string","priority":"urgent|routine|optional","reason":"string","how":"specific patient instructions"}],"plan":[{"step":"string","timeframe":"now|this week|this month|ongoing","rationale":"string"}],"followUp":"string","priorActionReview":"string"}`;
   try{
-    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:2000,messages:[{role:'user',content:prompt}]})});
+    const res=await fetch('/.netlify/functions/claude',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:2000,messages:[{role:'user',content:prompt}]})});
     const d=await res.json();const text=(d.content?.[0]?.text||'{}').replace(/```json|```/g,'').trim();
     const enc=JSON.parse(text);renderEncounter(enc,el);saveEncounter(enc);el.dataset.generated='1';
   }catch(e){el.innerHTML=`<div style="color:var(--muted);font-size:13px;padding:14px 0;">Unable to generate encounter. Error: ${e.message}</div>`;}
@@ -381,7 +381,7 @@ Patient: ${profile.name||'Frank'}, ${profile.age||48}yo ${profile.sex||'Male'}. 
 TK30 data: BP ${t.bpSys}/${t.bpDia} mmHg | SpO₂ ${t.spo2}% | Temp ${t.tempF}°F (${((t.tempDev*9/5)>=0?'+':'')+((t.tempDev*9/5).toFixed(1))}°F from baseline) | HRV ${avg(data,'hrv')}ms | RHR ${avg(data,'rhr')} BPM | Sleep ${avgF(data,'sleep')}h | Steps ${avg(data,'steps').toLocaleString()}/day
 Style: plain English, 4–6 sentences, one follow-up question. Suggest bringing findings to their doctor when relevant.`;
   try{
-    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,system:sys,messages:chatMessages})});
+    const res=await fetch('/.netlify/functions/claude',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,system:sys,messages:chatMessages})});
     const d=await res.json();removeTyping();
     const reply=d.content?.[0]?.text||'Connection issue — please try again.';
     chatMessages.push({role:'assistant',content:reply});addBubble('sage',reply);
@@ -434,7 +434,7 @@ ${sigSummaryRpt}
 Return ONLY valid JSON (no markdown):
 {"patientSummary":"2-3 sentence overview","keyFindings":[{"metric":"string","current":"string","previous":"string","trend":"improving|stable|worsening","note":"string"}],"concernsForDoctor":["string"],"recommendedDiscussion":["string"],"lifestyle":"brief lifestyle summary paragraph","disclaimer":"standard disclaimer"}`;
   try{
-    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1500,messages:[{role:'user',content:prompt}]})});
+    const res=await fetch('/.netlify/functions/claude',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1500,messages:[{role:'user',content:prompt}]})});
     const d=await res.json();const text=(d.content?.[0]?.text||'{}').replace(/```json|```/g,'').trim();
     const rpt=JSON.parse(text);
     renderDoctorReport(rpt);
@@ -477,7 +477,7 @@ async function handleResultUpload(e){
     if(mt==='application/pdf'||mt.startsWith('image/')){messages=[{role:'user',content:[{type:mt==='application/pdf'?'document':'image',source:{type:'base64',media_type:mt,data:base64}},{type:'text',text:`You are SageHealth's AI. Analyze this uploaded medical document or result. Extract key findings, values, dates, and what they mean for the patient. Patient profile: ${profile.age||48}yo ${profile.sex||'Male'}, conditions: ${profile.conditions||'None'}. Be concise and actionable. Flag anything that should be discussed with their doctor.`}]}];}
     else{const text=atob(base64);messages=[{role:'user',content:`You are SageHealth's AI. Analyze this uploaded medical text. Extract key findings. Patient: ${profile.age||48}yo ${profile.sex||'Male'}, conditions: ${profile.conditions||'None'}.\n\n${text}`}];}
     try{
-      const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,messages})});
+      const res=await fetch('/.netlify/functions/claude',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,messages})});
       const d=await res.json();const reply=d.content?.[0]?.text||'Unable to analyze.';
       ua.innerHTML=`<div style="background:rgba(0,184,217,.05);border:1px solid rgba(0,184,217,.18);border-radius:10px;padding:13px 15px;margin-top:4px;"><div style="font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--cyan);font-weight:600;margin-bottom:7px;">📄 ${file.name} — Analysis</div><div style="font-size:13px;color:#8296b8;line-height:1.7;">${reply}</div></div>`;
       const uploads=JSON.parse(localStorage.getItem('sh_uploads')||'[]');uploads.unshift({date:new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}),filename:file.name,analysis:reply});localStorage.setItem('sh_uploads',JSON.stringify(uploads.slice(0,20)));
@@ -492,7 +492,7 @@ async function saveDrResult(){
   const analysisEl=document.getElementById('dr-sage-analysis');analysisEl.style.display='block';analysisEl.innerHTML='<div class="enc-generating"><div class="enc-spinner"></div>SageHealth is reviewing what your doctor said...</div>';
   const prompt=`You are SageHealth's AI. The patient just told you what their doctor said after receiving a SageHealth report. Acknowledge, interpret what it means for their ongoing monitoring, and note any new action items. Be warm and practical.\nDoctor's response: "${text}"\nPatient context: ${profile.age||48}yo ${profile.sex||'Male'}, conditions: ${profile.conditions||'None'}, current BP ${avg(data,'bpSys')}/${avg(data,'bpDia')}, SpO₂ ${avgF(data,'spo2')}%, HRV ${avg(data,'hrv')}ms.`;
   try{
-    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:600,messages:[{role:'user',content:prompt}]})});
+    const res=await fetch('/.netlify/functions/claude',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:600,messages:[{role:'user',content:prompt}]})});
     const d=await res.json();const reply=d.content?.[0]?.text||'Saved.';
     analysisEl.innerHTML=`<div class="dr-feedback-card">${reply}</div>`;
     const reports=JSON.parse(localStorage.getItem('sh_drreports')||'[]');if(reports.length>0){reports[0].drFeedback=text;reports[0].drAnalysis=reply;localStorage.setItem('sh_drreports',JSON.stringify(reports));}
