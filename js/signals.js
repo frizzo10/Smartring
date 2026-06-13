@@ -61,7 +61,7 @@ const SIGNAL_PATTERNS = [
         { label: `${avg(data,'steps').toLocaleString()} steps/day`, flagged: avg(data,'steps') < 5000 },
       ];
     },
-    action: 'Get a fasting glucose + HbA1c blood test',
+    action: 'Ask your doctor about fasting glucose and HbA1c testing',
     actionHow: `You don't need a doctor's referral. Walk into any <strong>Quest Diagnostics or LabCorp</strong> location — no appointment needed. Ask for "fasting glucose and HbA1c." Fast for 8 hours beforehand (water is fine). Costs $35–50 without insurance. Results in 1–2 days. Normal fasting glucose is below 100 mg/dL. Prediabetes range is 100–125. This single test tells you exactly where you stand.`,
     askSage: 'Tell me more about what this metabolic pattern means for me.',
     disclaimer: 'This is a pattern observation, not a diagnosis. Only a licensed physician can diagnose prediabetes or any medical condition.'
@@ -92,7 +92,7 @@ const SIGNAL_PATTERNS = [
     narrative(data, profile) {
       const spo2 = avgF(data, 'spo2');
       const apnea = (data.reduce((s, d) => s + d.apnea, 0) / data.length).toFixed(1);
-      return `Your ring has been tracking your overnight breathing, and <strong>the pattern this week is worth paying attention to</strong>. Average SpO₂ of ${spo2}% with ${apnea} airway events per night suggests your breathing may be interrupted during sleep. Most people with sleep apnea have no idea — they just feel tired, have elevated blood pressure, and wonder why they never feel fully rested. Untreated sleep apnea is one of the leading causes of hypertension and cardiovascular disease. A home sleep study takes one night and tells you definitively.`;
+      return `Your ring has been tracking your overnight breathing, and <strong>the pattern this week is worth paying attention to</strong>. Average overnight oxygen of ${spo2}% with ${apnea} airway events per night suggests your breathing may be interrupted during sleep. Most people with sleep apnea have no idea — they just feel tired, have elevated blood pressure, and wonder why they never feel fully rested. Untreated sleep apnea is one of the leading causes of hypertension and cardiovascular disease. A home sleep study takes one night and tells you definitively.`;
     },
     drivers(data) {
       const apnea = (data.reduce((s, d) => s + d.apnea, 0) / data.length).toFixed(1);
@@ -190,7 +190,7 @@ const SIGNAL_PATTERNS = [
     id: 'immune_activation',
     level: 'urgent',
     icon: '🌡️',
-    title: 'Immune system activation detected',
+    title: 'Temperature elevation above baseline',
     category: 'Early illness warning',
     detect(data) {
       const t = data[data.length - 1];
@@ -198,7 +198,7 @@ const SIGNAL_PATTERNS = [
       const prevHrv = avg(data.slice(0, 4), 'hrv');
       return t.tempDev > 0.5 || (t.tempDev > 0.3 && hrv < prevHrv * 0.85);
     },
-    watchingFor: 'Body temperature vs personal baseline + HRV trend — last 3 nights',
+    watchingFor: 'Overnight skin temperature vs your personal 7-day baseline — last 3 nights',
     narrative(data) {
       const t = data[data.length - 1];
       const hrv = avg(data.slice(-3), 'hrv');
@@ -341,7 +341,7 @@ const SIGNAL_PATTERNS = [
         { label: `Temp avg ${(tempC * 9/5 + 32).toFixed(1)}°F`, flagged: tempC < 36.3 || tempC > 37.1 },
       ];
     },
-    action: 'Get a TSH thyroid panel',
+    action: 'Ask your doctor about a TSH blood test',
     actionHow: `A <strong>TSH (thyroid-stimulating hormone) blood test</strong> is a routine lab that any primary care doctor can order. You can also order it yourself through <strong>Ulta Lab Tests or Walk-In Lab</strong> for $29–45 without insurance or a referral. Fast for 8 hours. Results in 1–2 days. Normal TSH is 0.4–4.0 mIU/L. If yours is outside that range, bring the result to your doctor — thyroid conditions are very treatable.`,
     askSage: 'What does the thyroid pattern in my data mean, and should I be concerned?',
     disclaimer: 'Biometric patterns are not diagnostic of thyroid conditions. Only a blood test and physician can diagnose thyroid disorders.'
@@ -387,7 +387,7 @@ const SIGNAL_PATTERNS = [
     id: 'vasovagal_syncope',
     level: 'watch',
     icon: '💫',
-    title: 'Vasovagal syncope risk',
+    title: 'Blood pressure drop pattern',
     category: 'Cardiovascular',
     detect(data) {
       const t = data[data.length-1];
@@ -398,12 +398,12 @@ const SIGNAL_PATTERNS = [
       const lowSteps = t.steps < 3000;
       return bpDrop && hrSpike && lowSteps;
     },
-    watchingFor: 'Blood pressure drops paired with sudden HR spikes following periods of inactivity',
+    watchingFor: 'Blood pressure dips paired with compensatory HR increases following low-activity periods',
     narrative(data) {
       const t = data[data.length-1];
       const prev = data[data.length-2] || t;
       const drop = prev.bpSys - t.bpSys;
-      return `Your ring detected a <strong>sharp drop in blood pressure (${drop} mmHg) paired with a reflexive heart rate spike</strong> following a period of low activity. This pattern is associated with vasovagal syncope — the mechanism behind fainting when standing up too quickly or after prolonged sitting. Your nervous system is overcompensating. It's worth knowing about before it catches you off guard.`;
+      return `Your ring detected a <strong>sharp drop in blood pressure (${drop} mmHg) paired with a reflexive heart rate spike</strong> following a period of low activity. This pattern — a blood pressure dip with a compensatory heart rate increase — is sometimes associated with lightheadedness or dizziness when standing up quickly. Your nervous system is overcompensating. It's worth knowing about before it catches you off guard.`;
     },
     drivers(data) {
       const t = data[data.length-1];
@@ -417,7 +417,7 @@ const SIGNAL_PATTERNS = [
     action: 'Stand up slowly. Stay hydrated. Test with a simple stand-up check.',
     actionHow: `<strong>Right now:</strong> When rising from sitting or lying, pause at the edge for 10 seconds before standing fully. Drink 16oz of water — dehydration makes this significantly worse. <strong>To test:</strong> Sit for 5 minutes, stand up, note if you feel dizzy or see spots. If yes, mention it to your doctor — they can do a simple tilt-table test. <strong>Longer term:</strong> Compression socks and increased salt + water intake reduce episodes in most people.`,
     askSage: 'My blood pressure dropped suddenly and my heart rate spiked — what does that mean?',
-    disclaimer: 'This pattern is a risk indicator, not a diagnosis of vasovagal syncope. Only a physician can diagnose.'
+    disclaimer: 'This is an observational blood pressure pattern, not a clinical diagnosis. Mention it to your physician if you experience dizziness when standing.'
   },
 
   // ── PAROXYSMAL AFIB DETECTION ──────────────────────────
@@ -425,7 +425,7 @@ const SIGNAL_PATTERNS = [
     id: 'afib_paroxysmal',
     level: 'urgent',
     icon: '⚡',
-    title: 'Paroxysmal AFib detection',
+    title: 'Irregular cardiac rhythm — take an ECG',
     category: 'Cardiovascular',
     detect(data) {
       const t = data[data.length-1];
@@ -436,11 +436,11 @@ const SIGNAL_PATTERNS = [
       const recentDrop = prev.hrv < 55;
       return erraticHRV && elevatedHR && recentDrop;
     },
-    watchingFor: 'Irregular R-R intervals — sudden erratic HRV spikes with elevated resting HR at rest',
+    watchingFor: 'Erratic beat-to-beat variation at rest — pattern worth a clinical ECG reading',
     narrative(data) {
       const t = data[data.length-1];
       const prev = data[data.length-2] || t;
-      return `Your ring detected an unusual pattern last night — <strong>a sudden spike in HRV variability (${prev.hrv}ms → ${t.hrv}ms) paired with an elevated resting heart rate of ${t.rhr} BPM while at rest</strong>. This pattern — erratic beat-to-beat variation at an elevated rate — is consistent with intermittent atrial fibrillation. Paroxysmal AFib comes and goes, which is why most people don't know they have it. It significantly increases stroke risk. This needs a proper ECG reading today.`;
+      return `Your ring detected an unusual pattern last night — <strong>a sudden spike in HRV variability (${prev.hrv}ms → ${t.hrv}ms) paired with an elevated resting heart rate of ${t.rhr} BPM while at rest</strong>. This pattern — erratic beat-to-beat variation at an elevated rate while at rest — is worth a clinical ECG reading. Intermittent rhythm irregularities can come and go, which is why continuous monitoring matters. A clinical ECG takes 30 seconds and gives your physician the data they need to evaluate this properly.`;
     },
     drivers(data) {
       const t = data[data.length-1];
@@ -451,7 +451,7 @@ const SIGNAL_PATTERNS = [
         { label: `Prior HRV ${prev.hrv}ms (baseline)`, flagged: false },
       ];
     },
-    action: 'Get a clinical ECG today — do not wait',
+    action: 'Take a static ECG reading and discuss with your physician today',
     actionHow: `<strong>Today:</strong> A KardiaMobile (AliveCor) personal ECG device costs $89 and gives you a medical-grade single-lead ECG in 30 seconds. Available on Amazon with next-day delivery. Alternatively, walk into any urgent care — they can do a 12-lead ECG on the spot, usually $50-100 without insurance. <strong>Do not ignore this signal.</strong> Paroxysmal AFib is intermittent — it may not show on your next reading, but documenting it is important. Untreated AFib is one of the leading causes of stroke.`,
     askSage: 'My ring detected an unusual heart rhythm pattern last night — how worried should I be?',
     disclaimer: 'Ring PPG sensors cannot definitively diagnose AFib. This is a screening signal requiring clinical ECG confirmation. If you feel palpitations, chest pain, or shortness of breath, call 911.'
@@ -573,7 +573,7 @@ const SIGNAL_PATTERNS = [
     id: 'upper_airway_resistance',
     level: 'watch',
     icon: '🫁',
-    title: 'Upper airway resistance',
+    title: 'Minor breathing disruption during sleep',
     category: 'Sleep Health',
     detect(data) {
       const t = data[data.length-1];
@@ -583,10 +583,10 @@ const SIGNAL_PATTERNS = [
       const remLow = t.rem < 1.3;
       return spo2Watch && apneaWatch && remLow;
     },
-    watchingFor: 'Minor SpO₂ dips + micro-arousals during REM — precursor pattern to full sleep apnea',
+    watchingFor: 'Minor SpO₂ dips + brief arousals during REM sleep — subtle breathing pattern worth watching',
     narrative(data) {
       const t = data[data.length-1];
-      return `Your ring picked up a subtle but significant pattern — <strong>SpO₂ dipping to ${t.spo2}% with ${t.apnea} airway events</strong> that don't quite reach full apnea threshold, paired with fragmented REM sleep of only ${t.rem}h. This is upper airway resistance syndrome — your airway is narrowing during sleep without fully collapsing. It's the precursor to obstructive sleep apnea, and the stage where intervention is most effective. Most people at this stage are dismissively told they don't have apnea — but their sleep quality and daytime energy tell a different story.`;
+      return `Your ring picked up a subtle but significant pattern — <strong>SpO₂ dipping to ${t.spo2}% with ${t.apnea} airway events</strong> that don't quite reach full apnea threshold, paired with fragmented REM sleep of only ${t.rem}h. Your airway may be narrowing slightly during sleep without a full breathing stop. This subtle pattern affects sleep quality and daytime energy. A home sleep study gives your physician the data to evaluate this properly.`;
     },
     drivers(data) {
       const t = data[data.length-1];
@@ -599,7 +599,7 @@ const SIGNAL_PATTERNS = [
     action: 'Side sleeping + nasal strips tonight — home sleep study this week',
     actionHow: `<strong>Tonight:</strong> Sleep on your side — it reduces airway resistance by 30-40% in most people. Try a nasal dilator strip (Breathe Right, $10 at any pharmacy). <strong>This week:</strong> Order a home sleep study — WatchPAT ONE or Lofta mail you a device. Upper airway resistance syndrome is frequently missed by standard sleep studies. Request that the physician specifically evaluate for UARS, not just apnea-hypopnea index (AHI). <strong>Do not use alcohol or sedatives</strong> — they relax airway muscles significantly.`,
     askSage: 'My ring is showing minor breathing disruptions during sleep — what is upper airway resistance and should I be concerned?',
-    disclaimer: 'Ring-based detection cannot diagnose UARS. A formal sleep study is required. This is a screening signal only.'
+    disclaimer: 'Ring sensors cannot diagnose sleep disorders. This is a screening observation only. A formal sleep study is required for any clinical diagnosis.'
   },
 
   // ── AUTONOMIC BURNOUT PATTERN ──────────────────────────
@@ -607,7 +607,7 @@ const SIGNAL_PATTERNS = [
     id: 'autonomic_burnout',
     level: 'watch',
     icon: '🔋',
-    title: 'Autonomic burnout pattern',
+    title: 'Nervous system recovery pattern',
     category: 'Mental Health & Recovery',
     detect(data, profile) {
       if (data.length < 5) return false;
@@ -621,13 +621,13 @@ const SIGNAL_PATTERNS = [
       const avgHRV = avg(data,'hrv');
       return declining && avgRHR > 70 && avgHRV < hrvNorm - 10 && avgSteps < 6000;
     },
-    watchingFor: 'Progressive daily HRV decline + rising RHR + low activity — sympathetic overactivation pattern',
+    watchingFor: 'Progressive daily HRV decline + rising RHR + low activity — recovery deficit building over the week',
     narrative(data, profile) {
       const age = profile.age || 48;
       const hrvNorm = Math.round(65 - age * 0.5);
       const avgHRV = avg(data, 'hrv');
       const avgRHR = avg(data, 'rhr');
-      return `Your ring has tracked a <strong>progressive decline in HRV every day this week</strong> — now at ${avgHRV}ms against your age-expected norm of ~${hrvNorm}ms — while your resting heart rate has climbed to ${avgRHR} BPM. Even on low-activity days your nervous system is not recovering. This is autonomic burnout — your sympathetic nervous system (fight-or-flight) is chronically overactivated and your parasympathetic (rest-and-recover) is losing ground. The body keeps going but the tank is emptying.`;
+      return `Your ring has tracked a <strong>progressive decline in HRV every day this week</strong> — now at ${avgHRV}ms against your age-expected norm of ~${hrvNorm}ms — while your resting heart rate has climbed to ${avgRHR} BPM. Even on low-activity days your nervous system is not recovering. Your nervous system recovery metrics have been declining daily — your body is expending more than it is recovering, even on low-activity days. The body keeps going but the tank is emptying.`;
     },
     drivers(data, profile) {
       const age = profile.age || 48;
@@ -642,7 +642,7 @@ const SIGNAL_PATTERNS = [
     action: 'Full rest protocol — 72 hours minimum before reassessing',
     actionHow: `<strong>The next 3 days:</strong> No structured exercise. No alcohol. 8+ hours sleep with consistent bedtime. Cold exposure (cold shower, cold water on face) activates the parasympathetic system — try 30 seconds of cold water on your face and neck morning and evening. <strong>Breathwork:</strong> 4-7-8 breathing (inhale 4, hold 7, exhale 8) for 5 minutes before bed directly activates the vagus nerve and raises HRV measurably within 20 minutes. <strong>If this persists beyond 2 weeks</strong> with no improvement, consider talking to your doctor about burnout evaluation — cortisol testing is a reasonable next step.`,
     askSage: 'My HRV has been declining every single day this week. What is happening to my nervous system?',
-    disclaimer: 'Autonomic burnout is a clinical concept. This signal is observational. Diagnosis requires clinical evaluation.'
+    disclaimer: 'This is an observational pattern based on HRV and resting HR trends. Individual variation is normal. Discuss persistent patterns with your physician.'
   },
 
   // ── SUBSTANCE CLEARANCE STRAIN ─────────────────────────
