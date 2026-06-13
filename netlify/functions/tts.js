@@ -27,7 +27,7 @@ exports.handler = async (event) => {
 
   const ssml = `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis"
     xmlns:mstts="http://www.w3.org/2001/mstts" xml:lang="en-US">
-    <voice name="en-US-AriaNeural">
+    <voice name="en-US-JennyNeural">
       <mstts:express-as style="empathetic">
         <prosody rate="-8%" pitch="-2%">
           ${clean.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
@@ -57,7 +57,7 @@ exports.handler = async (event) => {
       return {
         statusCode: 200,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ audio: base64, engine: 'azure-aria' })
+        body: JSON.stringify({ audio: base64, engine: 'azure-jenny' })
       };
     }
 
