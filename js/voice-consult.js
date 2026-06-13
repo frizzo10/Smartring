@@ -22,6 +22,7 @@ function openVoiceConsult(sigId, sigTitle, askQuestion) {
   vcState.signal = { id: sigId, title: sigTitle };
   vcState.messages = [];
   vcState.commitment = null;
+  vcState.currentAudio = null;
   vcState.isListening = false;
   vcState.isSpeaking = false;
 
@@ -77,8 +78,15 @@ async function openingMessage(sigId, sigTitle, askQuestion) {
 function toggleMic() {
   if (vcState.isSpeaking) {
     // Stop Dr. Sage speaking so user can respond
-    window.speechSynthesis.cancel();
+    if (vcState.currentAudio) {
+      vcState.currentAudio.pause();
+      vcState.currentAudio = null;
+    }
+    if (vcState.currentAudio) { vcState.currentAudio.pause(); vcState.currentAudio = null; }
+  if (window.speechSynthesis) window.speechSynthesis.cancel();
     vcState.isSpeaking = false;
+    setMicState('idle');
+    setVcStatus('Tap the mic to speak', '');
   }
 
   if (vcState.isListening) {
@@ -278,38 +286,98 @@ function showCommitmentBox(commitmentText) {
   }
 }
 
-/* ── DR. SAGE SPEAKS ─────────────────────────────── */
+/* ── DR. SAGE SPEAKS — ElevenLabs with Web Speech fallback ── */
 function sageSpeak(text) {
   return new Promise((resolve) => {
-    if (!window.speechSynthesis) { resolve(); return; }
-
-    window.speechSynthesis.cancel();
     vcState.isSpeaking = true;
     setMicState('speaking');
     setVcStatus('Dr. Sage is speaking — tap mic to interrupt', 'speaking');
 
-    // Clean text for speech (remove markdown)
-    const clean = text.replace(/[*_`#]/g, '').replace(/Note:.+$/i, '').trim();
+    // Clean text for speech
+    const clean = text
+      .replace(/[*_`#]/g, '')
+      .replace(/Note:.+$/i, '')
+      .replace(/<[^>]+>/g, '')
+      .trim();
 
-    const u = new SpeechSynthesisUtterance(clean);
-    u.rate = 0.9;
-    u.pitch = 1;
+    // Try ElevenLabs first
+    elevenLabsSpeak(clean)
+      .then(resolve)
+      .catch(() => {
+        // Fallback to Web Speech API
+        webSpeechSpeak(clean).then(resolve);
+      });
+  });
+}
+
+/* ── ELEVENLABS TTS ──────────────────────────────── */
+async function elevenLabsSpeak(text) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const res = await fetch('/.netlify/functions/tts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text })
+      });
+
+      if (!res.ok) { reject(new Error('TTS failed')); return; }
+
+      const data = await res.json();
+      if (!data.audio) { reject(new Error('No audio')); return; }
+
+      // Decode base64 to audio
+      const binary = atob(data.audio);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      const blob = new Blob([bytes], { type: 'audio/mpeg' });
+      const url = URL.createObjectURL(blob);
+
+      const audio = new Audio(url);
+      vcState.currentAudio = audio;
+
+      audio.onended = () => {
+        URL.revokeObjectURL(url);
+        vcState.currentAudio = null;
+        vcState.isSpeaking = false;
+        setMicState('idle');
+        setVcStatus('Tap the mic to respond', '');
+        resolve();
+      };
+
+      audio.onerror = () => {
+        URL.revokeObjectURL(url);
+        vcState.currentAudio = null;
+        reject(new Error('Audio playback failed'));
+      };
+
+      audio.play().catch(reject);
+
+    } catch(e) {
+      reject(e);
+    }
+  });
+}
+
+/* ── WEB SPEECH FALLBACK ─────────────────────────── */
+function webSpeechSpeak(text) {
+  return new Promise((resolve) => {
+    if (!window.speechSynthesis) {
+      vcState.isSpeaking = false;
+      setMicState('idle');
+      setVcStatus('Tap the mic to respond', '');
+      resolve();
+      return;
+    }
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.rate = 0.88; u.pitch = 1;
     if (vcState.voice) u.voice = vcState.voice;
-
-    u.onend = () => {
+    u.onend = u.onerror = () => {
       vcState.isSpeaking = false;
       setMicState('idle');
       setVcStatus('Tap the mic to respond', '');
       resolve();
     };
-
-    u.onerror = () => {
-      vcState.isSpeaking = false;
-      setMicState('idle');
-      setVcStatus('Tap the mic to respond', '');
-      resolve();
-    };
-
     window.speechSynthesis.speak(u);
   });
 }
@@ -450,6 +518,7 @@ function closeVoiceConsult() {
   if (vcState.recognition) {
     try { vcState.recognition.abort(); } catch(e) {}
   }
+  if (vcState.currentAudio) { vcState.currentAudio.pause(); vcState.currentAudio = null; }
   if (window.speechSynthesis) window.speechSynthesis.cancel();
   vcState.isListening = false;
   vcState.isSpeaking = false;
