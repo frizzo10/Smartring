@@ -14,7 +14,7 @@ let vcState = {
 };
 
 /* ── OPEN VOICE CONSULTATION ─────────────────────── */
-function openVoiceConsult(sigId, sigTitle, askQuestion) {
+function openVoiceConsult(sigId, sigTitle, askQuestion, isIntro = false) {
   const modal = document.getElementById('voiceModal');
   if (!modal) return;
 
@@ -43,7 +43,11 @@ function openVoiceConsult(sigId, sigTitle, askQuestion) {
   pickVoice();
 
   // Start with Dr. Sage opening the conversation
-  openingMessage(sigId, sigTitle, askQuestion);
+  if (isIntro || sigId === '__intro__') {
+    openingIntroMessage();
+  } else {
+    openingMessage(sigId, sigTitle, askQuestion);
+  }
 }
 
 /* ── PICK BEST VOICE ─────────────────────────────── */
@@ -58,6 +62,50 @@ function pickVoice() {
   // Retry if voices not loaded yet
   if (!vcState.voice && voices.length === 0) {
     window.speechSynthesis.onvoiceschanged = () => pickVoice();
+  }
+}
+
+
+/* ── FIRST-TIME INTRO CONVERSATION ─────────────────── */
+async function openingIntroMessage() {
+  const name = (typeof profile !== 'undefined' && profile.name) ? `, ${profile.name}` : '';
+
+  setVcStatus('Dr. Sage is connecting...', '');
+  setMicState('thinking');
+
+  try {
+    const res = await fetch('/.netlify/functions/claude', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        max_tokens: 100,
+        system: `You are Dr. Sage, meeting a new SageHealth user for the first time. This is a voice conversation.
+Be warm, human, and curious. Introduce yourself in ONE sentence. Then ask ONE open question about what brought them here.
+No medical data yet — just a human introduction. Max 2 sentences total. Voice — keep it short and warm.`,
+        messages: [{ role: 'user', content: 'Start the first conversation.' }]
+      })
+    });
+    const d = await res.json();
+    const opening = d.content?.[0]?.text?.trim() ||
+      `Hi${name} — I am Dr. Sage, your health advisor. Before I start looking at your numbers, I want to know: what brought you to SageHealth?`;
+
+    // Update modal signal label for intro
+    const label = document.getElementById('vc-signal-label');
+    if (label) label.textContent = 'Getting to know you';
+
+    addVcMessage('sage', opening);
+    vcState.messages.push({ role: 'assistant', content: opening });
+
+    // Override system for intro mode
+    vcState._introMode = true;
+
+    await sageSpeak(opening);
+  } catch(e) {
+    const fallback = `Hi${name}. I am Dr. Sage. Before I dive into your health data, I want to understand what matters to you. What brought you to SageHealth?`;
+    addVcMessage('sage', fallback);
+    vcState.messages.push({ role: 'assistant', content: fallback });
+    await sageSpeak(fallback);
   }
 }
 
@@ -303,6 +351,29 @@ async function handleUserSpeech(text) {
   }
 }
 
+
+/* ── INTRO MODE SYSTEM PROMPT ───────────────────────── */
+function buildIntroSystemPrompt() {
+  const name = (typeof profile !== 'undefined' && profile.name) ? profile.name : '';
+  return `You are Dr. Sage meeting ${name || 'a new user'} for the first time. Voice conversation.
+
+YOUR GOAL: Learn 3-5 things about this person that will shape every future conversation.
+Ask about:
+- What brought them here (specific health concern? general wellness? curiosity?)
+- Their lifestyle (work situation, stress, sleep habits, exercise)
+- What they've already tried
+- What matters most to them health-wise
+- Any concerns they haven't mentioned to their doctor
+
+RULES:
+- ONE question at a time. Never multiple.
+- Short responses — 1-2 sentences. This is voice.
+- Warm and genuinely curious — not clinical.
+- After 4-5 exchanges, summarize what you've learned and tell them what you'll be watching for.
+- End with: "I'll be here every morning with what I've noticed. Let's get started."
+- NEVER discuss specific biometric values yet — this is about them as a person first.`;
+}
+
 /* ── BUILD SYSTEM PROMPT — uses state map ─────────── */
 function buildSystemPrompt(sigId, sigTitle) {
   const name = (typeof profile !== 'undefined' && profile.name) ? profile.name : 'Frank';
@@ -313,7 +384,12 @@ function buildSystemPrompt(sigId, sigTitle) {
     ? formatStateMapForPrompt(stateMap, sigId)
     : `Signal: ${sigTitle} | Limited data available`;
 
+  // Inject persistent memory
+  const memoryContext = (typeof SageMemory !== 'undefined') ? SageMemory.buildContext() : '';
+
   return `You are Dr. Sage, an AI health coach for SageHealth. VOICE conversation with ${name}.
+
+${memoryContext}
 
 STRUCTURED HEALTH STATE (TK30 ring, 7-day analysis):
 ${stateContext}
@@ -506,10 +582,17 @@ function saveCommitment() {
     checkIns: []
   };
 
-  // Save to localStorage
-  const commitments = JSON.parse(localStorage.getItem('sh_commitments') || '[]');
-  commitments.unshift(record);
-  localStorage.setItem('sh_commitments', JSON.stringify(commitments));
+  // Save via SageSync (handles both localStorage and Supabase)
+  if (typeof SageSync !== 'undefined') {
+    SageSync.saveCommitment(record, null);
+  } else {
+    const commitments = JSON.parse(localStorage.getItem('sh_commitments') || '[]');
+    commitments.unshift(record);
+    localStorage.setItem('sh_commitments', JSON.stringify(commitments));
+  }
+
+  // Store baseline for later retrieval
+  vcState._baselineMetrics = record.baselineMetrics;
 
   // Also save as action item
   const actions = JSON.parse(localStorage.getItem('sh_actions') || '[]');
@@ -610,6 +693,26 @@ function setMicState(state) {
 
 /* ── CLOSE ───────────────────────────────────────── */
 function closeVoiceConsult() {
+  // Save conversation and extract memories if meaningful
+  if (vcState.messages && vcState.messages.length >= 3) {
+    const sig = vcState.signal || {};
+
+    // Extract memories from this conversation in background
+    if (typeof SageMemory !== 'undefined') {
+      SageMemory.extractFromConversation(vcState.messages);
+    }
+
+    // Save full conversation to Supabase
+    if (typeof SageSync !== 'undefined') {
+      SageSync.saveConversation(
+        sig.id, sig.title,
+        vcState.messages,
+        vcState.commitment,
+        vcState._baselineMetrics || null
+      );
+    }
+  }
+
   // Stop everything
   if (vcState.recognition) {
     try { vcState.recognition.abort(); } catch(e) {}

@@ -691,7 +691,8 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
     <div class="nav-item" onclick="showPage('settings',this)"><div class="nav-dot"></div><span>Settings</span></div>
   </nav>
   <div class="sidebar-bottom">
-    <div class="u-chip"><div class="u-av" id="sav">F</div><div><div class="u-name" id="sname">Frank</div><div class="u-sub">TK30 · SageHealth</div></div></div>
+    <div class="u-chip"><div class="u-av" id="sav">F</div><div><div class="u-name" id="sname">Frank</div><div class="u-sub">TK30 · SageHealth</div>
+      <button id="auth-btn" onclick="showAuthModal('signin')" style="font-size:10px;color:var(--blue);background:none;border:none;cursor:pointer;padding:2px 0;font-weight:600;text-align:left;">☁ Sync data</button></div></div>
   </div>
 </div>
 <div class="main">
@@ -715,7 +716,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
     </div>
     <div class="hdr-btns">
       <button class="btn-sm" onclick="startWt()" style="background:var(--green-bg);border-color:rgba(14,159,110,.3);color:var(--green);font-weight:700;">🧠 Meet Dr. Sage</button>
-      <button class="btn-sm" onclick="openWeekly()">📋 Weekly report</button>
+      <button class="btn-sm" onclick="openWeekly()">📅 This Week</button>
       <button class="btn-sm btn-dr" onclick="openContactDr()">🩺 Contact doctor</button>
       <button class="btn-sm" id="doctor-report-btn" onclick="generateDoctorReport()" style="background:var(--purple-bg);border-color:rgba(109,91,208,.3);color:var(--purple);">📋 Download doctor report</button>
     </div>
@@ -885,12 +886,12 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
 <!-- ════ WEEKLY MODAL ════ -->
 <div id="weeklyModal">
 <div class="wm-card">
-  <div class="wm-head"><div><div class="wm-title">Weekly health report</div><div class="wm-sub" id="wm-week-label"></div></div><button class="wm-close" onclick="closeWeekly()">✕</button></div>
+  <div class="wm-head"><div><div class="wm-title">This Week with Dr. Sage</div><div class="wm-sub" id="wm-week-label"></div></div><button class="wm-close" onclick="closeWeekly()">✕</button></div>
   <div class="wm-body">
     <div class="enc-tab-bar">
-      <button class="enc-tab active" id="etab-brief" onclick="encTab('brief')">Briefing</button>
-      <button class="enc-tab" id="etab-encounter" onclick="encTab('encounter')">Clinical encounter</button>
-      <button class="enc-tab" id="etab-chat" onclick="encTab('chat')">Talk to Dr. Sage</button>
+      <button class="enc-tab active" id="etab-brief" onclick="encTab('brief')">Your week</button>
+      <button class="enc-tab" id="etab-encounter" onclick="encTab('encounter')">Doctor prep</button>
+      <button class="enc-tab" id="etab-chat" onclick="encTab('chat')">Ask Dr. Sage</button>
     </div>
     <div class="enc-panel active" id="epanel-brief">
       <div class="wm-section"><div class="wm-label">This week at a glance</div><div class="wk-stats" id="wk-stats"></div></div>
@@ -1027,6 +1028,8 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
 
 <div id="toast"><div class="toast-title" id="toastTitle"></div><div class="toast-body" id="toastBody"></div></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>window.SAGE_SUPABASE_URL=window.SAGE_SUPABASE_URL||"";window.SAGE_SUPABASE_ANON=window.SAGE_SUPABASE_ANON||"";</script>
+<script src="/js/supabase.js"></script>
 <script src="/js/statemap.js"></script>
 <script src="/js/commitments.js"></script>
 <script src="/js/notifications.js"></script>
@@ -1072,7 +1075,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
       <span style="font-size:26px;">⚙️</span><span style="font-size:12px;font-weight:600;color:var(--text);">Settings</span>
     </button>
     <button onclick="openWeekly();toggleMobileMore()" style="display:flex;flex-direction:column;align-items:center;gap:6px;background:var(--blue-bg);border:1px solid rgba(29,111,164,.2);border-radius:14px;padding:16px 10px;cursor:pointer;">
-      <span style="font-size:26px;">📊</span><span style="font-size:12px;font-weight:600;color:var(--blue);">Weekly</span>
+      <span style="font-size:26px;">📊</span><span style="font-size:12px;font-weight:600;color:var(--blue);">This Week</span>
     </button>
     <button onclick="openContactDr();toggleMobileMore()" style="display:flex;flex-direction:column;align-items:center;gap:6px;background:var(--purple-bg);border:1px solid rgba(109,91,208,.2);border-radius:14px;padding:16px 10px;cursor:pointer;grid-column:1/-1;">
       <span style="font-size:26px;">🩺</span><span style="font-size:12px;font-weight:600;color:var(--purple);">Contact Doctor</span>
