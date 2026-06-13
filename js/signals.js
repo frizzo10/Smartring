@@ -948,7 +948,7 @@ const ANNOTATION_SUGGESTIONS = {
   bp_elevated:       ['Just had coffee', 'Stressed at work', 'Salty meal', 'White coat effect', 'Active before reading'],
   sleep_architecture:['Late screen time', 'Partner kept me up', 'Stress / racing thoughts', 'New environment', 'Alcohol'],
   substance_clearance:['Had a few drinks', 'Late dinner', 'Took medication', 'Ate very spicy food'],
-  thermal_dehydration:['Hot outside', 'Intense workout', 'Didn't drink enough water', 'Hot flash'],
+  thermal_dehydration:['Hot outside', 'Intense workout', 'Dehydrated', 'Hot flash'],
   chronic_stress:    ['Work deadline', 'Family situation', 'Poor sleep streak', 'Overtraining'],
   autonomic_burnout: ['Burnout from work', 'Illness recovery', 'Life event', 'Overtraining'],
   afib_paroxysmal:   ['Caffeine', 'Alcohol', 'Stress', 'Poor sleep', 'Dehydration'],
