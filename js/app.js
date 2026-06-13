@@ -688,17 +688,16 @@ function setVoiceIndicator(engine) {
   // Update the monitoring badge to show which voice is active
   const badge = document.getElementById('monitor-badge');
   if (!badge) return;
-  if (engine === 'azure') {
-    badge.innerHTML = '<span style="width:6px;height:6px;border-radius:50%;background:#10b981;animation:ecgp 2s infinite;display:inline-block;"></span> TK30 monitoring · <strong>Aria Neural voice</strong>';
-    badge.style.background = 'var(--green-bg)';
-    badge.style.color = 'var(--green)';
-    badge.style.borderColor = 'rgba(14,159,110,.25)';
-  } else {
-    badge.innerHTML = '<span style="width:6px;height:6px;border-radius:50%;background:var(--amber);animation:ecgp 2s infinite;display:inline-block;"></span> TK30 monitoring · <strong>browser voice</strong> (Azure key missing)';
-    badge.style.background = 'var(--amber-bg)';
-    badge.style.color = 'var(--amber)';
-    badge.style.borderColor = 'rgba(180,83,9,.25)';
-  }
+  const labels = {
+    'elevenlabs-rachel': { text: 'Rachel · ElevenLabs', bg: 'var(--green-bg)', color: 'var(--green)', border: 'rgba(14,159,110,.25)', dot: '#10b981' },
+    'azure-aria':        { text: 'Aria Neural · Azure',  bg: 'var(--blue-bg)',  color: 'var(--blue)',  border: 'rgba(29,111,164,.25)',  dot: '#3b82f6' },
+    'browser':           { text: 'browser voice (check API keys)', bg: 'var(--amber-bg)', color: 'var(--amber)', border: 'rgba(180,83,9,.25)', dot: 'var(--amber)' },
+  };
+  const lbl = labels[engine] || labels['browser'];
+  badge.innerHTML = `<span style="width:6px;height:6px;border-radius:50%;background:${lbl.dot};animation:ecgp 2s infinite;display:inline-block;"></span> TK30 monitoring · <strong>${lbl.text}</strong>`;
+  badge.style.background = lbl.bg;
+  badge.style.color = lbl.color;
+  badge.style.borderColor = lbl.border;
   // Reset after 8 seconds
   setTimeout(() => {
     badge.innerHTML = '<span style="width:6px;height:6px;border-radius:50%;background:#10b981;animation:ecgp 2s infinite;display:inline-block;"></span> TK30 monitoring active';

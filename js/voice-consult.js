@@ -314,7 +314,7 @@ function sageSpeak(text) {
 async function elevenLabsSpeak(text) {
   return new Promise(async (resolve, reject) => {
     try {
-      setVcStatus('Dr. Sage is speaking — Azure Aria Neural voice', 'speaking');
+      // engine label set after response
       const res = await fetch('/.netlify/functions/tts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -336,6 +336,8 @@ async function elevenLabsSpeak(text) {
       const audio = new Audio(url);
       vcState.currentAudio = audio;
 
+      const engineLabel = data.engine === 'elevenlabs-rachel' ? 'Rachel · ElevenLabs' : 'Aria Neural · Azure';
+      setVcStatus(`Dr. Sage is speaking — ${engineLabel} · tap mic to interrupt`, 'speaking');
       audio.onended = () => {
         URL.revokeObjectURL(url);
         vcState.currentAudio = null;

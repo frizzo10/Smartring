@@ -1,89 +1,113 @@
 /* ─────────────────────────────────────────────────────
-   Azure Cognitive Services TTS proxy
-   POST { text, voice? }
-   Returns audio/mpeg as base64
-   Free tier: 500k characters/month forever (F0)
+   SageHealth TTS proxy
+   Primary:  ElevenLabs Rachel (21m00Tc8r5r5hJfvQ5ar)
+   Fallback: Azure Aria Neural
    ───────────────────────────────────────────────────── */
 
-// Best Azure neural voices for Dr. Sage:
-// en-US-AriaNeural      — warm, conversational, natural  <- default
-// en-US-JennyNeural     — friendly, clear, trustworthy
-// en-US-SaraNeural      — calm, professional
-// en-US-NancyNeural     — warm, empathetic
-// en-GB-SoniaNeural     — British, authoritative
-
-const DEFAULT_VOICE = 'en-US-AriaNeural';
+const ELEVEN_VOICE_ID = '21m00Tc8r5r5hJfvQ5ar'; // Rachel
 
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method not allowed' };
   }
 
-  const apiKey = process.env.AZURE_SPEECH_KEY;
-  const region = process.env.AZURE_SPEECH_REGION || 'eastus';
-
-  if (!apiKey) {
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: 'AZURE_SPEECH_KEY not set in Netlify environment variables' })
-    };
-  }
-
   let body;
   try { body = JSON.parse(event.body); }
   catch (e) { return { statusCode: 400, body: JSON.stringify({ error: 'Invalid JSON' }) }; }
 
-  const { text, voice } = body;
+  const { text } = body;
   if (!text) return { statusCode: 400, body: JSON.stringify({ error: 'No text provided' }) };
 
-  const selectedVoice = voice || DEFAULT_VOICE;
+  const clean = text.replace(/<[^>]*>/g, '').trim();
 
-  // SSML gives us control over rate, pitch, and emotional style
-  const ssml = `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis"
-    xmlns:mstts="http://www.w3.org/2001/mstts"
-    xml:lang="en-US">
-    <voice name="${selectedVoice}">
-      <mstts:express-as style="empathetic">
-        <prosody rate="-8%" pitch="-2%">
-          ${text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
-        </prosody>
-      </mstts:express-as>
-    </voice>
-  </speak>`;
+  // ── Try ElevenLabs first ──────────────────────────────
+  const elevenKey = process.env.ELEVENLABS_API_KEY;
+  if (elevenKey) {
+    try {
+      const res = await fetch(
+        `https://api.elevenlabs.io/v1/text-to-speech/${ELEVEN_VOICE_ID}`,
+        {
+          method: 'POST',
+          headers: {
+            'xi-api-key': elevenKey,
+            'Content-Type': 'application/json',
+            'Accept': 'audio/mpeg'
+          },
+          body: JSON.stringify({
+            text: clean,
+            model_id: 'eleven_turbo_v2',
+            voice_settings: {
+              stability: 0.55,
+              similarity_boost: 0.80,
+              style: 0.15,
+              use_speaker_boost: true
+            }
+          })
+        }
+      );
 
-  try {
-    const response = await fetch(
-      `https://${region}.tts.speech.microsoft.com/cognitiveservices/v1`,
-      {
-        method: 'POST',
-        headers: {
-          'Ocp-Apim-Subscription-Key': apiKey,
-          'Content-Type': 'application/ssml+xml',
-          'X-Microsoft-OutputFormat': 'audio-16khz-128kbitrate-mono-mp3',
-          'User-Agent': 'SageHealth'
-        },
-        body: ssml
+      if (res.ok) {
+        const buffer = await res.arrayBuffer();
+        const base64 = Buffer.from(buffer).toString('base64');
+        return {
+          statusCode: 200,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ audio: base64, engine: 'elevenlabs-rachel' })
+        };
       }
-    );
-
-    if (!response.ok) {
-      const err = await response.text();
-      return {
-        statusCode: response.status,
-        body: JSON.stringify({ error: `Azure TTS error ${response.status}: ${err}` })
-      };
+    } catch(e) {
+      console.log('ElevenLabs failed, trying Azure:', e.message);
     }
-
-    const arrayBuffer = await response.arrayBuffer();
-    const base64 = Buffer.from(arrayBuffer).toString('base64');
-
-    return {
-      statusCode: 200,
-      headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
-      body: JSON.stringify({ audio: base64 })
-    };
-
-  } catch (err) {
-    return { statusCode: 500, body: JSON.stringify({ error: err.message }) };
   }
+
+  // ── Fallback: Azure Aria Neural ───────────────────────
+  const azureKey = process.env.AZURE_SPEECH_KEY;
+  const azureRegion = process.env.AZURE_SPEECH_REGION || 'eastus';
+
+  if (azureKey) {
+    try {
+      const ssml = `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis"
+        xmlns:mstts="http://www.w3.org/2001/mstts" xml:lang="en-US">
+        <voice name="en-US-AriaNeural">
+          <mstts:express-as style="empathetic">
+            <prosody rate="-8%" pitch="-2%">
+              ${clean.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+            </prosody>
+          </mstts:express-as>
+        </voice>
+      </speak>`;
+
+      const res = await fetch(
+        `https://${azureRegion}.tts.speech.microsoft.com/cognitiveservices/v1`,
+        {
+          method: 'POST',
+          headers: {
+            'Ocp-Apim-Subscription-Key': azureKey,
+            'Content-Type': 'application/ssml+xml',
+            'X-Microsoft-OutputFormat': 'audio-16khz-128kbitrate-mono-mp3',
+            'User-Agent': 'SageHealth'
+          },
+          body: ssml
+        }
+      );
+
+      if (res.ok) {
+        const buffer = await res.arrayBuffer();
+        const base64 = Buffer.from(buffer).toString('base64');
+        return {
+          statusCode: 200,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ audio: base64, engine: 'azure-aria' })
+        };
+      }
+    } catch(e) {
+      console.log('Azure TTS failed:', e.message);
+    }
+  }
+
+  // ── Both failed ───────────────────────────────────────
+  return {
+    statusCode: 503,
+    body: JSON.stringify({ error: 'No TTS service available', engine: 'none' })
+  };
 };
