@@ -700,6 +700,52 @@ function saveSettings(){
   localStorage.setItem('sh_profile',JSON.stringify(profile));localStorage.setItem('sh_goals',JSON.stringify(goals));setGreeting();showToast('✓ Saved','Settings updated.');
 }
 
+
+/* ── DOCTOR REPORT PDF ──────────────────────────────── */
+async function generateDoctorReport() {
+  const btn = document.getElementById('doctor-report-btn');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Generating report...'; }
+
+  try {
+    const stateMap = typeof loadStateMap === 'function' ? loadStateMap() : null;
+    const firedSignals = JSON.parse(localStorage.getItem('sh_active_signals') || '[]');
+    const commitments = JSON.parse(localStorage.getItem('sh_commitments') || '[]');
+    const today = new Date().toISOString().slice(0, 10);
+
+    const res = await fetch('/.netlify/functions/report', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        stateMap,
+        profile,
+        signals: firedSignals,
+        commitments,
+        reportDate: today
+      })
+    });
+
+    if (!res.ok) throw new Error('Report generation failed: ' + res.status);
+
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `SageHealth_Report_${today}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    showToast('📋 Report downloaded', 'Hand this to your doctor at your next visit.');
+
+  } catch(e) {
+    console.log('Report error:', e);
+    showToast('⚠ Report failed', 'Check your connection and try again.');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '📋 Download doctor report'; }
+  }
+}
+
 /* ─── BATTERY ──────────────────────────────────────── */
 function logRingCharged() {
   localStorage.setItem('sh_last_charge', Date.now().toString());
