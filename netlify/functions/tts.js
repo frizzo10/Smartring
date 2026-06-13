@@ -24,6 +24,7 @@ exports.handler = async (event) => {
   const elevenKey = process.env.ELEVENLABS_API_KEY;
   if (elevenKey) {
     try {
+      console.log('Trying ElevenLabs, key starts:', elevenKey.slice(0,6));
       const res = await fetch(
         `https://api.elevenlabs.io/v1/text-to-speech/${ELEVEN_VOICE_ID}`,
         {
@@ -46,17 +47,23 @@ exports.handler = async (event) => {
         }
       );
 
+      console.log('ElevenLabs status:', res.status);
+
       if (res.ok) {
         const buffer = await res.arrayBuffer();
         const base64 = Buffer.from(buffer).toString('base64');
+        console.log('ElevenLabs success, audio bytes:', buffer.byteLength);
         return {
           statusCode: 200,
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ audio: base64, engine: 'elevenlabs-rachel' })
         };
+      } else {
+        const errText = await res.text();
+        console.log('ElevenLabs error response:', errText);
       }
     } catch(e) {
-      console.log('ElevenLabs failed, trying Azure:', e.message);
+      console.log('ElevenLabs exception:', e.message);
     }
   }
 
@@ -66,6 +73,7 @@ exports.handler = async (event) => {
 
   if (azureKey) {
     try {
+      console.log('Trying Azure TTS');
       const ssml = `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis"
         xmlns:mstts="http://www.w3.org/2001/mstts" xml:lang="en-US">
         <voice name="en-US-AriaNeural">
@@ -91,6 +99,8 @@ exports.handler = async (event) => {
         }
       );
 
+      console.log('Azure status:', res.status);
+
       if (res.ok) {
         const buffer = await res.arrayBuffer();
         const base64 = Buffer.from(buffer).toString('base64');
@@ -99,13 +109,15 @@ exports.handler = async (event) => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ audio: base64, engine: 'azure-aria' })
         };
+      } else {
+        const errText = await res.text();
+        console.log('Azure error:', errText);
       }
     } catch(e) {
-      console.log('Azure TTS failed:', e.message);
+      console.log('Azure exception:', e.message);
     }
   }
 
-  // ── Both failed ───────────────────────────────────────
   return {
     statusCode: 503,
     body: JSON.stringify({ error: 'No TTS service available', engine: 'none' })
