@@ -43,7 +43,7 @@ function openVoiceConsult(sigId, sigTitle, askQuestion) {
   pickVoice();
 
   // Start with Dr. Sage opening the conversation
-  setTimeout(() => openingMessage(sigId, sigTitle, askQuestion), 400);
+  openingMessage(sigId, sigTitle, askQuestion);
 }
 
 /* ── PICK BEST VOICE ─────────────────────────────── */
@@ -69,29 +69,8 @@ async function openingMessage(sigId, sigTitle, askQuestion) {
   addVcMessage('sage', opening);
   vcState.messages.push({ role: 'assistant', content: opening });
 
-  // Safari iOS blocks autoplay — require user gesture first
-  // Show a tap-to-hear button instead of autoplaying
-  const isSafariIOS = /iP(hone|ad|od)/.test(navigator.userAgent) && /WebKit/.test(navigator.userAgent);
-  if (isSafariIOS) {
-    setVcStatus('Tap 🔊 to hear Dr. Sage, or tap the mic to respond', '');
-    // Add a hear button
-    const hearBtn = document.createElement('button');
-    hearBtn.id = 'vc-hear-btn';
-    hearBtn.style.cssText = 'display:block;margin:8px auto 0;background:var(--blue-bg);border:1px solid rgba(29,111,164,.3);color:var(--blue);border-radius:10px;padding:8px 20px;font-size:13px;font-weight:600;cursor:pointer;';
-    hearBtn.textContent = '🔊 Hear Dr. Sage';
-    hearBtn.onclick = async () => {
-      hearBtn.remove();
-      setVcStatus('Dr. Sage is speaking — tap mic to interrupt', 'speaking');
-      setMicState('speaking');
-      vcState.isSpeaking = true;
-      await sageSpeak(opening);
-    };
-    const statusEl = document.getElementById('vc-status');
-    if (statusEl) statusEl.after(hearBtn);
-  } else {
-    // Desktop / Android — autoplay works fine
-    await sageSpeak(opening);
-  }
+  // Play directly — we're still in the tap gesture chain from "Talk to Dr. Sage"
+  await sageSpeak(opening);
 }
 
 /* ── TOGGLE MIC ──────────────────────────────────── */
