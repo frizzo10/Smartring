@@ -102,6 +102,13 @@ function initApp(){
   buildSignalsPanel(data, profile, goals);
   if(typeof runCommitmentFollowUps==='function') runCommitmentFollowUps(data,profile);
 
+  // Build state map — clean structured context for all AI calls
+  const firedSigsForMap = JSON.parse(localStorage.getItem('sh_active_signals') || '[]');
+  if(typeof buildStateMap==='function') {
+    const stateMap = buildStateMap(data, profile, goals, firedSigsForMap);
+    if(typeof saveStateMap==='function') saveStateMap(stateMap);
+  }
+
   // Run notification check after signals are computed
   const firedSigs = JSON.parse(localStorage.getItem('sh_active_signals') || '[]');
   if(typeof runNotificationCheck==='function') {
