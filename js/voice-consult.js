@@ -367,14 +367,25 @@ async function elevenLabsSpeak(text) {
       const binary = atob(data.audio);
       const bytes = new Uint8Array(binary.length);
       for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-      const blob = new Blob([bytes], { type: 'audio/mpeg' });
+      const blob = new Blob([bytes.buffer], { type: 'audio/mpeg' });
       const url = URL.createObjectURL(blob);
 
-      const audio = new Audio(url);
+      const audio = new Audio();
+      audio.preload = 'auto';
       vcState.currentAudio = audio;
 
-      const engineLabel = data.engine === 'elevenlabs-rachel' ? 'Rachel · ElevenLabs' : 'Aria Neural · Azure';
-      setVcStatus(`Dr. Sage is speaking — ${engineLabel} · tap mic to interrupt`, 'speaking');
+      setVcStatus('Dr. Sage is speaking — Jenny Neural · Azure · tap mic to interrupt', 'speaking');
+
+      audio.oncanplaythrough = () => {
+        const p = audio.play();
+        if (p) p.catch(err => {
+          console.log('Safari blocked play:', err.message);
+          URL.revokeObjectURL(url);
+          vcState.currentAudio = null;
+          reject(err);
+        });
+      };
+
       audio.onended = () => {
         URL.revokeObjectURL(url);
         vcState.currentAudio = null;
@@ -384,13 +395,15 @@ async function elevenLabsSpeak(text) {
         resolve();
       };
 
-      audio.onerror = () => {
+      audio.onerror = (e) => {
+        console.log('Audio error:', e);
         URL.revokeObjectURL(url);
         vcState.currentAudio = null;
         reject(new Error('Audio playback failed'));
       };
 
-      audio.play().catch(reject);
+      audio.src = url;
+      audio.load();
 
     } catch(e) {
       reject(e);
