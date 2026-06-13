@@ -63,14 +63,58 @@ function pickVoice() {
 
 /* ── DR. SAGE OPENING MESSAGE ────────────────────── */
 async function openingMessage(sigId, sigTitle, askQuestion) {
-  const name = (typeof profile !== 'undefined' && profile.name) ? profile.name : 'Frank';
-  const opening = `Hi ${name}. I've been watching your health data and wanted to talk with you about something I noticed — ${sigTitle.toLowerCase()}. ${askQuestion} I want to understand what's actually going on in your life before we talk about any kind of plan. Can you tell me a bit about how you've been feeling lately?`;
+  const name = (typeof profile !== 'undefined' && profile.name) ? profile.name : '';
+  const age  = (typeof profile !== 'undefined' && profile.age)  ? profile.age  : '';
+  const t    = (typeof data    !== 'undefined') ? data[data.length - 1] : {};
 
-  addVcMessage('sage', opening);
-  vcState.messages.push({ role: 'assistant', content: opening });
+  setVcStatus('Dr. Sage is thinking...', '');
+  setMicState('thinking');
 
-  // Play directly — we're still in the tap gesture chain from "Talk to Dr. Sage"
-  await sageSpeak(opening);
+  // Generate a fresh, varied opening via Groq — never the same twice
+  const systemPrompt = buildSystemPrompt(sigId, sigTitle);
+  const userMsg = `[OPENING] Generate a SHORT, direct opening for a voice call about: ${sigTitle}.
+Key data: HRV ${t.hrv||'--'}ms, RHR ${t.rhr||'--'} BPM, BP ${t.bpSys||'--'}/${t.bpDia||'--'}, sleep ${t.sleep||'--'}h.
+Rules:
+- MAX 2 sentences. This is voice — be brief.
+- Start differently every time. Never start with "Hi ${name}" followed by the same preamble.
+- Get straight to what you noticed. Mention one specific number.
+- End with ONE direct question about their life, not their data.
+- Vary the opener: sometimes start with the finding, sometimes with a question, sometimes with context.
+- Examples of good openers:
+  "Your HRV dropped 12 points this week while your heart rate crept up — what's been going on?"
+  "Something in your overnight data caught my attention. How has your energy been this week?"
+  "Before we talk about your ${sigTitle.toLowerCase()}, I want to know — how are you actually feeling?"`;
+
+  try {
+    const res = await fetch('/.netlify/functions/claude', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        max_tokens: 80,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: userMsg }]
+      })
+    });
+    const d = await res.json();
+    const opening = d.content?.[0]?.text?.trim() || `Your ${sigTitle.toLowerCase()} data caught my attention. How have you been feeling lately?`;
+
+    addVcMessage('sage', opening);
+    vcState.messages.push({ role: 'assistant', content: opening });
+    await sageSpeak(opening);
+
+  } catch(e) {
+    // Fallback if Groq fails
+    const fallbacks = [
+      `Your ${sigTitle.toLowerCase()} pattern this week is worth talking about. What's been going on in your life?`,
+      `I noticed something in your data around ${sigTitle.toLowerCase()}. How have you been feeling?`,
+      `One of your signals — ${sigTitle.toLowerCase()} — has my attention. Tell me what's been happening.`,
+    ];
+    const opening = fallbacks[Math.floor(Math.random() * fallbacks.length)];
+    addVcMessage('sage', opening);
+    vcState.messages.push({ role: 'assistant', content: opening });
+    await sageSpeak(opening);
+  }
 }
 
 /* ── TOGGLE MIC ──────────────────────────────────── */
