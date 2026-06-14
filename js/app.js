@@ -704,7 +704,61 @@ function saveSettings(){
 
 
 /* ── DOCTOR REPORT PDF ──────────────────────────────── */
+function askDoctorType() {
+  return new Promise((resolve) => {
+    const modal = document.createElement('div');
+    modal.id = 'dr-type-modal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(30,40,60,.6);backdrop-filter:blur(4px);z-index:1000;display:flex;align-items:center;justify-content:center;padding:24px;';
+
+    const doctors = [
+      { id:'primary_care',  label:'Primary Care / GP',       icon:'🩺', desc:'General visit or annual check-up' },
+      { id:'cardiologist',  label:'Cardiologist',             icon:'❤️', desc:'Heart, BP, rhythm, HRV concerns' },
+      { id:'endocrinologist',label:'Endocrinologist',         icon:'⚗️', desc:'Thyroid, diabetes, hormones' },
+      { id:'pulmonologist', label:'Pulmonologist / Sleep',    icon:'🫁', desc:'Breathing, sleep apnea, SpO₂' },
+      { id:'neurologist',   label:'Neurologist',              icon:'🧠', desc:'Nervous system, stress, burnout' },
+      { id:'gynecologist',  label:'Gynecologist / OB-GYN',   icon:'👩‍⚕️', desc:'Hormonal patterns, cycle health' },
+      { id:'other',         label:'Other specialist',         icon:'👨‍⚕️', desc:'Any other physician' },
+    ];
+
+    modal.innerHTML = `
+      <div style="background:white;border-radius:20px;padding:28px;max-width:460px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.15);max-height:90vh;overflow-y:auto;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+          <div style="font-size:16px;font-weight:800;color:var(--text);">Who are you seeing?</div>
+          <button onclick="document.getElementById('dr-type-modal').remove();window._drTypeResolve(null);" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;">✕</button>
+        </div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:18px;">Dr. Sage will tailor the report language and focus to the specialist you're visiting.</div>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;">
+          ${doctors.map(d => `
+            <button onclick="document.getElementById('dr-type-modal').remove();window._drTypeResolve({id:'${d.id}',label:'${d.label}'});"
+              style="display:flex;align-items:center;gap:12px;background:var(--bg);border:1px solid var(--border2);border-radius:12px;padding:12px 14px;cursor:pointer;text-align:left;width:100%;"
+              onmouseover="this.style.background='var(--blue-bg)';this.style.borderColor='rgba(29,111,164,.3)'"
+              onmouseout="this.style.background='var(--bg)';this.style.borderColor='var(--border2)'">
+              <span style="font-size:22px;flex-shrink:0;">${d.icon}</span>
+              <div>
+                <div style="font-size:13px;font-weight:700;color:var(--text);">${d.label}</div>
+                <div style="font-size:11px;color:var(--muted);margin-top:2px;">${d.desc}</div>
+              </div>
+            </button>
+          `).join('')}
+        </div>
+        <div style="text-align:center;">
+          <button onclick="document.getElementById('dr-type-modal').remove();window._drTypeResolve({id:'primary_care',label:'Physician'});"
+            style="background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;text-decoration:underline;">
+            Skip — generate general report
+          </button>
+        </div>
+      </div>`;
+
+    window._drTypeResolve = resolve;
+    document.body.appendChild(modal);
+  });
+}
+
 async function generateDoctorReport() {
+  // Ask who they're seeing — Dr. Sage tailors the report
+  const doctorInfo = await askDoctorType();
+  if (doctorInfo === null) return; // closed modal = cancelled
+
   const btn = document.getElementById('doctor-report-btn');
   if (btn) { btn.disabled = true; btn.textContent = '⏳ Generating report...'; }
 
@@ -726,6 +780,7 @@ async function generateDoctorReport() {
         signals: firedSignals,
         commitments,
         testResults: JSON.parse(localStorage.getItem('sh_test_results') || '{}'),
+        doctorInfo,
         reportDate: today
       })
     });
