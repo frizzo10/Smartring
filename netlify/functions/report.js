@@ -284,7 +284,7 @@ function buildClinicalPrompt(stateMap, profile, signals, commitments, doctorInfo
     neurologist:     'Focus on HRV as autonomic nervous system indicator, stress patterns, sleep architecture, recovery metrics. Highlight burnout or nervous system signals.',
     gynecologist:    'Focus on temperature patterns, hormonal cycle signals, HRV variability patterns. Highlight any ovulation or hormonal signals.',
     primary_care:    'Provide a comprehensive overview of all biometric systems. Balance breadth and depth.',
-    other:           'Provide a comprehensive overview suitable for any specialist to quickly understand this patient's biometric picture.',
+    other:           'Provide a comprehensive overview suitable for any specialist to quickly understand this patients biometric picture.',
   }[drId] || 'Provide a comprehensive clinical overview.';
 
   return \`Generate a concise 3-paragraph clinical summary for a \${drLabel} appointment. Patient uses continuous biometric monitoring (myDrSage V80 ring).
