@@ -710,7 +710,10 @@ async function generateDoctorReport() {
 
   try {
     const stateMap = typeof loadStateMap === 'function' ? loadStateMap() : null;
-    const firedSignals = JSON.parse(localStorage.getItem('sh_active_signals') || '[]');
+    // Only pass signals that are currently fired AND not dismissed
+    const allFiredSignals = JSON.parse(localStorage.getItem('sh_active_signals') || '[]');
+    const dismissed = JSON.parse(localStorage.getItem('sh_acknowledged_signals') || '{}');
+    const firedSignals = allFiredSignals.filter(s => !dismissed[s.id]);
     const commitments = JSON.parse(localStorage.getItem('sh_commitments') || '[]');
     const today = new Date().toISOString().slice(0, 10);
 
