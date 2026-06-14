@@ -47,7 +47,19 @@ exports.handler = async (event) => {
     }
   }
 
-  // ── Step 2: Generate PDF using PDFKit ──
+  // ── Step 2: Check if JSON-only request (for in-app display) ──
+  const wantsJson = (event.queryStringParameters?.format === 'json') ||
+                    (body.format === 'json');
+
+  if (wantsJson) {
+    return {
+      statusCode: 200,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ narrative, date })
+    };
+  }
+
+  // ── Step 3: Generate PDF using PDFKit ──
   try {
     const pdfBuffer = await generatePDF(stateMap, profile, signals, commitments, narrative, date);
     const base64 = pdfBuffer.toString('base64');
@@ -57,7 +69,8 @@ exports.handler = async (event) => {
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': `attachment; filename="myDrSage_Report_${date}.pdf"`,
-        'Cache-Control': 'no-cache'
+        'Cache-Control': 'no-cache',
+        'X-Report-Narrative': encodeURIComponent(narrative.slice(0, 500))
       },
       body: base64,
       isBase64Encoded: true

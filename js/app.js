@@ -771,31 +771,27 @@ async function generateDoctorReport() {
     const commitments = JSON.parse(localStorage.getItem('sh_commitments') || '[]');
     const today = new Date().toISOString().slice(0, 10);
 
-    const res = await fetch('/.netlify/functions/report', {
+    const payload = {
+      stateMap, profile,
+      signals: firedSignals,
+      commitments,
+      testResults: JSON.parse(localStorage.getItem('sh_test_results') || '{}'),
+      doctorInfo,
+      reportDate: today
+    };
+
+    // Step 1: Get narrative first (fast ~2s) — display in app immediately
+    const narrativeRes = await fetch('/.netlify/functions/report', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        stateMap,
-        profile,
-        signals: firedSignals,
-        commitments,
-        testResults: JSON.parse(localStorage.getItem('sh_test_results') || '{}'),
-        doctorInfo,
-        reportDate: today
-      })
+      body: JSON.stringify({ ...payload, format: 'json' })
     });
 
-    if (!res.ok) throw new Error('Report generation failed: ' + res.status);
+    if (!narrativeRes.ok) throw new Error('Report failed: ' + narrativeRes.status);
+    const narrativeData = await narrativeRes.json();
+    const narrative = narrativeData.narrative || '';
 
-    // Store PDF blob for later download/email
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
-    window._lastReportBlob = blob;
-    window._lastReportUrl  = url;
-    window._lastReportDate = today;
-    window._lastReportDoctor = doctorInfo;
-
-    // Save report record to localStorage + Supabase
+    // Save report record
     const reportRecord = {
       id: Date.now(),
       date: today,
@@ -804,23 +800,23 @@ async function generateDoctorReport() {
       signalCount: firedSignals.length,
       signals: firedSignals.map(s => s.title),
       healthGrade: stateMap?.health_grade || 'B',
-      blobUrl: url
+      narrative
     };
     const saved = JSON.parse(localStorage.getItem('sh_doctor_reports') || '[]');
     saved.unshift(reportRecord);
     localStorage.setItem('sh_doctor_reports', JSON.stringify(saved.slice(0, 10)));
 
-    // Render inline preview in modal
-    renderReportPreview(reportRecord, firedSignals, stateMap, doctorInfo);
+    window._lastReportDate   = today;
+    window._lastReportDoctor = doctorInfo;
+    window._lastReportPayload = payload;
 
-    // Show saved reports bar
+    // Render in-app with narrative
+    renderReportPreview(reportRecord, firedSignals, stateMap, doctorInfo, narrative);
     loadSavedReports();
-
-    // Show action buttons
     document.getElementById('report-actions').style.display = 'block';
     document.getElementById('report-generating').style.display = 'none';
 
-    showToast('✓ Report ready', 'Email it to your doctor or download the PDF.');
+    showToast('✓ Report ready', 'Email it to your doctor or tap Download PDF.');
 
   } catch(e) {
     console.log('Report error:', e);
@@ -833,7 +829,7 @@ async function generateDoctorReport() {
 
 /* ── DOCTOR REPORT — IN APP ─────────────────────────── */
 
-function renderReportPreview(record, signals, stateMap, doctorInfo) {
+function renderReportPreview(record, signals, stateMap, doctorInfo, narrative) {
   const m = stateMap || {};
   const cv = m.cardio || {};
   const sl = m.sleep || {};
@@ -853,6 +849,13 @@ function renderReportPreview(record, signals, stateMap, doctorInfo) {
         <div style="font-size:16px;font-weight:800;">${p.name || 'Patient'}, ${p.age || '--'}yo ${p.sex || ''}</div>
         <div style="font-size:11px;opacity:.8;margin-top:4px;">For: ${doctorInfo?.label || 'Physician'} · Generated ${date}</div>
       </div>
+
+      <!-- Dr. Sage Clinical Analysis -->
+      ${narrative ? '<div style="padding:16px 18px;border-bottom:1px solid var(--border);background:var(--bg);">' +
+        '<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;">Dr. Sage Clinical Analysis</div>' +
+        '<div style="font-size:13px;color:var(--text);line-height:1.7;">' +
+        narrative.replace(/\n\n/g, '</p><p style="margin-top:10px;">').replace(/^/, '<p>').replace(/$/, '</p>') +
+        '</div></div>' : ''}
 
       <!-- Biometric summary -->
       <div style="padding:14px 16px;border-bottom:1px solid var(--border);">
@@ -937,21 +940,40 @@ function loadSavedReport(idx) {
   if (!record) return;
   const stateMap = typeof loadStateMap === 'function' ? loadStateMap() : null;
   const signals = (record.signals || []).map(title => ({ title, level: 'watch', action: '' }));
-  renderReportPreview(record, signals, stateMap, { label: record.doctor, id: record.doctorId });
+  renderReportPreview(record, signals, stateMap, { label: record.doctor, id: record.doctorId }, record.narrative || '');
   document.getElementById('report-actions').style.display = 'block';
 }
 
-function downloadReportPDF() {
-  if (!window._lastReportUrl) {
+async function downloadReportPDF() {
+  if (!window._lastReportPayload) {
     showToast('⚠ No report', 'Generate a report first.');
     return;
   }
-  const a = document.createElement('a');
-  a.href = window._lastReportUrl;
-  a.download = 'myDrSage_Report_' + (window._lastReportDate || 'report') + '.pdf';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
+  const btn = event?.target;
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Building PDF...'; }
+
+  try {
+    const res = await fetch('/.netlify/functions/report', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(window._lastReportPayload)
+    });
+    if (!res.ok) throw new Error('PDF failed: ' + res.status);
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'myDrSage_Report_' + (window._lastReportDate || 'report') + '.pdf';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast('✓ PDF downloaded', 'Attach it to your email to the doctor.');
+  } catch(e) {
+    showToast('⚠ PDF failed', e.message);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '⬇️ Download PDF'; }
+  }
 }
 
 function emailReport() {
