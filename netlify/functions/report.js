@@ -1,14 +1,9 @@
 /* ─────────────────────────────────────────────────────
    SageHealth — Doctor Report PDF Generator
-   POST { stateMap, profile, signals, commitments }
-   Returns PDF as base64
-
-   Uses Groq to generate clinical narrative,
-   then Python (via child_process) to render PDF.
+   Pure Node.js using PDFKit — no Python needed
    ───────────────────────────────────────────────────── */
 
-const { execSync } = require('child_process');
-const path = require('path');
+const PDFDocument = require('pdfkit');
 
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') {
@@ -20,12 +15,13 @@ exports.handler = async (event) => {
   catch (e) { return { statusCode: 400, body: JSON.stringify({ error: 'Invalid JSON' }) }; }
 
   const { stateMap, profile, signals, commitments, reportDate } = body;
+  const date = reportDate || new Date().toISOString().slice(0, 10);
 
   // ── Step 1: Generate clinical narrative via Groq ──
   const groqKey = process.env.GROQ_API_KEY;
-  let narrative = '';
+  let narrative = 'Clinical narrative not available.';
 
-  if (groqKey && stateMap) {
+  if (groqKey) {
     try {
       const prompt = buildClinicalPrompt(stateMap, profile, signals, commitments);
       const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -36,345 +32,266 @@ exports.handler = async (event) => {
         },
         body: JSON.stringify({
           model: 'llama-3.3-70b-versatile',
-          max_tokens: 800,
+          max_tokens: 600,
           temperature: 0.3,
           messages: [
-            { role: 'system', content: 'You are a clinical documentation assistant. Write concise, precise clinical summaries for physician review. Use medical terminology appropriately. Never diagnose — only report observations and patterns.' },
+            { role: 'system', content: 'You are a clinical documentation assistant. Write concise, precise clinical summaries for physician review. Use medical terminology. Never diagnose — only report patterns and observations.' },
             { role: 'user', content: prompt }
           ]
         })
       });
       const data = await res.json();
-      narrative = data.choices?.[0]?.message?.content || '';
+      narrative = data.choices?.[0]?.message?.content || narrative;
     } catch(e) {
       console.log('Groq narrative failed:', e.message);
     }
   }
 
-  // ── Step 2: Generate PDF via Python inline ────────
-  const pythonScript = buildPythonScript(stateMap, profile, signals, commitments, narrative, reportDate);
-
+  // ── Step 2: Generate PDF using PDFKit ──
   try {
-    const result = execSync(`python3 -c "${pythonScript.replace(/"/g, '\\"').replace(/\n/g, '\\n')}"`, {
-      encoding: 'buffer',
-      maxBuffer: 10 * 1024 * 1024
-    });
-
-    // Python prints base64 to stdout
-    const base64 = result.toString('utf8').trim();
+    const pdfBuffer = await generatePDF(stateMap, profile, signals, commitments, narrative, date);
+    const base64 = pdfBuffer.toString('base64');
 
     return {
       statusCode: 200,
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="SageHealth_Report_${(reportDate || new Date().toISOString().slice(0,10))}.pdf"`,
+        'Content-Disposition': `attachment; filename="myDrSage_Report_${date}.pdf"`,
         'Cache-Control': 'no-cache'
       },
       body: base64,
       isBase64Encoded: true
     };
-
   } catch(e) {
-    console.log('PDF generation error:', e.message);
-    return { statusCode: 500, body: JSON.stringify({ error: 'PDF generation failed', detail: e.message }) };
+    console.log('PDF error:', e.message);
+    return { statusCode: 500, body: JSON.stringify({ error: e.message }) };
   }
 };
 
-/* ── BUILD CLINICAL PROMPT ─────────────────────────── */
-function buildClinicalPrompt(stateMap, profile, signals, commitments) {
-  const m = stateMap;
-  const activeSignals = (signals || []).map(s => `${s.title} [${s.level}]`).join(', ') || 'None';
-  const activeCommitments = (commitments || []).filter(c => c.status === 'active').map(c => c.commitment).join('; ') || 'None';
+// ── PDF GENERATION ────────────────────────────────────
+function generatePDF(stateMap, profile, signals, commitments, narrative, date) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    const doc = new PDFDocument({ size: 'LETTER', margin: 50 });
 
-  return `Generate a concise clinical summary for a physician office visit. This patient uses a continuous biometric monitoring ring (Wosheng TK30).
+    doc.on('data', chunk => chunks.push(chunk));
+    doc.on('end', () => resolve(Buffer.concat(chunks)));
+    doc.on('error', reject);
 
-PATIENT: ${profile?.age || '--'}yo ${profile?.sex || 'Unknown'} | Conditions: ${profile?.conditions || 'None reported'} | Medications: ${profile?.medications || 'None reported'}
+    const m  = stateMap || {};
+    const c  = m.cardio || {};
+    const s  = m.sleep || {};
+    const t  = m.temperature || {};
+    const a  = m.activity || {};
+    const r  = m.recovery || {};
+    const p  = profile || {};
+    const W  = doc.page.width - 100; // usable width
 
-7-DAY BIOMETRIC SUMMARY:
-- HRV: ${m?.cardio?.hrv?.current || '--'}ms (age norm ${m?.cardio?.hrv?.age_norm || '--'}ms, status: ${m?.cardio?.hrv?.status || '--'}, trend: ${m?.cardio?.hrv?.trend?.label || '--'})
-- RHR: ${m?.cardio?.rhr?.current || '--'} BPM (status: ${m?.cardio?.rhr?.status || '--'}, trend: ${m?.cardio?.rhr?.trend?.label || '--'})
-- BP avg: ${m?.cardio?.bp?.systolic || '--'}/${m?.cardio?.bp?.diastolic || '--'} mmHg (${m?.cardio?.bp?.days_elevated || 0}/7 days elevated, trend: ${m?.cardio?.bp?.trend?.label || '--'})
-- SpO2: ${m?.cardio?.spo2?.current || '--'}% (status: ${m?.cardio?.spo2?.status || '--'})
-- Sleep: ${m?.sleep?.total?.avg7d || '--'}h total, ${m?.sleep?.deep?.avg7d || '--'}h deep, ${m?.sleep?.rem?.avg7d || '--'}h REM
-- Overnight temp: ${m?.temperature?.last_night_f || '--'}°F (${m?.temperature?.deviation_f > 0 ? '+' : ''}${m?.temperature?.deviation_f || 0}°F from baseline)
-- Steps: ${m?.activity?.steps_avg7d?.toLocaleString() || '--'}/day avg
-- Health grade: ${m?.health_grade || '--'}
+    // Colors
+    const BLUE  = '#1D6FA4';
+    const GREEN = '#0E9F6E';
+    const AMBER = '#B45309';
+    const RED   = '#C0392B';
+    const GREY  = '#6B7F96';
+    const DARK  = '#1A2535';
 
-DETECTED PATTERNS: ${activeSignals}
-PATIENT COMMITMENTS: ${activeCommitments}
+    // ── HEADER ────────────────────────────────────────
+    doc.rect(50, 50, W, 60).fill(BLUE);
+    doc.fill('white').fontSize(18).font('Helvetica-Bold')
+       .text('myDrSage', 60, 62);
+    doc.fontSize(9).font('Helvetica')
+       .text('Continuous Biometric Monitoring', 60, 84);
+    doc.fontSize(14).font('Helvetica-Bold')
+       .text('PATIENT HEALTH REPORT', 200, 62, { width: W - 160, align: 'center' });
+    doc.fontSize(9).font('Helvetica')
+       .text('For Physician Review', 200, 84, { width: W - 160, align: 'center' });
+    doc.fontSize(9)
+       .text(`Date: ${date}`, 60, 62, { width: W, align: 'right' })
+       .text('Generated by myDrSage AI', 60, 76, { width: W, align: 'right' });
 
-Write a 3-paragraph clinical summary:
-1. Overview of biometric trends and overall health picture (2-3 sentences)
-2. Notable findings that warrant clinical attention, with specific values (2-3 sentences)
-3. Suggested discussion points for this visit based on the data (2-3 sentences)
+    doc.fill(DARK);
+    let y = 125;
 
-Use clinical language. Be specific with numbers. Do not diagnose. End with: "Data generated by SageHealth continuous biometric monitoring. This summary is for informational purposes and does not constitute medical advice."`;
+    // ── PATIENT INFO ─────────────────────────────────
+    doc.rect(50, y, W, 1).fill('#E2E8F0'); y += 8;
+    doc.fontSize(10).font('Helvetica-Bold').fill(BLUE).text('PATIENT INFORMATION', 50, y); y += 16;
+
+    const infoItems = [
+      ['Patient', p.name || 'Not provided'],
+      ['Age / Sex', `${p.age || '--'}yo / ${p.sex || '--'}`],
+      ['Conditions', p.conditions || 'None reported'],
+      ['Medications', p.medications || 'None reported'],
+      ['Ring Device', 'myDrSage V80 Smart Ring'],
+      ['Health Grade', m.health_grade || 'B'],
+      ['Data Period', '7-day analysis'],
+      ['Report Date', date],
+    ];
+
+    const colW = W / 2 - 10;
+    infoItems.forEach((item, i) => {
+      const x = i % 2 === 0 ? 50 : 50 + colW + 20;
+      const rowY = y + Math.floor(i / 2) * 18;
+      doc.fontSize(8).font('Helvetica-Bold').fill(BLUE).text(item[0] + ':', x, rowY, { width: 90 });
+      doc.font('Helvetica').fill(DARK).text(item[1], x + 95, rowY, { width: colW - 95 });
+    });
+    y += Math.ceil(infoItems.length / 2) * 18 + 12;
+
+    // ── CLINICAL SUMMARY ──────────────────────────────
+    doc.rect(50, y, W, 1).fill('#E2E8F0'); y += 8;
+    doc.fontSize(10).font('Helvetica-Bold').fill(BLUE).text('CLINICAL SUMMARY', 50, y); y += 14;
+
+    doc.fontSize(9).font('Helvetica').fill(DARK);
+    const cleanNarrative = narrative.replace(/\*\*/g, '').replace(/\*/g, '').trim();
+    const narHeight = doc.heightOfString(cleanNarrative, { width: W, lineGap: 2 });
+    doc.text(cleanNarrative, 50, y, { width: W, lineGap: 2 });
+    y += narHeight + 16;
+
+    // ── BIOMETRIC DASHBOARD ───────────────────────────
+    doc.rect(50, y, W, 1).fill('#E2E8F0'); y += 8;
+    doc.fontSize(10).font('Helvetica-Bold').fill(BLUE).text('7-DAY BIOMETRIC SUMMARY', 50, y); y += 14;
+
+    // Table header
+    const cols = [180, 80, 80, 100, W - 460];
+    const headers = ['Metric', 'Value', 'Status', '7-Day Trend', 'Clinical Note'];
+    doc.rect(50, y, W, 16).fill('#1D6FA4');
+    let x = 50;
+    headers.forEach((h, i) => {
+      doc.fontSize(8).font('Helvetica-Bold').fill('white').text(h, x + 3, y + 4, { width: cols[i] });
+      x += cols[i];
+    });
+    y += 16;
+
+    function statusColor(status) {
+      if (!status) return GREY;
+      if (['excellent','optimal','athletic','peak','goal_met'].includes(status)) return GREEN;
+      if (['healthy','normal','good','close'].includes(status)) return BLUE;
+      if (['elevated','below_norm','watch','moderate','below_goal'].includes(status)) return AMBER;
+      return RED;
+    }
+
+    const metrics = [
+      ['Heart Rate Variability (HRV)', `${c.hrv?.current || '--'} ms`, c.hrv?.status, c.hrv?.trend?.label, `Age norm ~${c.hrv?.age_norm || '--'}ms`],
+      ['Resting Heart Rate', `${c.rhr?.current || '--'} BPM`, c.rhr?.status, c.rhr?.trend?.label, ''],
+      ['Blood Pressure (avg)', `${c.bp?.systolic || '--'}/${c.bp?.diastolic || '--'} mmHg`, c.bp?.status, c.bp?.trend?.label, `${c.bp?.days_elevated || 0}/7 days elevated`],
+      ['Blood Oxygen (SpO₂)', `${c.spo2?.current || '--'}%`, c.spo2?.status, c.spo2?.trend?.label, 'Overnight avg'],
+      ['Total Sleep', `${s.total?.avg7d || '--'} h avg`, s.total?.avg7d >= 7 ? 'normal' : 'watch', s.total?.trend?.label, `Goal: ${s.total?.goal || 7.5}h`],
+      ['Deep Sleep', `${s.deep?.avg7d || '--'} h avg`, s.deep?.avg7d >= 1.2 ? 'normal' : 'watch', s.deep?.trend?.label, 'Target 1.5h'],
+      ['REM Sleep', `${s.rem?.avg7d || '--'} h avg`, s.rem?.avg7d >= 1.2 ? 'normal' : 'watch', s.rem?.trend?.label, 'Target 1.5h'],
+      ['Skin Temperature', `${t.last_night_f || '--'}°F`, t.status?.replace('_',' '), t.trend?.label, `${t.deviation_f > 0 ? '+' : ''}${t.deviation_f || 0}°F from baseline`],
+      ['Daily Steps', `${(a.steps_avg7d || 0).toLocaleString()}/day`, a.status, a.trend?.label, `${a.goal_pct || 0}% of goal`],
+      ['Readiness Score', `${r.readiness || '--'}/100`, r.status, r.trend?.label, `${r.consecutive_low_days || 0} consecutive low days`],
+    ];
+
+    metrics.forEach((row, idx) => {
+      const rowColor = idx % 2 === 0 ? 'white' : '#F7FAFC';
+      doc.rect(50, y, W, 15).fill(rowColor);
+      let rx = 50;
+      row.forEach((cell, ci) => {
+        const cellColor = ci === 2 ? statusColor(cell) : DARK;
+        doc.fontSize(8).font(ci === 0 ? 'Helvetica-Bold' : 'Helvetica').fill(cellColor)
+           .text(cell || '--', rx + 3, y + 3, { width: cols[ci] - 6, lineBreak: false });
+        rx += cols[ci];
+      });
+      y += 15;
+    });
+    y += 12;
+
+    // ── DETECTED PATTERNS ─────────────────────────────
+    const activeSignals = signals || [];
+    if (activeSignals.length > 0) {
+      if (y > doc.page.height - 200) { doc.addPage(); y = 50; }
+      doc.rect(50, y, W, 1).fill('#E2E8F0'); y += 8;
+      doc.fontSize(10).font('Helvetica-Bold').fill(BLUE).text('DETECTED PATTERNS (for clinical review)', 50, y); y += 10;
+      doc.fontSize(8).font('Helvetica').fill(GREY)
+         .text('Observational findings from continuous biometric monitoring. Not diagnoses — for physician discussion.', 50, y, { width: W }); y += 14;
+
+      activeSignals.forEach(sig => {
+        const lvlColor = sig.level === 'urgent' ? RED : sig.level === 'watch' ? AMBER : BLUE;
+        const lvlBg = sig.level === 'urgent' ? '#FFF5F5' : sig.level === 'watch' ? '#FFFBEB' : '#E8F4FD';
+        doc.rect(50, y, W, 20).fill(lvlBg);
+        doc.rect(50, y, 4, 20).fill(lvlColor);
+        doc.fontSize(8).font('Helvetica-Bold').fill(lvlColor)
+           .text(sig.level?.toUpperCase() || 'INFO', 60, y + 6, { width: 50 });
+        doc.font('Helvetica').fill(DARK)
+           .text(sig.title || '', 115, y + 6, { width: W - 70 });
+        y += 22;
+      });
+      y += 8;
+    }
+
+    // ── COMMITMENTS ───────────────────────────────────
+    const activeCommitments = (commitments || []).filter(c => c.status === 'active');
+    if (activeCommitments.length > 0) {
+      if (y > doc.page.height - 150) { doc.addPage(); y = 50; }
+      doc.rect(50, y, W, 1).fill('#E2E8F0'); y += 8;
+      doc.fontSize(10).font('Helvetica-Bold').fill(BLUE).text('PATIENT HEALTH COMMITMENTS', 50, y); y += 10;
+      doc.fontSize(8).font('Helvetica').fill(GREY)
+         .text('Commitments made during voice consultations with Dr. Sage. Tracked via biometric data.', 50, y, { width: W }); y += 14;
+
+      activeCommitments.forEach((com, i) => {
+        doc.fontSize(9).font('Helvetica').fill(DARK)
+           .text(`${i + 1}.  ${com.commitment}`, 50, y, { width: W });
+        y += 16;
+      });
+      y += 8;
+    }
+
+    // ── PHYSICIAN NOTES ───────────────────────────────
+    if (y > doc.page.height - 150) { doc.addPage(); y = 50; }
+    doc.rect(50, y, W, 1).fill('#E2E8F0'); y += 8;
+    doc.fontSize(10).font('Helvetica-Bold').fill(BLUE).text('PHYSICIAN NOTES', 50, y); y += 14;
+
+    for (let i = 0; i < 6; i++) {
+      doc.rect(50, y, W, 22).fill('#F7FAFC').stroke('#E2E8F0');
+      y += 24;
+    }
+    y += 8;
+
+    // ── FOOTER ────────────────────────────────────────
+    doc.rect(50, y, W, 1).fill('#E2E8F0'); y += 6;
+    doc.fontSize(7).font('Helvetica').fill(GREY)
+       .text(
+         'myDrSage is a biometric monitoring and health concierge service. This report is for informational purposes only and does not constitute medical advice, diagnosis, or treatment. ' +
+         'All findings should be reviewed by a licensed healthcare provider. Device: myDrSage V80 Smart Ring. Report generated: ' + date + '.',
+         50, y, { width: W, align: 'center', lineGap: 2 }
+       );
+
+    doc.end();
+  });
 }
 
-/* ── BUILD PYTHON PDF SCRIPT ───────────────────────── */
-function buildPythonScript(stateMap, profile, signals, commitments, narrative, reportDate) {
+// ── CLINICAL PROMPT ───────────────────────────────────
+function buildClinicalPrompt(stateMap, profile, signals, commitments) {
   const m = stateMap || {};
   const c = m.cardio || {};
   const s = m.sleep || {};
   const t = m.temperature || {};
   const a = m.activity || {};
-  const r = m.recovery || {};
   const p = profile || {};
-  const date = reportDate || new Date().toISOString().slice(0, 10);
-  const patientName = p.name || 'Patient';
-  const patientAge = p.age || '--';
-  const patientSex = p.sex || '--';
-  const conditions = p.conditions || 'None reported';
-  const grade = m.health_grade || 'B';
+  const activeSignals = (signals || []).map(s => `${s.title} [${s.level}]`).join(', ') || 'None';
+  const activeCommitments = (commitments || []).filter(c => c.status === 'active').map(c => c.commitment).join('; ') || 'None';
 
-  const activeSignals = (signals || []).map(s => `${s.title} (${s.level})`);
-  const activeCommitments = (commitments || []).filter(c => c.status === 'active');
+  return `Generate a concise 3-paragraph clinical summary for a physician office visit. Patient uses continuous biometric monitoring (myDrSage V80 ring).
 
-  // Escape for Python string
-  const safeNarrative = (narrative || 'Clinical narrative not available.')
-    .replace(/\\/g, '\\\\')
-    .replace(/'/g, "\\'")
-    .replace(/\n/g, '\\n');
+PATIENT: ${p.age || '--'}yo ${p.sex || 'Unknown'} | Conditions: ${p.conditions || 'None'} | Health Grade: ${m.health_grade || 'B'}
 
-  const signalsList = activeSignals.map(s => `'${s.replace(/'/g, "\\'")}'`).join(', ');
-  const commitList = activeCommitments.map(c => `'${(c.commitment || '').replace(/'/g, "\\'").slice(0, 80)}'`).join(', ');
+7-DAY BIOMETRICS:
+- HRV: ${c.hrv?.current || '--'}ms (age norm ${c.hrv?.age_norm || '--'}ms, trend: ${c.hrv?.trend?.label || '--'})
+- RHR: ${c.rhr?.current || '--'} BPM (trend: ${c.rhr?.trend?.label || '--'})
+- BP: ${c.bp?.systolic || '--'}/${c.bp?.diastolic || '--'} mmHg (${c.bp?.days_elevated || 0}/7 days elevated)
+- SpO2: ${c.spo2?.current || '--'}%
+- Sleep: ${s.total?.avg7d || '--'}h total, ${s.deep?.avg7d || '--'}h deep, ${s.rem?.avg7d || '--'}h REM
+- Temp: ${t.last_night_f || '--'}°F (${t.deviation_f > 0 ? '+' : ''}${t.deviation_f || 0}°F from baseline)
+- Steps: ${(a.steps_avg7d || 0).toLocaleString()}/day avg
+- Readiness: ${m.recovery?.readiness || '--'}/100
 
-  return `
-import base64, io, sys
-from reportlab.lib.pagesizes import letter
-from reportlab.lib import colors
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.units import inch
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, HRFlowable
-from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_RIGHT
+DETECTED PATTERNS: ${activeSignals}
+PATIENT COMMITMENTS: ${activeCommitments}
 
-W, H = letter
-buf = io.BytesIO()
-doc = SimpleDocTemplate(buf, pagesize=letter,
-    topMargin=0.6*inch, bottomMargin=0.6*inch,
-    leftMargin=0.75*inch, rightMargin=0.75*inch)
+Write exactly 3 paragraphs:
+1. Overall biometric picture and trends this week
+2. Notable findings with specific values that warrant clinical attention
+3. Suggested discussion points for this visit
 
-# Colors
-BLUE      = colors.HexColor('#1D6FA4')
-BLUE_LIGHT= colors.HexColor('#E8F4FD')
-GREEN     = colors.HexColor('#0E9F6E')
-GREEN_LIGHT=colors.HexColor('#ECFDF5')
-AMBER     = colors.HexColor('#B45309')
-AMBER_LIGHT=colors.HexColor('#FFFBEB')
-RED       = colors.HexColor('#C0392B')
-RED_LIGHT = colors.HexColor('#FFF5F5')
-GREY      = colors.HexColor('#6B7F96')
-GREY_LIGHT= colors.HexColor('#F0F4F8')
-DARK      = colors.HexColor('#1A2535')
-WHITE     = colors.white
-
-styles = getSampleStyleSheet()
-def style(name='Normal', size=10, color=DARK, bold=False, align=TA_LEFT, leading=None):
-    return ParagraphStyle(name+str(size)+str(bold),
-        parent=styles['Normal'], fontSize=size,
-        textColor=color, fontName='Helvetica-Bold' if bold else 'Helvetica',
-        alignment=align, leading=leading or size*1.4)
-
-story = []
-
-# ── HEADER ─────────────────────────────────────────────
-header_data = [[
-    Paragraph('<font color="#1D6FA4"><b>SageHealth</b></font><br/><font size="8" color="#6B7F96">Continuous Biometric Monitoring</font>', style('h', 12)),
-    Paragraph('<b>PATIENT HEALTH REPORT</b><br/><font size="8" color="#6B7F96">For Physician Review</font>', style('h', 11, align=TA_CENTER)),
-    Paragraph(f'<font size="8" color="#6B7F96">Report date: {date}<br/>Generated by SageHealth AI</font>', style('h', 8, align=TA_RIGHT))
-]]
-ht = Table(header_data, colWidths=[2.2*inch, 3.4*inch, 1.6*inch])
-ht.setStyle(TableStyle([
-    ('BACKGROUND', (0,0), (-1,-1), BLUE_LIGHT),
-    ('ROWBACKGROUNDS', (0,0), (-1,-1), [BLUE_LIGHT]),
-    ('BOX', (0,0), (-1,-1), 0.5, BLUE),
-    ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-    ('TOPPADDING', (0,0), (-1,-1), 10),
-    ('BOTTOMPADDING', (0,0), (-1,-1), 10),
-    ('LEFTPADDING', (0,0), (-1,-1), 12),
-    ('RIGHTPADDING', (0,0), (-1,-1), 12),
-]))
-story.append(ht)
-story.append(Spacer(1, 10))
-
-# ── PATIENT INFO ────────────────────────────────────────
-patient_data = [
-    ['Patient', '${patientName}', 'Age / Sex', '${patientAge}yo / ${patientSex}'],
-    ['Conditions', '${conditions}', 'Health Grade', '${grade}'],
-    ['Ring Device', 'Wosheng TK30 (BLE 5.0)', 'Data Period', '7-day analysis'],
-]
-pt = Table(patient_data, colWidths=[1.1*inch, 2.6*inch, 1.1*inch, 2.4*inch])
-pt.setStyle(TableStyle([
-    ('FONTNAME', (0,0), (0,-1), 'Helvetica-Bold'),
-    ('FONTNAME', (2,0), (2,-1), 'Helvetica-Bold'),
-    ('FONTSIZE', (0,0), (-1,-1), 9),
-    ('TEXTCOLOR', (0,0), (0,-1), BLUE),
-    ('TEXTCOLOR', (2,0), (2,-1), BLUE),
-    ('TEXTCOLOR', (1,0), (1,-1), DARK),
-    ('TEXTCOLOR', (3,0), (3,-1), DARK),
-    ('BACKGROUND', (0,0), (-1,-1), GREY_LIGHT),
-    ('ROWBACKGROUNDS', (0,0), (-1,-1), [GREY_LIGHT, WHITE]),
-    ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor('#D1D9E0')),
-    ('INNERGRID', (0,0), (-1,-1), 0.25, colors.HexColor('#D1D9E0')),
-    ('TOPPADDING', (0,0), (-1,-1), 5),
-    ('BOTTOMPADDING', (0,0), (-1,-1), 5),
-    ('LEFTPADDING', (0,0), (-1,-1), 8),
-]))
-story.append(pt)
-story.append(Spacer(1, 12))
-
-# ── CLINICAL SUMMARY ────────────────────────────────────
-story.append(Paragraph('Clinical Summary', style('s', 11, BLUE, True)))
-story.append(Spacer(1, 4))
-story.append(HRFlowable(width='100%', thickness=1, color=BLUE_LIGHT))
-story.append(Spacer(1, 6))
-for para in '${safeNarrative}'.split('\\\\n'):
-    if para.strip():
-        story.append(Paragraph(para.strip(), style('b', 9, DARK, leading=14)))
-        story.append(Spacer(1, 4))
-story.append(Spacer(1, 8))
-
-# ── BIOMETRIC DASHBOARD ─────────────────────────────────
-story.append(Paragraph('7-Day Biometric Summary', style('s', 11, BLUE, True)))
-story.append(Spacer(1, 4))
-story.append(HRFlowable(width='100%', thickness=1, color=BLUE_LIGHT))
-story.append(Spacer(1, 6))
-
-def status_color(status):
-    if status in ['excellent','optimal','athletic','peak','goal_met']: return GREEN
-    if status in ['healthy','normal','good','close']: return BLUE
-    if status in ['elevated','below_norm','watch','moderate','below_goal']: return AMBER
-    return RED
-
-def metric_row(label, value, unit, status, trend='', note=''):
-    col = status_color(status)
-    return [
-        Paragraph(f'<b>{label}</b>', style('m', 9, DARK, True)),
-        Paragraph(f'<font color="#{col.hexval()[1:]}"><b>{value}</b></font> <font size="8" color="#6B7F96">{unit}</font>', style('m', 10)),
-        Paragraph(f'<font size="8" color="#{col.hexval()[1:]}">{status.replace("_"," ").upper()}</font>', style('m', 8, align=TA_CENTER)),
-        Paragraph(f'<font size="8" color="#6B7F96">{trend}</font>', style('m', 8)),
-        Paragraph(f'<font size="8" color="#6B7F96">{note}</font>', style('m', 8)),
-    ]
-
-hrv_c    = c.get('hrv', {})
-rhr_c    = c.get('rhr', {})
-bp_c     = c.get('bp', {})
-spo2_c   = c.get('spo2', {})
-sleep_t  = s.get('total', {})
-sleep_d  = s.get('deep', {})
-sleep_r  = s.get('rem', {})
-act      = a
-
-bio_header = [Paragraph('<b>Metric</b>', style('h',8,GREY,True)), Paragraph('<b>Value</b>', style('h',8,GREY,True)),
-              Paragraph('<b>Status</b>', style('h',8,GREY,True,TA_CENTER)), Paragraph('<b>7-Day Trend</b>', style('h',8,GREY,True)),
-              Paragraph('<b>Note</b>', style('h',8,GREY,True))]
-bio_data = [bio_header]
-bio_data.append(metric_row('Heart rate variability', str(hrv_c.get('current','--')), 'ms RMSSD', hrv_c.get('status','normal'),
-    hrv_c.get('trend',{}).get('label','--'), f'Age norm {hrv_c.get("age_norm","--")}ms'))
-bio_data.append(metric_row('Resting heart rate', str(rhr_c.get('current','--')), 'BPM', rhr_c.get('status','healthy'),
-    rhr_c.get('trend',{}).get('label','--'), ''))
-bio_data.append(metric_row('Blood pressure (avg)', f"{bp_c.get('systolic','--')}/{bp_c.get('diastolic','--')}", 'mmHg', bp_c.get('status','normal'),
-    bp_c.get('trend',{}).get('label','--'), f"{bp_c.get('days_elevated',0)}/7 days elevated"))
-bio_data.append(metric_row('Blood oxygen (SpO2)', str(spo2_c.get('current','--')), '%', spo2_c.get('status','excellent'),
-    spo2_c.get('trend',{}).get('label','--'), 'Overnight avg'))
-bio_data.append(metric_row('Total sleep', str(sleep_t.get('avg7d','--')), 'h avg', 'normal' if float(sleep_t.get('avg7d',0) or 0)>=7 else 'watch',
-    sleep_t.get('trend',{}).get('label','--'), f"Goal {sleep_t.get('goal','7.5')}h"))
-bio_data.append(metric_row('Deep sleep', str(sleep_d.get('avg7d','--')), 'h avg', 'normal' if float(sleep_d.get('avg7d',0) or 0)>=1.2 else 'watch',
-    sleep_d.get('trend',{}).get('label','--'), 'Target 1.5h'))
-bio_data.append(metric_row('REM sleep', str(sleep_r.get('avg7d','--')), 'h avg', 'normal' if float(sleep_r.get('avg7d',0) or 0)>=1.2 else 'watch',
-    sleep_r.get('trend',{}).get('label','--'), 'Target 1.5h'))
-bio_data.append(metric_row('Skin temperature', str(t.get('last_night_f','--')), 'F overnight', t.get('status','baseline').replace('_',' '),
-    t.get('trend',{}).get('label','--'), f"+{t.get('deviation_f',0)}F from personal baseline"))
-bio_data.append(metric_row('Daily steps', str(act.get('steps_avg7d') or '--'), '/day avg', act.get('status','normal'),
-    act.get('trend',{}).get('label','--'), f"{act.get('goal_pct',0)}% of goal"))
-
-bt = Table(bio_data, colWidths=[1.6*inch, 1.2*inch, 1.0*inch, 1.4*inch, 1.9*inch])
-bt.setStyle(TableStyle([
-    ('BACKGROUND', (0,0), (-1,0), BLUE),
-    ('TEXTCOLOR', (0,0), (-1,0), WHITE),
-    ('ROWBACKGROUNDS', (0,1), (-1,-1), [WHITE, GREY_LIGHT]),
-    ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor('#D1D9E0')),
-    ('INNERGRID', (0,0), (-1,-1), 0.25, colors.HexColor('#E2E8F0')),
-    ('TOPPADDING', (0,0), (-1,-1), 5),
-    ('BOTTOMPADDING', (0,0), (-1,-1), 5),
-    ('LEFTPADDING', (0,0), (-1,-1), 6),
-    ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-]))
-story.append(bt)
-story.append(Spacer(1, 12))
-
-# ── DETECTED PATTERNS ───────────────────────────────────
-sig_list = [${signalsList}]
-if sig_list:
-    story.append(Paragraph('Detected Patterns (for clinical review)', style('s', 11, BLUE, True)))
-    story.append(Spacer(1, 4))
-    story.append(HRFlowable(width='100%', thickness=1, color=BLUE_LIGHT))
-    story.append(Spacer(1, 6))
-    story.append(Paragraph('<i>The following patterns were detected by SageHealth algorithmic monitoring. These are observational findings that may warrant clinical discussion, not diagnoses.</i>',
-        style('n', 8, GREY)))
-    story.append(Spacer(1, 6))
-    sig_data = []
-    for sig in sig_list:
-        level = 'URGENT' if 'urgent' in sig.lower() else 'WATCH' if 'watch' in sig.lower() else 'INFO'
-        col = RED if level=='URGENT' else AMBER if level=='WATCH' else BLUE
-        sig_data.append([
-            Paragraph(f'<font color="#{col.hexval()[1:]}"><b>{level}</b></font>', style('sl', 8, align=TA_CENTER)),
-            Paragraph(sig.replace(f' ({level.lower()})',''), style('sl', 9, DARK)),
-        ])
-    st = Table(sig_data, colWidths=[0.8*inch, 6.4*inch])
-    st.setStyle(TableStyle([
-        ('ROWBACKGROUNDS', (0,0), (-1,-1), [WHITE, GREY_LIGHT]),
-        ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor('#D1D9E0')),
-        ('INNERGRID', (0,0), (-1,-1), 0.25, colors.HexColor('#E2E8F0')),
-        ('TOPPADDING', (0,0), (-1,-1), 5),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 5),
-        ('LEFTPADDING', (0,0), (-1,-1), 8),
-        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-    ]))
-    story.append(st)
-    story.append(Spacer(1, 12))
-
-# ── PATIENT COMMITMENTS ─────────────────────────────────
-commit_list = [${commitList}]
-if commit_list:
-    story.append(Paragraph('Patient Health Commitments', style('s', 11, BLUE, True)))
-    story.append(Spacer(1, 4))
-    story.append(HRFlowable(width='100%', thickness=1, color=BLUE_LIGHT))
-    story.append(Spacer(1, 6))
-    story.append(Paragraph('<i>These are commitments the patient made during voice consultations with SageHealth. Progress is tracked via biometric data.</i>',
-        style('n', 8, GREY)))
-    story.append(Spacer(1, 6))
-    for i, com in enumerate(commit_list, 1):
-        story.append(Paragraph(f'{i}. {com}', style('c', 9, DARK)))
-        story.append(Spacer(1, 3))
-    story.append(Spacer(1, 8))
-
-# ── PHYSICIAN NOTES ─────────────────────────────────────
-story.append(Paragraph('Physician Notes', style('s', 11, BLUE, True)))
-story.append(Spacer(1, 4))
-story.append(HRFlowable(width='100%', thickness=1, color=BLUE_LIGHT))
-story.append(Spacer(1, 6))
-notes_data = [[''] for _ in range(6)]
-nt = Table(notes_data, colWidths=[7.2*inch], rowHeights=[0.38*inch]*6)
-nt.setStyle(TableStyle([
-    ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor('#D1D9E0')),
-    ('INNERGRID', (0,0), (-1,-1), 0.25, colors.HexColor('#E2E8F0')),
-    ('BACKGROUND', (0,0), (-1,-1), GREY_LIGHT),
-]))
-story.append(nt)
-story.append(Spacer(1, 12))
-
-# ── FOOTER ──────────────────────────────────────────────
-story.append(HRFlowable(width='100%', thickness=0.5, color=colors.HexColor('#D1D9E0')))
-story.append(Spacer(1, 4))
-story.append(Paragraph(
-    'SageHealth is a biometric monitoring and health concierge service. This report is for informational purposes only and does not constitute medical advice, diagnosis, or treatment. '
-    'All findings should be reviewed by a licensed healthcare provider. Device: Wosheng TK30 Smart Ring. '
-    f'Report generated: {date}.',
-    style('f', 7, GREY, align=TA_CENTER)))
-
-doc.build(story)
-buf.seek(0)
-print(base64.b64encode(buf.read()).decode(), end='')
-`;
+Clinical language. Specific numbers. No diagnosis. End with: "Data generated by myDrSage continuous biometric monitoring. For informational purposes only."`;
 }

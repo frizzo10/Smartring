@@ -1,0 +1,8 @@
+{
+  "name": "sagehealth",
+  "version": "1.0.0",
+  "description": "myDrSage health monitoring platform",
+  "dependencies": {
+    "pdfkit": "^0.15.0"
+  }
+}

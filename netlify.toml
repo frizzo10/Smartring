@@ -1,5 +1,6 @@
 [build]
   publish = "."
+  command = "npm install"
 
 [[redirects]]
   from = "/*"
@@ -11,4 +12,4 @@
   [headers.values]
     X-Frame-Options = "SAMEORIGIN"
     X-Content-Type-Options = "nosniff"
-    Content-Security-Policy = "default-src 'self' 'unsafe-inline' 'unsafe-eval' https://api.anthropic.com https://cdnjs.cloudflare.com https://api.groq.com; media-src 'self' blob: data:; connect-src 'self' https://api.anthropic.com https://api.groq.com https://api.elevenlabs.io https://eastus.tts.speech.microsoft.com https://eastus.api.cognitive.microsoft.com; img-src 'self' data: blob: https://images.pexels.com; worker-src 'self' blob:"
+    Content-Security-Policy = "default-src 'self' 'unsafe-inline' 'unsafe-eval' https://api.anthropic.com https://cdnjs.cloudflare.com https://api.groq.com; media-src 'self' blob: data:; connect-src 'self' https://api.anthropic.com https://api.groq.com https://api.elevenlabs.io https://eastus.tts.speech.microsoft.com https://eastus.api.cognitive.microsoft.com https://zuzgbxjahfqcnxygsquq.supabase.co; img-src 'self' data: blob: https://images.pexels.com; worker-src 'self' blob:"
