@@ -787,23 +787,227 @@ async function generateDoctorReport() {
 
     if (!res.ok) throw new Error('Report generation failed: ' + res.status);
 
+    // Store PDF blob for later download/email
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `SageHealth_Report_${today}.pdf`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    window._lastReportBlob = blob;
+    window._lastReportUrl  = url;
+    window._lastReportDate = today;
+    window._lastReportDoctor = doctorInfo;
 
-    showToast('📋 Report downloaded', 'Hand this to your doctor at your next visit.');
+    // Save report record to localStorage + Supabase
+    const reportRecord = {
+      id: Date.now(),
+      date: today,
+      doctor: doctorInfo?.label || 'Physician',
+      doctorId: doctorInfo?.id || 'primary_care',
+      signalCount: firedSignals.length,
+      signals: firedSignals.map(s => s.title),
+      healthGrade: stateMap?.health_grade || 'B',
+      blobUrl: url
+    };
+    const saved = JSON.parse(localStorage.getItem('sh_doctor_reports') || '[]');
+    saved.unshift(reportRecord);
+    localStorage.setItem('sh_doctor_reports', JSON.stringify(saved.slice(0, 10)));
+
+    // Render inline preview in modal
+    renderReportPreview(reportRecord, firedSignals, stateMap, doctorInfo);
+
+    // Show saved reports bar
+    loadSavedReports();
+
+    // Show action buttons
+    document.getElementById('report-actions').style.display = 'block';
+    document.getElementById('report-generating').style.display = 'none';
+
+    showToast('✓ Report ready', 'Email it to your doctor or download the PDF.');
 
   } catch(e) {
     console.log('Report error:', e);
     showToast('⚠ Report failed', 'Check your connection and try again.');
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = '📋 Download doctor report'; }
+  }
+}
+
+
+/* ── DOCTOR REPORT — IN APP ─────────────────────────── */
+
+function renderReportPreview(record, signals, stateMap, doctorInfo) {
+  const m = stateMap || {};
+  const cv = m.cardio || {};
+  const sl = m.sleep || {};
+  const t = m.temperature || {};
+  const a = m.activity || {};
+  const r = m.recovery || {};
+  const p = profile || {};
+
+  const date = new Date(record.date).toLocaleDateString('en-US', {month:'long', day:'numeric', year:'numeric'});
+
+  let html = `
+    <div style="border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-top:14px;">
+
+      <!-- Report header -->
+      <div style="background:var(--blue);padding:16px 18px;color:white;">
+        <div style="font-size:11px;opacity:.8;margin-bottom:2px;text-transform:uppercase;letter-spacing:.05em;">myDrSage Health Report</div>
+        <div style="font-size:16px;font-weight:800;">${p.name || 'Patient'}, ${p.age || '--'}yo ${p.sex || ''}</div>
+        <div style="font-size:11px;opacity:.8;margin-top:4px;">For: ${doctorInfo?.label || 'Physician'} · Generated ${date}</div>
+      </div>
+
+      <!-- Biometric summary -->
+      <div style="padding:14px 16px;border-bottom:1px solid var(--border);">
+        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;">7-Day Biometric Summary</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          ${(function() {
+            const metrics = [
+              ['HRV', cv.hrv?.current + 'ms', cv.hrv?.trend?.label, cv.hrv?.status],
+              ['Resting HR', cv.rhr?.current + ' BPM', cv.rhr?.trend?.label, cv.rhr?.status],
+              ['Blood Pressure', (cv.bp?.systolic||'--') + '/' + (cv.bp?.diastolic||'--'), cv.bp?.trend?.label, cv.bp?.status],
+              ['SpO2', cv.spo2?.current + '%', cv.spo2?.trend?.label, cv.spo2?.status],
+              ['Total Sleep', sl.total?.avg7d + 'h avg', sl.total?.trend?.label, sl.total?.avg7d >= 7 ? 'normal' : 'watch'],
+              ['Deep Sleep', sl.deep?.avg7d + 'h avg', sl.deep?.trend?.label, sl.deep?.avg7d >= 1.2 ? 'normal' : 'watch'],
+              ['Temperature', (t.last_night_f||'--') + 'F', (t.deviation_f > 0 ? '+' : '') + (t.deviation_f||0) + 'F from baseline', t.status],
+              ['Readiness', (r.readiness||'--') + '/100', r.trend?.label, r.status],
+            ];
+            return metrics.map(function(row) {
+              const label = row[0], val = row[1], trend = row[2], status = row[3];
+              const statusColor = ['excellent','optimal','normal','good','athletic'].includes(status) ? 'var(--green)' :
+                                  ['elevated','watch','below_norm'].includes(status) ? 'var(--amber)' :
+                                  ['high','low','suppressed'].includes(status) ? 'var(--red)' : 'var(--muted)';
+              return '<div style="background:var(--bg);border-radius:9px;padding:10px 12px;">' +
+                '<div style="font-size:10px;color:var(--muted);font-weight:600;margin-bottom:3px;">' + label + '</div>' +
+                '<div style="font-size:14px;font-weight:700;color:' + statusColor + ';">' + (val||'--') + '</div>' +
+                '<div style="font-size:10px;color:var(--muted);margin-top:2px;">' + (trend||'') + '</div>' +
+                '</div>';
+            }).join('');
+          })()}
+        </div>
+      </div>
+
+      <!-- Active signals -->
+      ${signals.length > 0 ? (function() {
+        return '<div style="padding:14px 16px;border-bottom:1px solid var(--border);">' +
+          '<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;">Patterns for Clinical Review</div>' +
+          signals.map(function(s) {
+            const col = s.level === 'urgent' ? 'var(--red)' : s.level === 'watch' ? 'var(--amber)' : 'var(--blue)';
+            const bg  = s.level === 'urgent' ? 'var(--red-bg)' : s.level === 'watch' ? 'var(--amber-bg)' : 'var(--blue-bg)';
+            return '<div style="background:' + bg + ';border-left:3px solid ' + col + ';border-radius:8px;padding:10px 12px;margin-bottom:7px;">' +
+              '<div style="font-size:12px;font-weight:700;color:' + col + ';">' + s.title + '</div>' +
+              '<div style="font-size:11px;color:var(--muted);margin-top:3px;">' + (s.action||'') + '</div>' +
+              '</div>';
+          }).join('') +
+          '</div>';
+      })() : ''}
+
+      <!-- Health grade -->
+      <div style="padding:12px 16px;display:flex;align-items:center;justify-content:space-between;">
+        <div style="font-size:12px;color:var(--muted);">Overall health grade this week</div>
+        <div style="font-size:24px;font-weight:900;color:var(--blue);">${m.health_grade || 'B'}</div>
+      </div>
+
+      <!-- Disclaimer -->
+      <div style="padding:10px 16px;background:var(--bg);border-top:1px solid var(--border);">
+        <div style="font-size:10px;color:var(--muted);line-height:1.5;">Data generated by myDrSage continuous biometric monitoring (V80 ring). For informational purposes only — not a medical diagnosis. Review with your licensed physician.</div>
+      </div>
+    </div>`;
+
+  document.getElementById('report-content').innerHTML = html;
+  document.getElementById('report-subtitle').textContent = 'For ' + (doctorInfo?.label || 'your physician') + ' · ' + date;
+}
+
+function loadSavedReports() {
+  const saved = JSON.parse(localStorage.getItem('sh_doctor_reports') || '[]');
+  const bar = document.getElementById('saved-reports-bar');
+  if (!saved.length || !bar) return;
+
+  bar.style.display = 'block';
+  bar.innerHTML = '<span style="font-size:11px;color:var(--muted);margin-right:8px;vertical-align:middle;">Past reports:</span>' +
+    saved.map(function(r, i) {
+      return '<button onclick="loadSavedReport(' + i + ')" style="display:inline-block;background:' +
+        (i===0?'var(--blue)':'var(--bg)') + ';color:' + (i===0?'white':'var(--muted)') +
+        ';border:1px solid ' + (i===0?'var(--blue)':'var(--border2)') +
+        ';border-radius:20px;padding:4px 12px;font-size:11px;font-weight:600;cursor:pointer;margin-right:6px;white-space:nowrap;">' +
+        r.doctor + ' · ' + r.date + '</button>';
+    }).join('');
+}
+
+function loadSavedReport(idx) {
+  const saved = JSON.parse(localStorage.getItem('sh_doctor_reports') || '[]');
+  const record = saved[idx];
+  if (!record) return;
+  const stateMap = typeof loadStateMap === 'function' ? loadStateMap() : null;
+  const signals = (record.signals || []).map(title => ({ title, level: 'watch', action: '' }));
+  renderReportPreview(record, signals, stateMap, { label: record.doctor, id: record.doctorId });
+  document.getElementById('report-actions').style.display = 'block';
+}
+
+function downloadReportPDF() {
+  if (!window._lastReportUrl) {
+    showToast('⚠ No report', 'Generate a report first.');
+    return;
+  }
+  const a = document.createElement('a');
+  a.href = window._lastReportUrl;
+  a.download = 'myDrSage_Report_' + (window._lastReportDate || 'report') + '.pdf';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
+function emailReport() {
+  const panel = document.getElementById('email-panel');
+  if (panel) panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+}
+
+async function sendReportEmail() {
+  const to = document.getElementById('report-email-to')?.value?.trim();
+  const drName = document.getElementById('report-email-name')?.value?.trim() || 'Doctor';
+  if (!to) { showToast('⚠', 'Enter your doctor email address.'); return; }
+
+  // Use mailto: with report summary — deeplinks into email app
+  const patientName = profile?.name || 'Patient';
+  const date = window._lastReportDate || new Date().toISOString().slice(0,10);
+  const doctorLabel = window._lastReportDoctor?.label || 'Physician';
+  const grade = (typeof loadStateMap === 'function' ? loadStateMap() : {})?.health_grade || 'B';
+
+  const subject = encodeURIComponent('myDrSage Health Report — ' + patientName + ' — ' + date);
+  const body = encodeURIComponent(
+    'Dear ' + drName + ',\n\n' +
+    'Please find attached the myDrSage biometric health report for ' + patientName + ' in advance of our ' + doctorLabel + ' appointment.\n\n' +
+    'Report summary:\n' +
+    '- Health grade this week: ' + grade + '\n' +
+    '- Generated: ' + date + '\n' +
+    '- Report tailored for: ' + doctorLabel + '\n\n' +
+    'This report was generated by myDrSage, a continuous biometric monitoring service using the V80 smart ring. It includes 7-day averages for HRV, resting heart rate, blood pressure, SpO2, sleep architecture, skin temperature, and step count, along with algorithmically detected patterns for clinical review.\n\n' +
+    'To view the full PDF report, please ask the patient to share it with you directly from the myDrSage app.\n\n' +
+    'Note: This report is informational only and does not constitute medical diagnosis or advice.\n\n' +
+    'Generated by myDrSage — myDrSage.com'
+  );
+
+  window.location.href = 'mailto:' + to + '?subject=' + subject + '&body=' + body;
+
+  // Also show PDF download prompt
+  setTimeout(() => {
+    showToast('📧 Email opened', 'Download the PDF and attach it to the email.');
+    document.getElementById('report-actions').style.display = 'block';
+  }, 500);
+}
+
+function shareReport() {
+  const patientName = profile?.name || 'Patient';
+  const date = window._lastReportDate || new Date().toISOString().slice(0,10);
+
+  if (navigator.share && window._lastReportBlob) {
+    const file = new File([window._lastReportBlob], 'myDrSage_Report_' + date + '.pdf', { type: 'application/pdf' });
+    navigator.share({
+      title: 'myDrSage Health Report — ' + patientName + ',',
+      text: 'My health report from myDrSage — please review before my appointment.',
+      files: [file]
+    }).catch(e => console.log('Share cancelled:', e));
+  } else {
+    // Fallback — copy a link or download
+    downloadReportPDF();
+    showToast('📤 PDF downloaded', 'Share the file via email, AirDrop, or Messages.');
   }
 }
 

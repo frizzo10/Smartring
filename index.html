@@ -718,7 +718,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
       <button class="btn-sm" onclick="startWt()" style="background:var(--green-bg);border-color:rgba(14,159,110,.3);color:var(--green);font-weight:700;">🧠 Meet Dr. Sage</button>
       <button class="btn-sm" onclick="openWeekly()">📅 This Week</button>
       <button class="btn-sm btn-dr" onclick="openContactDr()">🩺 Contact doctor</button>
-      <button class="btn-sm" id="doctor-report-btn" onclick="generateDoctorReport()" style="background:var(--purple-bg);border-color:rgba(109,91,208,.3);color:var(--purple);">📋 Download doctor report</button>
+      <button class="btn-sm" onclick="openReportModal()" style="background:var(--purple-bg);border-color:rgba(109,91,208,.3);color:var(--purple);">📋 Doctor report</button>
     </div>
   </div>
   <!-- Briefing -->
@@ -922,12 +922,24 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
   <div class="report-head">
     <div>
       <div class="report-title">📋 Doctor report</div>
-      <div class="report-sub">Trend analysis and findings — formatted to send to your physician before your next appointment.</div>
+      <div class="report-sub" id="report-subtitle">Ready to generate for your next visit</div>
     </div>
     <button onclick="closeReportModal()" style="background:var(--panel2);border:1px solid var(--border2);color:var(--muted);border-radius:50%;width:28px;height:28px;cursor:pointer;flex-shrink:0;font-size:14px;">✕</button>
   </div>
+
+  <!-- Saved reports list -->
+  <div id="saved-reports-bar" style="display:none;padding:10px 18px;background:var(--bg);border-bottom:1px solid var(--border);overflow-x:auto;white-space:nowrap;"></div>
+
+  <!-- Generate button -->
+  <div style="padding:14px 18px 0;display:flex;gap:8px;align-items:center;" id="report-generate-bar">
+    <button onclick="generateDoctorReport()" id="doctor-report-btn"
+      style="flex:1;background:linear-gradient(135deg,var(--blue),var(--cyan));color:white;border:none;border-radius:11px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
+      🧠 Generate report for my next visit
+    </button>
+  </div>
+
   <div class="report-body">
-    <div id="report-generating" style="display:none;"><div class="enc-generating"><div class="enc-spinner"></div>Generating your doctor report...</div></div>
+    <div id="report-generating" style="display:none;padding:40px 0;"><div class="enc-generating"><div class="enc-spinner"></div>Dr. Sage is preparing your report...</div></div>
     <div id="report-content"></div>
 
     <!-- Upload prior results -->
@@ -951,8 +963,32 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
       <div id="dr-sage-analysis" style="display:none;"></div>
     </div>
 
-    <div id="report-actions" style="display:none;">
-      <button class="btn-report-dl" onclick="copyReport()">📋 Copy report text</button>
+    <div id="report-actions" style="display:none;margin-top:14px;">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button onclick="emailReport()"
+          style="flex:1;min-width:140px;background:var(--blue);color:white;border:none;border-radius:10px;padding:11px 16px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
+          ✉️ Email to doctor
+        </button>
+        <button onclick="downloadReportPDF()"
+          style="flex:1;min-width:140px;background:var(--purple-bg);border:1px solid rgba(109,91,208,.3);color:var(--purple);border-radius:10px;padding:11px 16px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
+          ⬇️ Download PDF
+        </button>
+        <button onclick="shareReport()"
+          style="flex:1;min-width:140px;background:var(--green-bg);border:1px solid rgba(14,159,110,.3);color:var(--green);border-radius:10px;padding:11px 16px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
+          📤 Share
+        </button>
+      </div>
+      <div id="email-panel" style="display:none;margin-top:12px;background:var(--bg);border:1px solid var(--border2);border-radius:12px;padding:14px;">
+        <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:8px;">Email report to your doctor</div>
+        <input id="report-email-to" type="email" placeholder="doctor@clinic.com"
+          style="width:100%;border:1px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;font-family:var(--font);outline:none;box-sizing:border-box;margin-bottom:8px;">
+        <input id="report-email-name" type="text" placeholder="Dr. Smith's name (optional)"
+          style="width:100%;border:1px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;font-family:var(--font);outline:none;box-sizing:border-box;margin-bottom:10px;">
+        <button onclick="sendReportEmail()"
+          style="width:100%;background:var(--blue);color:white;border:none;border-radius:9px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;">
+          Send report
+        </button>
+      </div>
     </div>
     <div style="font-size:11px;color:var(--muted);line-height:1.6;margin-top:14px;padding:9px 12px;background:rgba(90,106,133,.06);border-radius:8px;">
       ⚠ SageHealth is a health monitoring tool. This report is informational and does not constitute medical advice. Share with your licensed physician and follow their guidance.
