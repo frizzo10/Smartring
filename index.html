@@ -12,38 +12,82 @@
 <title>SageHealth</title>
 <style>
 :root{
-  /* Medical pastel — clean, clinical, trustworthy */
-  --bg:#f0f4f8;
-  --panel:#ffffff;
-  --panel2:#f7fafc;
-  --border:rgba(0,0,0,.07);
-  --border2:rgba(0,0,0,.12);
-  --text:#1a2535;
-  --muted:#6b7f96;
-
-  /* Clinical accent palette — muted, pastel */
-  --green:#0e9f6e;       /* clinical teal-green */
-  --green-bg:#ecfdf5;
-  --cyan:#0891b2;        /* medical blue */
-  --cyan-bg:#e0f7fa;
-  --purple:#6d5bd0;      /* clinical indigo */
-  --purple-bg:#ede9fe;
-  --amber:#b45309;       /* warm amber — caution */
-  --amber-bg:#fffbeb;
-  --red:#c0392b;         /* clinical alert red */
-  --red-bg:#fff5f5;
-  --blue:#1d6fa4;        /* deep clinical blue */
-  --blue-bg:#e8f4fd;
-  --pink:#9d174d;        /* dark rose */
-  --pink-bg:#fdf2f8;
-
-  --font:-apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI',sans-serif;
+  --accent:#1D6FA4;
+  --accent-tint:#EAF2F8;
+  --normal:#0E9F6E;
+  --watch:#B45309;
+  --watch-tint:#FBF0E2;
+  --urgent:#C0392B;
+  --ink:#16242B;
+  --ink-2:#3A4B53;
+  --muted:#5A6B73;
+  --faint:#97A4AB;
+  --surface:#FFFFFF;
+  --surface-grouped:#F4F6F8;
+  --fill:#F6F8F9;
+  --hairline:#E9EDF0;
+  /* legacy aliases */
+  --bg:var(--surface-grouped);
+  --panel:var(--surface);
+  --panel2:var(--fill);
+  --border:var(--hairline);
+  --border2:#D6DCE1;
+  --text:var(--ink);
+  --green:var(--normal);
+  --green-bg:#ECFDF5;
+  --amber:var(--watch);
+  --amber-bg:var(--watch-tint);
+  --red:var(--urgent);
+  --red-bg:#FFF5F5;
+  --blue:var(--accent);
+  --blue-bg:var(--accent-tint);
+  --cyan:#0891B2;
+  --cyan-bg:#E0F7FA;
+  --purple:#6D5BD0;
+  --purple-bg:#EDE9FE;
+  --pink:#9D174D;
+  --pink-bg:#FDF2F8;
+  --font:-apple-system,BlinkMacSystemFont,'SF Pro Text','SF Pro Display','Helvetica Neue',system-ui,sans-serif;
   --mono:'SF Mono','Fira Code',monospace;
-  --shadow:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.05);
-  --shadow-md:0 4px 12px rgba(0,0,0,.08),0 2px 4px rgba(0,0,0,.05);
+  --shadow:0 6px 18px -10px rgba(20,50,70,.18);
+  --shadow-md:0 12px 26px -10px rgba(29,111,164,.6);
+  --voice-bg:linear-gradient(168deg,#0C2A3B 0%,#0A1E2B 58%,#081621 100%);
+  --orb-gradient:radial-gradient(circle at 32% 28%,#6FB1DA,#1D6FA4 58%,#155A85);
 }
+@keyframes sageBreathe{0%,100%{transform:scale(1);}50%{transform:scale(1.055);}}
+@keyframes sageHalo{0%{transform:scale(.75);opacity:.5;}100%{transform:scale(1.85);opacity:0;}}
+@keyframes micPulse{0%{transform:scale(1);opacity:.5;}100%{transform:scale(2);opacity:0;}}
+@keyframes waveBar{0%,100%{transform:scaleY(.35);}50%{transform:scaleY(1);}}
+@keyframes thinkDot{0%,80%,100%{transform:scale(0);opacity:0;}40%{transform:scale(1);opacity:1;}}
+@media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-iteration-count:1!important;}}
 *{box-sizing:border-box;margin:0;padding:0;}
-body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;-webkit-font-smoothing:antialiased;}
+body{background:var(--surface-grouped);color:var(--ink);font-family:var(--font);min-height:100vh;-webkit-font-smoothing:antialiased;overscroll-behavior:none;}
+/* ── SHARED COMPONENTS ── */
+.tab-bar-new{position:fixed;bottom:0;left:0;right:0;z-index:200;height:83px;padding:10px 8px 0;display:flex;align-items:flex-start;justify-content:space-around;background:rgba(255,255,255,.86);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:1px solid var(--hairline);}
+.tab-item-new{display:flex;flex-direction:column;align-items:center;gap:4px;padding:0 8px;flex:1;cursor:pointer;font-size:10px;font-weight:500;color:var(--faint);border:none;background:none;-webkit-tap-highlight-color:transparent;transition:color .15s;}
+.tab-item-new.active{color:var(--accent);}
+.tab-item-new svg{width:24px;height:24px;stroke-width:1.8;}
+.btn-primary-new{width:100%;height:54px;border-radius:16px;background:var(--accent);color:#fff;font-size:17px;font-weight:600;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:9px;box-shadow:0 12px 26px -10px rgba(29,111,164,.6);transition:transform .1s;-webkit-tap-highlight-color:transparent;}
+.btn-primary-new:active{transform:scale(.97);}
+.sage-orb{border-radius:50%;background:var(--orb-gradient);box-shadow:0 12px 26px -6px rgba(29,111,164,.55);animation:sageBreathe 3.2s ease-in-out infinite;}
+.sage-orb-halo{position:absolute;border-radius:50%;background:var(--accent);opacity:.16;animation:sageHalo 3.2s ease-out infinite;}
+.metric-tile{background:var(--fill);border-radius:16px;padding:13px 12px;}
+.metric-tile .mt-label{font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);margin:0;}
+.metric-tile .mt-value{font-size:21px;font-weight:700;color:var(--ink);margin:7px 0 0;line-height:1;}
+.metric-tile .mt-value span{font-size:12px;font-weight:600;color:var(--faint);}
+.metric-tile .mt-status{font-size:12px;font-weight:600;margin:4px 0 0;}
+.mt-status.normal{color:var(--normal);}.mt-status.watch{color:var(--watch);}.mt-status.urgent{color:var(--urgent);}.mt-status.muted{color:var(--faint);}
+.sig-chip{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:8px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.10em;}
+.sig-chip.watch{background:var(--watch-tint);color:var(--watch);}.sig-chip.urgent{background:#FFF5F5;color:var(--urgent);}.sig-chip.info{background:var(--accent-tint);color:var(--accent);}.sig-chip.normal{background:#ECFDF5;color:var(--normal);}
+.sig-chip-dot{width:6px;height:6px;border-radius:50%;background:currentColor;}
+.sage-card{background:var(--surface);border:1px solid var(--hairline);border-radius:20px;padding:18px;box-shadow:0 6px 18px -10px rgba(20,50,70,.18);}
+.overline{font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);}
+.wave-bar{width:4px;border-radius:2px;background:var(--normal);transform-origin:bottom;animation:waveBar 1s ease-in-out infinite;}
+.think-dot{width:8px;height:8px;border-radius:50%;background:var(--faint);animation:thinkDot 1.4s ease-in-out infinite;}
+.seg-control{display:flex;background:var(--fill);border-radius:11px;padding:3px;gap:2px;}
+.seg-btn{flex:1;padding:7px 4px;border-radius:9px;border:none;font-size:13px;font-weight:500;color:var(--muted);background:transparent;cursor:pointer;transition:all .18s;}
+.seg-btn.active{background:var(--surface);color:var(--ink);font-weight:600;box-shadow:0 1px 4px rgba(0,0,0,.10);}
+.screen-scroll{min-height:100vh;padding-bottom:100px;}
 
 /* ── ONBOARDING ── */
 #onboarding{position:fixed;inset:0;background:linear-gradient(135deg,#e8f4fd 0%,#f0f4f8 50%,#ecfdf5 100%);z-index:1000;display:flex;align-items:center;justify-content:center;padding:24px;}
@@ -699,68 +743,83 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
 
 <!-- DASHBOARD -->
 <div class="page active" id="page-dashboard">
-  <div class="dash-header">
+  <!-- ── DASHBOARD — REDESIGNED ── -->
+
+  <!-- Greeting row -->
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:12px 24px 0;margin-top:8px;">
     <div>
-      <div class="dash-title" id="dashGreet">Good afternoon</div>
-      <div style="display:flex;align-items:center;gap:8px;margin-top:5px;flex-wrap:wrap;">
-        <div class="dash-sub" id="dashDate">Friday, June 12, 2026</div>
-        <span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;background:var(--blue-bg);color:var(--blue);border:1px solid rgba(29,111,164,.25);">
-          <span style="width:6px;height:6px;border-radius:50%;background:#10b981;animation:ecgp 2s infinite;display:inline-block;"></span>
-          TK30 monitoring active
-        </span>
-        <span id="streak-badge" style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;background:#fff7ed;color:#c2410c;border:1px solid rgba(194,65,12,.2);">🔥 1 day streak</span>
-        <span id="signal-status-badge" style="display:none;font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;background:var(--amber-bg);color:var(--amber);border:1px solid rgba(180,83,9,.25);cursor:pointer;" onclick="document.getElementById('signals-panel').scrollIntoView({behavior:'smooth'})">
-          ⚠ signals detected — scroll down
-        </span>
-      </div>
+      <p class="overline" id="dashDate" style="margin-bottom:5px;">Monday, June 15</p>
+      <h1 id="dashGreet" style="font-size:28px;font-weight:700;letter-spacing:-.02em;color:var(--ink);line-height:1.15;">Good morning, Frank.</h1>
     </div>
-    <div class="hdr-btns">
-      <button class="btn-sm" onclick="startWt()" style="background:var(--green-bg);border-color:rgba(14,159,110,.3);color:var(--green);font-weight:700;">🧠 Meet Dr. Sage</button>
-      <button class="btn-sm" onclick="openWeekly()">📅 This Week</button>
-      <button class="btn-sm btn-dr" onclick="openContactDr()">🩺 Contact doctor</button>
-      <button class="btn-sm" onclick="openReportModal()" style="background:var(--purple-bg);border-color:rgba(109,91,208,.3);color:var(--purple);">📋 Doctor report</button>
+    <div style="position:relative;flex-shrink:0;">
+      <div style="width:42px;height:42px;border-radius:50%;background:var(--accent-tint);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:600;color:var(--accent);" id="avatar-initials">FR</div>
+      <span id="ring-online-dot" style="position:absolute;bottom:-1px;right:-1px;width:13px;height:13px;border-radius:50%;background:var(--normal);border:2.5px solid var(--surface);display:none;"></span>
     </div>
   </div>
-  <!-- Briefing -->
-  <div class="briefing">
-    <div class="briefing-av"><div style="font-size:9px;text-transform:uppercase;letter-spacing:.07em;color:var(--green);font-weight:700;">SageHealth</div><div style="font-size:18px;margin:3px 0;">🧠</div></div>
-    <div class="briefing-text" id="dailySummary">Loading daily briefing...</div>
+
+  <!-- Dr. Sage note card -->
+  <div style="margin:16px 24px 0;background:var(--accent-tint);border-radius:20px;padding:16px 17px;display:flex;gap:13px;">
+    <div style="position:relative;width:34px;height:34px;flex-shrink:0;margin-top:1px;">
+      <div class="sage-orb" style="width:34px;height:34px;"></div>
+    </div>
+    <p id="dailySummary" style="font-size:15.5px;line-height:1.5;color:#1B3F57;margin:0;">Loading your morning briefing…</p>
   </div>
-  <!-- SIGNALS PANEL -->
-  <div class="signals-panel" id="signals-panel"><div style="background:var(--panel);border:1px solid var(--border2);border-radius:12px;padding:14px 18px;box-shadow:var(--shadow);color:var(--muted);font-size:13px;">⏳ Loading health signals...</div></div>
-  <!-- 5 metric cards -->
-  <div class="metrics-row" id="metrics-row"></div>
-  <!-- ECG HERO -->
-  <div class="ecg-hero">
-    <div class="ecg-hero-head">
-      <div class="ecg-hero-left">
-        <div class="ecg-hero-title"><div class="ecg-live-dot"></div>ECG rhythm monitoring<span style="font-size:11px;color:var(--muted);font-weight:400;margin-left:4px;">· Wosheng TK30 single-lead · Simulated until ring data live</span></div>
-        <div class="ecg-hero-sub">Your cardiac electrical activity — Lead II waveform. Detects rate, rhythm, and early arrhythmia signals including atrial fibrillation and PVCs.</div>
-        <div class="ecg-hero-vitals">
-          <div class="ecg-hv"><div class="ecg-hv-val" id="hero-hr" style="color:var(--green);">--</div><div class="ecg-hv-label">BPM</div></div>
-          <div class="ecg-hv"><div class="ecg-hv-val" id="hero-hrv" style="color:var(--cyan);">--</div><div class="ecg-hv-label">HRV ms</div></div>
-          <div class="ecg-hv"><div class="ecg-hv-val" id="hero-rhythm" style="color:var(--text);font-size:13px;font-weight:600;padding-top:5px;">Loading...</div><div class="ecg-hv-label">Rhythm</div></div>
+
+  <!-- Health ring + weekly score -->
+  <div style="margin:14px 24px 0;" class="sage-card">
+    <div style="display:flex;align-items:center;gap:20px;">
+      <div style="position:relative;width:96px;height:96px;flex-shrink:0;">
+        <svg width="96" height="96" viewBox="0 0 96 96" style="display:block;">
+          <circle cx="48" cy="48" r="42" fill="none" stroke="var(--hairline)" stroke-width="9"/>
+          <circle id="health-ring-arc" cx="48" cy="48" r="42" fill="none" stroke="var(--normal)" stroke-width="9" stroke-linecap="round" stroke-dasharray="264" stroke-dashoffset="42" transform="rotate(-90 48 48)"/>
+        </svg>
+        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+          <span id="health-ring-score" style="font-size:30px;font-weight:700;letter-spacing:-.02em;color:var(--ink);line-height:1;">84</span>
+          <span style="font-size:11px;font-weight:600;color:var(--faint);margin-top:2px;">/ 100</span>
         </div>
       </div>
-      <div class="ecg-hero-btns">
-        <button class="ecg-btn-sage" onclick="sageReadsECG()">🧠 Dr. Sage reads</button>
-        <button class="ecg-btn-primary" onclick="openECG()">⛶ Full screen</button>
+      <div>
+        <p class="overline" style="margin-bottom:6px;">This week</p>
+        <p id="health-ring-label" style="font-size:21px;font-weight:700;color:var(--ink);line-height:1.2;">Steady &amp; strong</p>
+        <p id="health-ring-sub" style="font-size:14px;line-height:1.45;color:var(--muted);margin-top:7px;">Up 3 points from last week. Recovery is the only thing to watch.</p>
       </div>
     </div>
-    <div class="ecg-canvas-wrap" style="margin-bottom:10px;"><canvas id="ecgCanvasHero" style="display:block;"></canvas></div>
-    <div class="ecg-foot-row">
-      <div class="ecg-live-dot" style="flex-shrink:0;"></div>
-      <div class="ecg-rhythm-label" id="ecg-hero-status">Normal sinus rhythm</div>
-      <div class="ecg-anatomy-inline">
-        <div class="ecg-anat-item"><strong>P wave</strong> — atria load</div>
-        <div class="ecg-anat-item"><strong>QRS</strong> — ventricles fire</div>
-        <div class="ecg-anat-item"><strong>T wave</strong> — heart resets</div>
-      </div>
-    </div>
-    <div id="heroEcgReading" style="font-size:13px;color:#7a92b5;line-height:1.7;margin-top:10px;min-height:0;"></div>
   </div>
-  <!-- Deep dive cards -->
-  <div id="dash-metrics"></div>
+
+  <!-- 3×2 metric tile grid -->
+  <div style="margin:14px 24px 0;display:grid;grid-template-columns:1fr 1fr 1fr;gap:11px;" id="metric-tiles-new">
+    <div class="metric-tile"><p class="mt-label">HRV</p><p class="mt-value"><span id="tile-hrv">--</span><span> ms</span></p><p class="mt-status watch" id="tile-hrv-status">↓ 12</p></div>
+    <div class="metric-tile"><p class="mt-label">Rest HR</p><p class="mt-value"><span id="tile-rhr">--</span><span> bpm</span></p><p class="mt-status normal" id="tile-rhr-status">Normal</p></div>
+    <div class="metric-tile"><p class="mt-label">SpO₂</p><p class="mt-value"><span id="tile-spo2">--</span><span> %</span></p><p class="mt-status normal" id="tile-spo2-status">Normal</p></div>
+    <div class="metric-tile"><p class="mt-label">Blood pr.</p><p class="mt-value"><span id="tile-bp-s">--</span><span id="tile-bp-d">/--</span></p><p class="mt-status normal" id="tile-bp-status">Normal</p></div>
+    <div class="metric-tile"><p class="mt-label">Sleep</p><p class="mt-value"><span id="tile-sleep-h">--</span><span>h</span><span id="tile-sleep-m">--</span><span>m</span></p><p class="mt-status normal" id="tile-sleep-status">Restful</p></div>
+    <div class="metric-tile"><p class="mt-label">Skin temp</p><p class="mt-value"><span id="tile-temp">--</span><span>°</span></p><p class="mt-status muted" id="tile-temp-status">Baseline</p></div>
+  </div>
+
+  <!-- Active signals row -->
+  <div id="signals-panel" style="margin:14px 24px 0;"></div>
+
+  <!-- Hidden legacy containers (keep JS working) -->
+  <div id="metrics-row" style="display:none;"></div>
+  <div id="dash-metrics" style="display:none;"></div>
+  <div id="signal-status-badge" style="display:none;"></div>
+  <div id="streak-badge" style="display:none;"></div>
+
+  <!-- ECG (kept but moved to heart page only) -->
+  <div style="display:none;">
+    <canvas id="ecgCanvasHero"></canvas>
+    <div id="heroEcgReading"></div>
+    <div id="ecg-hero-status"></div>
+    <div id="hero-hr"></div><div id="hero-hrv"></div><div id="hero-rhythm"></div>
+  </div>
+
+  <!-- Talk to Dr. Sage — sticky CTA -->
+  <div style="position:sticky;bottom:88px;left:0;right:0;padding:0 24px;margin-top:20px;z-index:50;">
+    <button class="btn-primary-new" onclick="startWt()">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2.5" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0013 0M12 17.5V21M8.5 21h7"/></svg>
+      Talk to Dr. Sage
+    </button>
+  </div>
 </div>
 
 <!-- HEART PAGE -->
@@ -1020,37 +1079,85 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
 
 
 <!-- ════ VOICE CONSULTATION MODAL ════ -->
-<div id="voiceModal">
-<div class="vc-card">
-  <div class="vc-head">
-    <div class="vc-head-top">
-      <div>
-        <div class="vc-sage-name">🧠 Dr. Sage</div>
-        <div class="vc-sage-cred">AI Health Coach · SageHealth</div>
-      </div>
-      <button class="vc-close" onclick="closeVoiceConsult()">✕</button>
+<!-- ═══ VOICE CONSULTATION — dark phone-call redesign ═══ -->
+<div id="voiceModal" style="display:none;position:fixed;inset:0;z-index:500;background:var(--voice-bg);">
+  <!-- Call header -->
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:54px 24px 0;">
+    <button onclick="closeVoiceConsult()" style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.12);border:none;color:rgba(255,255,255,.8);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+    </button>
+    <div style="text-align:center;">
+      <div style="font-size:17px;font-weight:600;color:#fff;letter-spacing:-.01em;">Dr. Sage</div>
+      <div style="font-size:13px;color:rgba(255,255,255,.5);margin-top:2px;" id="vc-signal-label">Health consultation · 0:00</div>
     </div>
-    <div class="vc-signal-pill" id="vc-signal-label">Health consultation</div>
+    <div style="width:36px;"></div>
   </div>
-  <div class="vc-body">
-    <div class="vc-conversation" id="vc-conversation"></div>
-    <div class="vc-commitment-box" id="vc-commitment-box" style="display:none;">
-      <div class="vc-commitment-label">✓ Your commitment</div>
-      <div class="vc-commitment-text" id="vc-commitment-text"></div>
+
+  <!-- Breathing orb — center -->
+  <div style="display:flex;flex-direction:column;align-items:center;margin-top:48px;">
+    <div style="position:relative;width:140px;height:140px;display:flex;align-items:center;justify-content:center;" id="vc-orb-wrap">
+      <!-- Red halo — Dr. Sage speaking -->
+      <div id="vc-halo-1" class="sage-orb-halo" style="width:140px;height:140px;display:none;"></div>
+      <div id="vc-halo-2" class="sage-orb-halo" style="width:140px;height:140px;display:none;animation-delay:1.6s;"></div>
+      <!-- Orb -->
+      <div class="sage-orb" style="width:120px;height:120px;" id="vc-orb"></div>
     </div>
-    <div class="vc-controls">
-      <div class="vc-status" id="vc-status">Tap the mic to speak with Dr. Sage</div>
-      <div class="vc-mic-row">
-        <button class="vc-mic" id="vc-mic" onclick="toggleMic()">🎤</button>
-      </div>
-      <div class="vc-transcript" id="vc-transcript"></div>
-      <div class="vc-action-row" style="margin-top:12px;">
-        <button class="vc-btn-commit" id="vc-btn-commit" onclick="saveCommitment()">✓ Save this commitment</button>
-        <button class="vc-btn-end" onclick="closeVoiceConsult()">End conversation</button>
-      </div>
+
+    <!-- Voice state label -->
+    <div style="display:flex;align-items:center;gap:7px;margin-top:18px;" id="vc-state-row">
+      <span id="vc-state-dot" style="width:7px;height:7px;border-radius:50%;background:var(--urgent);"></span>
+      <span id="vc-state-text" style="font-size:12px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:rgba(255,255,255,.55);">DR. SAGE IS SPEAKING</span>
     </div>
   </div>
-</div>
+
+  <!-- Transcript — one line at a time -->
+  <div style="padding:32px 32px 0;text-align:center;">
+    <p id="vc-prior-line" style="font-size:14px;color:rgba(255,255,255,.35);font-style:italic;margin-bottom:12px;min-height:20px;line-height:1.5;"></p>
+    <p id="vc-current-line" style="font-size:22px;font-weight:600;color:#fff;letter-spacing:-.01em;line-height:1.4;min-height:32px;text-wrap:pretty;"></p>
+    <p id="vc-transcript" style="font-size:14px;color:rgba(255,255,255,.45);margin-top:8px;min-height:20px;font-style:italic;"></p>
+  </div>
+
+  <!-- Hidden legacy elements JS needs -->
+  <div style="display:none;">
+    <div id="vc-conversation"></div>
+    <div id="vc-status"></div>
+  </div>
+
+  <!-- Commitment wrap-up sheet -->
+  <div id="vc-commitment-box" style="display:none;position:absolute;bottom:0;left:0;right:0;background:var(--surface);border-radius:28px 28px 0 0;padding:24px 24px 40px;box-shadow:0 -16px 40px -12px rgba(0,0,0,.4);">
+    <div style="width:36px;height:4px;border-radius:2px;background:var(--hairline);margin:0 auto 20px;"></div>
+    <p style="font-size:12px;font-weight:700;letter-spacing:.10em;text-transform:uppercase;color:var(--faint);margin-bottom:8px;">Your commitment</p>
+    <p id="vc-commitment-text" style="font-size:16px;line-height:1.5;color:var(--ink);margin-bottom:20px;"></p>
+    <div style="display:flex;gap:10px;">
+      <button onclick="closeVoiceConsult()" style="flex:1;height:48px;border-radius:13px;border:1.5px solid var(--hairline);background:transparent;color:var(--muted);font-size:15px;font-weight:600;cursor:pointer;">Adjust</button>
+      <button id="vc-btn-commit" onclick="saveCommitment()" style="flex:2;height:48px;border-radius:13px;background:var(--accent);color:#fff;font-size:15px;font-weight:600;border:none;cursor:pointer;">Save &amp; end call</button>
+    </div>
+  </div>
+
+  <!-- Call controls — bottom -->
+  <div style="position:absolute;bottom:48px;left:0;right:0;display:flex;align-items:center;justify-content:center;gap:32px;" id="vc-controls-row">
+    <!-- Mute -->
+    <div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
+      <button id="vc-mute-btn" onclick="toggleVcMute()" style="width:62px;height:62px;border-radius:50%;background:rgba(255,255,255,.16);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.8)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2.5" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0013 0M12 17.5V21"/></svg>
+      </button>
+      <span style="font-size:12px;color:rgba(255,255,255,.45);font-weight:500;">Mute</span>
+    </div>
+    <!-- End call -->
+    <div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
+      <button onclick="closeVoiceConsult()" style="width:78px;height:78px;border-radius:50%;background:var(--urgent);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 20px -6px rgba(192,57,43,.7);">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="white"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1-9.4 0-17-7.6-17-17 0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1L6.6 10.8z"/></svg>
+      </button>
+      <span style="font-size:12px;color:rgba(255,255,255,.45);font-weight:500;">End</span>
+    </div>
+    <!-- Speaker -->
+    <div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
+      <button id="vc-mic" onclick="toggleMic()" style="width:62px;height:62px;border-radius:50%;background:rgba(255,255,255,.16);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.8)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 010 14.14M15.54 8.46a5 5 0 010 7.07"/></svg>
+      </button>
+      <span style="font-size:12px;color:rgba(255,255,255,.45);font-weight:500;">Speaker</span>
+    </div>
+  </div>
 </div>
 
 <!-- ════ WALKTHROUGH ════ -->
@@ -1074,28 +1181,29 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
 <script src="/js/signals.js"></script>
 
 <!-- ════ iOS BOTTOM TAB BAR (mobile only) ════ -->
-<div id="mobile-tab-bar" style="display:none;">
-  <button class="mob-tab active" id="mob-dashboard" onclick="mobileNav('dashboard',this)">
-    <span class="mob-tab-icon">🏠</span>
-    <span>Home</span>
+<!-- New frosted tab bar — design system v2 -->
+<nav class="tab-bar-new" id="mobile-tab-bar" style="display:none;">
+  <button class="tab-item-new active" id="mob-dashboard" onclick="mobileNav('dashboard',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg>
+    Home
   </button>
-  <button class="mob-tab" id="mob-heart" onclick="mobileNav('heart',this)">
-    <span class="mob-tab-icon">❤️</span>
-    <span>Heart</span>
+  <button class="tab-item-new" id="mob-signals-tab" onclick="mobileNavSignals(this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+    Signals
   </button>
-  <button class="mob-tab" id="mob-sleep" onclick="mobileNav('sleep',this)">
-    <span class="mob-tab-icon">🌙</span>
-    <span>Sleep</span>
+  <button class="tab-item-new" id="mob-weekly" onclick="openWeekly();mobileNavActive(this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+    This Week
   </button>
-  <button class="mob-tab" id="mob-vitals" onclick="mobileNav('vitals',this)">
-    <span class="mob-tab-icon">🌡️</span>
-    <span>Vitals</span>
+  <button class="tab-item-new" id="mob-report" onclick="openReportModal();mobileNavActive(this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+    Report
   </button>
-  <button class="mob-tab" id="mob-more" onclick="toggleMobileMore()">
-    <span class="mob-tab-icon">⋯</span>
-    <span>More</span>
+  <button class="tab-item-new" id="mob-profile" onclick="mobileNav('profile',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+    Profile
   </button>
-</div>
+</nav>
 
 <!-- Mobile "More" sheet -->
 <div id="mobile-more-sheet" style="display:none;position:fixed;bottom:0;left:0;right:0;background:white;border-radius:20px 20px 0 0;z-index:300;padding:20px 20px calc(20px + env(safe-area-inset-bottom));box-shadow:0 -4px 30px rgba(0,0,0,.12);">

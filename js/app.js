@@ -1,3 +1,183 @@
+
+/* ── REDESIGN v2 — UI helpers ──────────────────────── */
+
+function updateDashboardV2(stateMap) {
+  const m = stateMap || {};
+  const cv = m.cardio || {};
+  const sl = m.sleep || {};
+  const t  = m.temperature || {};
+  const a  = m.activity || {};
+  const r  = m.recovery || {};
+
+  // Greeting
+  const hour = new Date().getHours();
+  const greet = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  const name = profile?.name ? `, ${profile.name.split(' ')[0]}.` : '.';
+  const el = document.getElementById('dashGreet');
+  if (el) el.textContent = greet + name;
+
+  const dateEl = document.getElementById('dashDate');
+  if (dateEl) dateEl.textContent = new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+
+  // Avatar initials
+  const av = document.getElementById('avatar-initials');
+  if (av && profile?.name) {
+    const parts = profile.name.trim().split(' ');
+    av.textContent = (parts[0]?.[0]||'') + (parts[1]?.[0]||'');
+  }
+
+  // Ring online dot
+  const dot = document.getElementById('ring-online-dot');
+  if (dot) dot.style.display = 'block';
+
+  // Health ring score
+  const score = r.readiness || m.health_grade_num || 84;
+  const scoreEl = document.getElementById('health-ring-score');
+  if (scoreEl) scoreEl.textContent = score;
+  const arc = document.getElementById('health-ring-arc');
+  if (arc) {
+    const circumference = 264;
+    const offset = circumference - (score / 100) * circumference;
+    arc.setAttribute('stroke-dashoffset', offset);
+    arc.setAttribute('stroke', score >= 80 ? 'var(--normal)' : score >= 60 ? 'var(--watch)' : 'var(--urgent)');
+  }
+  const labelEl = document.getElementById('health-ring-label');
+  if (labelEl) labelEl.textContent = score >= 85 ? 'Strong week' : score >= 70 ? 'Steady & strong' : score >= 55 ? 'Take it easy' : 'Recovery week';
+  const subEl = document.getElementById('health-ring-sub');
+  if (subEl && r.readiness) subEl.textContent = r.consecutive_low_days > 2 ? `${r.consecutive_low_days} consecutive low days — worth discussing with Dr. Sage.` : 'Up from last week. Recovery is the only thing to watch.';
+
+  // Metric tiles
+  function setTile(id, val, statusId, statusText, statusClass) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = val || '--';
+    const sEl = document.getElementById(statusId);
+    if (sEl) { sEl.textContent = statusText; sEl.className = 'mt-status ' + (statusClass||'muted'); }
+  }
+
+  setTile('tile-hrv', cv.hrv?.current, 'tile-hrv-status',
+    cv.hrv?.trend?.label || (cv.hrv?.current < 40 ? '↓ low' : 'Normal'),
+    cv.hrv?.status === 'watch' || cv.hrv?.current < 40 ? 'watch' : 'normal');
+
+  setTile('tile-rhr', cv.rhr?.current, 'tile-rhr-status',
+    cv.rhr?.status === 'normal' ? 'Normal' : cv.rhr?.trend?.label || '--',
+    cv.rhr?.status || 'muted');
+
+  setTile('tile-spo2', cv.spo2?.current, 'tile-spo2-status',
+    cv.spo2?.current >= 95 ? 'Normal' : 'Watch',
+    cv.spo2?.current >= 95 ? 'normal' : 'watch');
+
+  const bpEl = document.getElementById('tile-bp-s');
+  const bpDEl = document.getElementById('tile-bp-d');
+  if (bpEl) bpEl.textContent = cv.bp?.systolic || '--';
+  if (bpDEl) bpDEl.textContent = '/' + (cv.bp?.diastolic || '--');
+  setTile(null, null, 'tile-bp-status',
+    cv.bp?.status === 'normal' ? 'Normal' : cv.bp?.status || '--',
+    cv.bp?.status || 'muted');
+
+  const sh = sl.total?.avg7d || 0;
+  const shH = Math.floor(sh), shM = Math.round((sh - shH) * 60);
+  setTile('tile-sleep-h', shH || '--', null, null, null);
+  const smEl = document.getElementById('tile-sleep-m');
+  if (smEl) smEl.textContent = shM || '';
+  setTile(null, null, 'tile-sleep-status',
+    sh >= 7 ? 'Restful' : sh >= 6 ? 'Short' : 'Watch',
+    sh >= 7 ? 'normal' : sh >= 6 ? 'muted' : 'watch');
+
+  setTile('tile-temp', t.last_night_f ? (t.deviation_f > 0 ? '+' : '') + t.deviation_f : '--',
+    'tile-temp-status',
+    t.status === 'elevated' ? 'Elevated' : t.deviation_f > 0.5 ? 'Slight' : 'Baseline',
+    t.status === 'elevated' ? 'watch' : 'muted');
+}
+
+function renderSignalsPanelV2(signals) {
+  const container = document.getElementById('signals-panel');
+  if (!container) return;
+
+  const active = (signals||[]).filter(s => s.fired && !s.dismissed);
+  if (!active.length) {
+    container.innerHTML = '';
+    return;
+  }
+
+  const levelLabel = { urgent: 'Urgent', watch: 'Watch', info: 'Good to know', normal: 'Normal' };
+  const levelChip  = { urgent: 'urgent', watch: 'watch', info: 'info', normal: 'normal' };
+
+  container.innerHTML = '<p class="overline" style="margin:0 0 10px;padding:0 2px;">' + active.length + ' active signal' + (active.length > 1 ? 's' : '') + '</p>' +
+    active.map(s => {
+      const level = s.level || 'watch';
+      const chip = levelChip[level] || 'watch';
+      const borderColor = level === 'urgent' ? 'var(--urgent)' : level === 'watch' ? 'var(--watch)' : level === 'normal' ? 'var(--normal)' : 'var(--accent)';
+      return '<div onclick="openSignalCard('' + s.id + '')" style="background:var(--surface);border:1px solid var(--hairline);border-left:3px solid ' + borderColor + ';border-radius:16px;padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;gap:12px;cursor:pointer;box-shadow:0 6px 18px -10px rgba(20,50,70,.18);">' +
+        '<div style="flex:1;">' +
+          '<div class="sig-chip ' + chip + '" style="margin-bottom:6px;"><span class="sig-chip-dot"></span>' + (levelLabel[level]||'Watch') + ' · Pattern worth discussing</div>' +
+          '<div style="font-size:15px;font-weight:600;color:var(--ink);line-height:1.3;">' + s.title + '</div>' +
+          '<div style="font-size:13px;color:var(--muted);margin-top:3px;">' + (s.watchingFor||s.action||'') + '</div>' +
+        '</div>' +
+        '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>' +
+      '</div>';
+    }).join('');
+}
+
+function mobileNavActive(btn) {
+  document.querySelectorAll('.tab-item-new').forEach(t => t.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+}
+
+function mobileNavSignals(btn) {
+  mobileNavActive(btn);
+  // Scroll to signals panel
+  const el = document.getElementById('signals-panel');
+  if (el) el.scrollIntoView({behavior:'smooth'});
+}
+
+function updateVoiceState(state) {
+  // state: 'speaking' | 'listening' | 'thinking' | 'idle'
+  const dot = document.getElementById('vc-state-dot');
+  const txt = document.getElementById('vc-state-text');
+  const h1 = document.getElementById('vc-halo-1');
+  const h2 = document.getElementById('vc-halo-2');
+  if (!dot) return;
+
+  if (state === 'speaking') {
+    dot.style.background = 'var(--urgent)';
+    if (txt) txt.textContent = 'DR. SAGE IS SPEAKING';
+    if (h1) h1.style.display = 'block';
+    if (h2) h2.style.display = 'block';
+  } else if (state === 'listening') {
+    dot.style.background = 'var(--normal)';
+    if (txt) txt.textContent = 'YOUR TURN';
+    if (h1) h1.style.display = 'none';
+    if (h2) h2.style.display = 'none';
+  } else if (state === 'thinking') {
+    dot.style.background = 'var(--faint)';
+    if (txt) txt.textContent = 'THINKING…';
+    if (h1) h1.style.display = 'none';
+    if (h2) h2.style.display = 'none';
+  } else {
+    dot.style.background = 'var(--faint)';
+    if (txt) txt.textContent = '';
+    if (h1) h1.style.display = 'none';
+    if (h2) h2.style.display = 'none';
+  }
+}
+
+function setVoiceTranscript(line, isUser) {
+  const prior = document.getElementById('vc-prior-line');
+  const current = document.getElementById('vc-current-line');
+  if (!current) return;
+  if (prior && current.textContent) prior.textContent = '"' + current.textContent + '"';
+  current.textContent = line || '';
+}
+
+function toggleVcMute() {
+  // Toggle mute state visually
+  const btn = document.getElementById('vc-mute-btn');
+  if (!btn) return;
+  const muted = btn.dataset.muted === '1';
+  btn.dataset.muted = muted ? '0' : '1';
+  btn.style.background = muted ? 'rgba(255,255,255,.16)' : 'rgba(255,255,255,.4)';
+}
+
 /* ─── RING SPECS (from TK30 official spec sheet) ── */
 const TK30_SPECS = {
   cpu: 'Nordic NRF52832',
@@ -189,6 +369,30 @@ function buildDashboard(){
   if(ca<age)br+=`CV age estimate <strong>${ca}</strong> — ${age-ca} yrs younger than actual.`;
   br+=` <span style="display:inline-flex;align-items:baseline;gap:5px;margin-left:4px;"><span style="font-size:15px;font-weight:800;color:${grade.color};">${grade.grade}</span><span style="font-size:11px;color:${grade.color};font-weight:600;">${grade.label}</span></span>`;
   document.getElementById('dailySummary').innerHTML=br;
+
+  // ── v2 redesign: update new metric tiles + health ring ──
+  try {
+    const sm = typeof loadStateMap === 'function' ? loadStateMap() : null;
+    if (sm) {
+      updateDashboardV2(sm);
+    } else {
+      // Fallback: use raw data
+      const d = data[data.length-1];
+      const tileData = {
+        cardio: {
+          hrv: { current: d.hrv, status: d.hrv < 40 ? 'watch' : 'normal', trend: { label: '' }},
+          rhr: { current: d.rhr, status: d.rhr < 70 ? 'normal' : 'watch', trend: { label: '' }},
+          bp:  { systolic: d.bpSys, diastolic: d.bpDia, status: d.bpSys < 130 ? 'normal' : 'watch', trend: { label: '' }},
+          spo2:{ current: d.spo2, status: d.spo2 >= 95 ? 'normal' : 'watch', trend: { label: '' }},
+        },
+        sleep: { total: { avg7d: d.sleep, trend: { label: '' }}, deep: { avg7d: d.deep }, rem: { avg7d: d.rem }},
+        temperature: { last_night_f: d.tempF, deviation_f: d.tempDev, status: Math.abs(d.tempDev) > 0.5 ? 'elevated' : 'normal' },
+        recovery: { readiness: d.readiness },
+        health_grade_num: grade.grade === 'A' ? 92 : grade.grade === 'B' ? 81 : grade.grade === 'C' ? 65 : 48,
+      };
+      updateDashboardV2(tileData);
+    }
+  } catch(e) { console.log('v2:', e.message); }
 
   // Battery / sync warning based on days since last sync
   const lastSync = localStorage.getItem('sh_last_sync');
