@@ -690,13 +690,85 @@ function openWeekly(){
     {l:'Apnea events/night',v:+(data.reduce((s,d)=>s+d.apnea,0)/7).toFixed(1),g:goals.apnea||2,fmt:v=>v,inv:true},
   ].map(it=>{const p=it.inv?Math.max(0,Math.min(100,(1-it.v/it.g)*100)):Math.min(100,it.v/it.g*100);const col=p>=80?'var(--green)':p>=50?'var(--amber)':'var(--red)';return`<div class="goal-row"><div class="goal-label">${it.l}</div><div class="goal-bar"><div class="goal-fill" style="width:${Math.round(p)}%;background:${col};"></div></div><div class="goal-vals">${it.fmt(it.v)} / ${it.fmt(it.g)}</div></div>`;}).join('');
   const ec=document.getElementById('encounter-content');if(ec)ec.dataset.generated='';
+
+  // Render worth-noting rows in new design format
+  const t=data[data.length-1];
+  const best=data.reduce((b,d)=>d.sleep>b.sleep?d:b);
+  const insightsEl = document.getElementById('wk-insights');
+  if (insightsEl) {
+    const insights = [
+      {t:'Recovery driver', b:`Best recovery day (readiness ${data.reduce((b,d)=>d.readiness>b.readiness?d:b).readiness}/100) followed ${best.sleep}h sleep with ${best.deep}h deep.`, good:true},
+      {t:'Blood pressure', b:`Average systolic ${avg(data,'bpSys')} mmHg. ${avg(data,'bpSys')<130?'Healthy range.':'Elevated — worth discussing.'}`, good:avg(data,'bpSys')<130},
+      {t:'Temperature', b:data.some(d=>d.tempDev>0.5)?`Elevated on ${data.filter(d=>d.tempDev>0.5).length} night(s) this week.`:'Within baseline all week.', good:!data.some(d=>d.tempDev>0.5)},
+      {t:'Cardiovascular load', b:`HRV ${avg(data,'hrv')}ms, RHR ${avg(data,'rhr')} BPM. ${avg(data,'hrv')>=55?'Both indicate healthy adaptation.':'HRV trending below optimal.'}`, good:avg(data,'hrv')>=55},
+    ];
+    insightsEl.innerHTML = insights.map(ins =>
+      '<div style="background:var(--fill);border-left:3px solid ' + (ins.good?'var(--normal)':'var(--watch)') + ';border-radius:0 12px 12px 0;padding:12px 14px;margin-bottom:10px;">' +
+      '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:4px;">' + ins.t + '</div>' +
+      '<div style="font-size:14px;color:var(--ink);line-height:1.5;">' + ins.b + '</div>' +
+      '</div>'
+    ).join('');
+  }
+
+  // Generate Groq weekly narrative
+  generateWeeklyNarrative();
+
   encTab('brief');
   document.getElementById('weeklyModal').style.display='block';
+}
+
+async function generateWeeklyNarrative() {
+  const el = document.getElementById('wk-narrative');
+  if (!el) return;
+  if (el.dataset.generated === '1') return; // already loaded this session
+
+  el.textContent = 'Loading your weekly summary…';
+
+  const t = data[data.length-1];
+  const avgR = avg(data,'readiness');
+  const avgS = avgF(data,'sleep');
+  const avgH = avg(data,'hrv');
+  const avgBP = avg(data,'bpSys');
+  const name = profile.name ? profile.name.split(' ')[0] : 'Frank';
+  const activeSigs = JSON.parse(localStorage.getItem('sh_active_signals')||'[]').filter(s=>s.fired);
+
+  const prompt = `You are Dr. Sage, an AI health concierge. Write a 2-3 sentence warm, personal weekly summary for ${name} in your voice — conversational, human, specific to their data. Never say "data shows" or "metrics indicate." Speak directly to them like a caring physician would.
+
+This week: Average readiness ${avgR}/100. Average sleep ${avgS}h. HRV ${avgH}ms. BP avg ${avgBP}mmHg. SpO2 ${avgF(data,'spo2')}%.${activeSigs.length > 0 ? ' Active patterns: ' + activeSigs.slice(0,2).map(s=>s.title).join(', ') + '.' : ' No patterns flagged.'}
+
+Write 2-3 sentences only. Be specific — use the actual numbers. Warm but clinical. End with one thing worth paying attention to, or a positive note if everything looks good.`;
+
+  try {
+    const res = await fetch('/.netlify/functions/claude', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages: [{ role: 'user', content: prompt }], system: 'You are Dr. Sage, a warm and precise AI health advisor. Respond in 2-3 sentences only. No markdown, no bullets, no headers.' })
+    });
+    const json = await res.json();
+    const text = json.content?.[0]?.text || json.choices?.[0]?.message?.content || '';
+    if (text) {
+      el.textContent = text.trim();
+      el.dataset.generated = '1';
+    } else {
+      el.textContent = `A ${avgR >= 80 ? 'strong' : 'steady'} week overall — your readiness averaged ${avgR}/100 and sleep held at ${avgS}h. ${avgH >= 55 ? 'HRV looks healthy.' : 'HRV is worth keeping an eye on.'} ${activeSigs.length > 0 ? activeSigs[0].title + ' is the one thing worth discussing.' : 'Nothing urgent to flag.'}`;
+    }
+  } catch(e) {
+    el.textContent = `A ${avgR >= 80 ? 'strong' : 'steady'} week overall — readiness averaged ${avgR}/100, sleep ${avgS}h, HRV ${avgH}ms. ${activeSigs.length > 0 ? 'One pattern worth discussing: ' + activeSigs[0].title + '.' : 'Nothing urgent to flag.'}`;
+  }
 }
 function closeWeekly(){document.getElementById('weeklyModal').style.display='none';}
 
 /* ─── ENCOUNTER TABS ────────────────────────────── */
-function encTab(tab){['brief','encounter','chat'].forEach(t=>{document.getElementById('epanel-'+t).classList.toggle('active',t===tab);document.getElementById('etab-'+t).classList.toggle('active',t===tab);});if(tab==='encounter')generateEncounter();if(tab==='chat')initSageChat();}
+function encTab(tab){
+  ['brief','encounter','chat'].forEach(t=>{
+    const panel = document.getElementById('epanel-'+t);
+    const btn = document.getElementById('etab-'+t);
+    if (panel) { panel.style.display = t===tab ? 'block' : 'none'; panel.classList.toggle('active',t===tab); }
+    if (btn) { btn.classList.toggle('active',t===tab); }
+  });
+  if(tab==='encounter') generateEncounter();
+  if(tab==='chat') initSageChat();
+}
 
 async function generateEncounter(){
   const el=document.getElementById('encounter-content');if(el.dataset.generated==='1')return;
