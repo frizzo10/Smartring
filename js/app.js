@@ -1463,10 +1463,11 @@ function startVoiceOnboarding() {
   v.style.display = 'flex';
   obStep = 0;
   obShowQuestion();
-  // Check mic support on iOS
   checkObMicSupport();
-  // Auto-play first question via TTS
-  setTimeout(() => obSpeakQuestion(), 600);
+
+  // Speak immediately — we are inside the tap gesture chain right now
+  // iOS requires audio.play() to be called synchronously from a user gesture
+  obSpeakQuestion();
 }
 
 function startTypingOnboarding() {
@@ -1521,6 +1522,7 @@ function obSetState(state) {
 async function obSpeakQuestion() {
   const q = OB_QUESTIONS[obStep];
   if (!q) return;
+  obSetState('speaking');
   try {
     const res = await fetch('/.netlify/functions/tts', {
       method: 'POST',
@@ -1531,11 +1533,37 @@ async function obSpeakQuestion() {
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
     const audio = new Audio(url);
-    audio.onended = () => { obSetState('idle'); };
-    audio.play();
+    audio.onended = () => {
+      URL.revokeObjectURL(url);
+      obSetState('listening');
+      // Auto-start mic on non-iOS if supported
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      if (SR && !isIOS) obStartListening();
+    };
+    const p = audio.play();
+    if (p) p.catch(() => {
+      // Autoplay blocked — show tap-to-hear on the mic button
+      obSetState('idle');
+      const micLabel = document.getElementById('ob-mic-label');
+      if (micLabel) micLabel.textContent = 'Tap to hear Dr. Sage';
+      const micBtn = document.getElementById('ob-mic-btn');
+      if (micBtn) {
+        micBtn.onclick = () => {
+          micBtn.onclick = () => obToggleMic(); // restore after first tap
+          audio.play().then(() => {
+            audio.onended = () => { obSetState('listening'); };
+          });
+        };
+      }
+    });
   } catch(e) {
-    console.log('OB TTS:', e.message);
+    // TTS failed — just show text and let them type
     obSetState('idle');
+    const micLabel = document.getElementById('ob-mic-label');
+    if (micLabel) micLabel.textContent = 'Type your answer below';
+    const fallback = document.getElementById('ob-type-fallback');
+    if (fallback) fallback.style.display = 'block';
   }
 }
 
