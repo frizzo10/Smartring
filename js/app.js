@@ -1458,6 +1458,8 @@ function startVoiceOnboarding() {
   v.style.display = 'flex';
   obStep = 0;
   obShowQuestion();
+  // Check mic support on iOS
+  checkObMicSupport();
   // Auto-play first question via TTS
   setTimeout(() => obSpeakQuestion(), 600);
 }
@@ -1532,6 +1534,37 @@ async function obSpeakQuestion() {
   }
 }
 
+function showObTyping() {
+  const fallback = document.getElementById('ob-type-fallback');
+  if (fallback) {
+    fallback.style.display = 'block';
+    const input = document.getElementById('ob-type-input');
+    if (input) setTimeout(() => input.focus(), 100);
+  }
+}
+
+// Auto-detect iOS and show typing on load
+function checkObMicSupport() {
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (isIOS && !SR) {
+    // Show typing immediately, update mic button appearance
+    setTimeout(() => {
+      const fallback = document.getElementById('ob-type-fallback');
+      if (fallback) fallback.style.display = 'block';
+      const micBtn = document.getElementById('ob-mic-btn');
+      if (micBtn) {
+        micBtn.style.background = 'var(--faint)';
+        micBtn.onclick = showObTyping;
+      }
+      const micLabel = document.getElementById('ob-mic-label');
+      if (micLabel) { micLabel.textContent = 'Type your answer below'; micLabel.style.color = 'var(--muted)'; }
+      const wave = document.getElementById('ob-waveform');
+      if (wave) wave.style.display = 'none';
+    }, 300);
+  }
+}
+
 function obToggleMic() {
   if (obListening) {
     if (obRecognition) obRecognition.stop();
@@ -1544,22 +1577,55 @@ function obToggleMic() {
 
 function obStartListening() {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) {
-    document.getElementById('ob-type-fallback').style.display = 'block';
+
+  // iOS Safari PWA doesn't support SpeechRecognition — show typing fallback
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+
+  if (!SR || (isIOS && !window.SpeechRecognition)) {
+    // Show typing interface immediately with a friendly note
+    const fallback = document.getElementById('ob-type-fallback');
+    if (fallback) fallback.style.display = 'block';
+    const micLabel = document.getElementById('ob-mic-label');
+    if (micLabel) { micLabel.textContent = 'Type your answer below'; micLabel.style.color = 'var(--muted)'; }
+    const micBtn = document.getElementById('ob-mic-btn');
+    if (micBtn) { micBtn.style.background = 'var(--faint)'; micBtn.style.cursor = 'default'; }
     return;
   }
-  obRecognition = new SR();
-  obRecognition.continuous = false;
-  obRecognition.interimResults = false;
-  obRecognition.onresult = (e) => {
-    const answer = e.results[0][0].transcript;
-    obSaveAnswer(answer);
-  };
-  obRecognition.onerror = () => { obListening = false; obSetState('idle'); };
-  obRecognition.onend = () => { obListening = false; };
-  obRecognition.start();
-  obListening = true;
-  obSetState('listening');
+
+  try {
+    obRecognition = new SR();
+    obRecognition.continuous = false;
+    obRecognition.interimResults = false;
+    obRecognition.lang = 'en-US';
+    obRecognition.onresult = (e) => {
+      const answer = e.results[0][0].transcript;
+      obListening = false;
+      obSetState('idle');
+      obSaveAnswer(answer);
+    };
+    obRecognition.onerror = (e) => {
+      obListening = false;
+      obSetState('idle');
+      // On permission denied or not supported, show typing
+      if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+        const fallback = document.getElementById('ob-type-fallback');
+        if (fallback) fallback.style.display = 'block';
+        const micLabel = document.getElementById('ob-mic-label');
+        if (micLabel) micLabel.textContent = 'Mic not available — type below';
+      }
+    };
+    obRecognition.onend = () => {
+      if (obListening) { obListening = false; obSetState('idle'); }
+    };
+    obRecognition.start();
+    obListening = true;
+    obSetState('listening');
+  } catch(e) {
+    obListening = false;
+    const fallback = document.getElementById('ob-type-fallback');
+    if (fallback) fallback.style.display = 'block';
+  }
 }
 
 function obSubmitTyped() {
