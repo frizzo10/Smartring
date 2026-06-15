@@ -107,7 +107,7 @@ function renderSignalsPanelV2(signals) {
       const level = s.level || 'watch';
       const chip = levelChip[level] || 'watch';
       const borderColor = level === 'urgent' ? 'var(--urgent)' : level === 'watch' ? 'var(--watch)' : level === 'normal' ? 'var(--normal)' : 'var(--accent)';
-      return '<div onclick="openSignalCard('' + s.id + '')" style="background:var(--surface);border:1px solid var(--hairline);border-left:3px solid ' + borderColor + ';border-radius:16px;padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;gap:12px;cursor:pointer;box-shadow:0 6px 18px -10px rgba(20,50,70,.18);">' +
+      return '<div onclick="openSignalCard(\'' + s.id + '\')" style="background:var(--surface);border:1px solid var(--hairline);border-left:3px solid ' + borderColor + ';border-radius:16px;padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;gap:12px;cursor:pointer;box-shadow:0 6px 18px -10px rgba(20,50,70,.18);">' +
         '<div style="flex:1;">' +
           '<div class="sig-chip ' + chip + '" style="margin-bottom:6px;"><span class="sig-chip-dot"></span>' + (levelLabel[level]||'Watch') + ' · Pattern worth discussing</div>' +
           '<div style="font-size:15px;font-weight:600;color:var(--ink);line-height:1.3;">' + s.title + '</div>' +
