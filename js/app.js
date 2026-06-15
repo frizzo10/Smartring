@@ -653,7 +653,12 @@ function buildWtSteps(){
     {title:'What to do now',text:`${name}, here is what I suggest. Wear your ring every night. Open the app each morning. When a signal appears, talk to me about it. Before your next doctor visit — tap Dr. Report. The longer we do this together, the better prepared you will be. I am always watching. I will be here when something matters.`},
   ];
 }
-function startWt(){wtSteps=buildWtSteps();wtIdx=0;document.getElementById('wtOverlay').classList.add('open');const pips=document.getElementById('wtPips');pips.innerHTML=wtSteps.map((_,i)=>`<div class="wt-pip" id="wp${i}"></div>`).join('');renderWt();}
+function startWt(){
+  // Route to voice consultation in intro mode
+  if (typeof openVoiceConsult === 'function') {
+    openVoiceConsult('__intro__', 'Getting to know you', '', true);
+  }
+}
 function renderWt(){const s=wtSteps[wtIdx];document.getElementById('wtBody').textContent=s.text;document.getElementById('wtStep').textContent=`Step ${wtIdx+1} of ${wtSteps.length} · ${s.title}`;document.getElementById('wtPrev').style.opacity=wtIdx===0?.3:1;document.getElementById('wtPrev').disabled=wtIdx===0;document.getElementById('wtNext').textContent=wtIdx===wtSteps.length-1?'Finish ✓':'Next →';wtSteps.forEach((_,i)=>{const p=document.getElementById('wp'+i);if(p)p.classList.toggle('on',i<=wtIdx);});if(wtVoiceOn)speakWt();}
 function speakWt(){const b=document.getElementById('wtVoiceBtn');b.classList.add('speaking');speak(wtSteps[wtIdx].text,()=>b.classList.remove('speaking'));}
 function wtNav(dir){stopSpeech();if(dir===1&&wtIdx===wtSteps.length-1){closeWt();return;}wtIdx=Math.max(0,Math.min(wtSteps.length-1,wtIdx+dir));renderWt();}

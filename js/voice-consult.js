@@ -717,8 +717,42 @@ async function elevenLabsSpeak(text) {
         reject(new Error('Audio error'));
       };
       audio.src = url;
+
+      // iOS Safari blocks autoplay outside user gesture chain
+      // Show text immediately, offer tap-to-play if autoplay blocked
       const p = audio.play();
-      if (p) p.catch(reject);
+      if (p) {
+        p.catch(() => {
+          // Autoplay blocked — show tap-to-hear prompt in voice modal
+          vcState.isSpeaking = false;
+          setMicState('idle');
+          const cl = document.getElementById('vc-current-line');
+          if (cl && cl.textContent) {
+            // Already showing text — add a tap to hear button
+            const priorEl = document.getElementById('vc-prior-line');
+            if (priorEl && !document.getElementById('vc-tap-play')) {
+              const tapBtn = document.createElement('button');
+              tapBtn.id = 'vc-tap-play';
+              tapBtn.style.cssText = 'margin-top:16px;background:rgba(255,255,255,.18);color:#fff;border:none;border-radius:10px;padding:10px 20px;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;margin:16px auto 0;';
+              tapBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg> Tap to hear Dr. Sage';
+              tapBtn.onclick = () => {
+                tapBtn.remove();
+                audio.play().then(resolve).catch(() => {
+                  // Still blocked — just resolve and show text only
+                  vcState.isSpeaking = false;
+                  setMicState('idle');
+                  setVcStatus('Tap the mic to respond', '');
+                  resolve();
+                });
+              };
+              const transcript = document.querySelector('#voiceModal [style*="padding:32px"]');
+              if (transcript) transcript.appendChild(tapBtn);
+            }
+          }
+          setVcStatus('Tap to hear Dr. Sage or tap mic to respond', '');
+          resolve(); // Don't block — text is already shown
+        });
+      }
 
     } catch(e) {
       reject(e);
@@ -838,23 +872,36 @@ function getTagForSignal(sigId) {
 }
 
 function addVcMessage(who, text) {
+  // Update new v2 dark modal transcript — single line at a time
+  const currentLine = document.getElementById('vc-current-line');
+  const priorLine   = document.getElementById('vc-prior-line');
+  const transcript  = document.getElementById('vc-transcript');
+
+  if (who === 'sage') {
+    // Move current Dr. Sage line to prior (dimmed)
+    if (currentLine && priorLine) {
+      if (currentLine.textContent) priorLine.textContent = '"' + currentLine.textContent + '"';
+      currentLine.textContent = text;
+    }
+    // Update state indicator
+    if (typeof updateVoiceState === 'function') updateVoiceState('speaking');
+  } else {
+    // User's words show in transcript area
+    if (transcript) transcript.textContent = text;
+    if (typeof updateVoiceState === 'function') updateVoiceState('listening');
+  }
+
+  // Also update legacy conversation area (hidden but JS may need it)
   const area = document.getElementById('vc-conversation');
-  if (!area) return;
-
-  // Remove typing indicator if present
-  const typing = document.getElementById('vc-typing');
-  if (typing) typing.remove();
-
-  const d = document.createElement('div');
-  d.className = 'vc-msg' + (who === 'user' ? ' user' : '');
-
-  const initials = (typeof profile !== 'undefined' && profile.name) ? profile.name[0].toUpperCase() : 'F';
-  d.innerHTML = `
-    <div class="vc-av ${who === 'sage' ? 'sage' : ''}">${who === 'sage' ? '🧠' : initials}</div>
-    <div class="vc-bubble">${text}</div>`;
-
-  area.appendChild(d);
-  area.scrollTop = area.scrollHeight;
+  if (area) {
+    const typing = document.getElementById('vc-typing');
+    if (typing) typing.remove();
+    const d = document.createElement('div');
+    d.className = 'vc-msg' + (who === 'user' ? ' user' : '');
+    const initials = (typeof profile !== 'undefined' && profile.name) ? profile.name[0].toUpperCase() : 'F';
+    d.innerHTML = '<div class="vc-av ' + (who === 'sage' ? 'sage' : '') + '">' + (who === 'sage' ? '🧠' : initials) + '</div><div class="vc-bubble">' + text + '</div>';
+    area.appendChild(d);
+  }
 }
 
 function showTypingIndicator() {
