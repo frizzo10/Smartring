@@ -62,6 +62,7 @@ const SIGNAL_PATTERNS = [
       ];
     },
     action: 'Ask your doctor about fasting glucose and HbA1c testing',
+    selfCare: 'Try 20 minutes of walking after dinner for the next 3 days — it's one of the most effective ways to lower fasting glucose. Cut back on refined carbs and alcohol this week and let's see if your numbers respond.',
     actionHow: `You don't need a doctor's referral. Walk into any <strong>Quest Diagnostics or LabCorp</strong> location — no appointment needed. Ask for "fasting glucose and HbA1c." Fast for 8 hours beforehand (water is fine). Costs $35–50 without insurance. Results in 1–2 days. Normal fasting glucose is below 100 mg/dL. Prediabetes range is 100–125. This single test tells you exactly where you stand.`,
     askSage: 'Tell me more about what this metabolic pattern means for me.',
     disclaimer: 'This is a pattern observation, not a diagnosis. Only a licensed physician can diagnose prediabetes or any medical condition.'
@@ -104,6 +105,7 @@ const SIGNAL_PATTERNS = [
       ];
     },
     action: 'Order a home sleep study',
+    selfCare: 'Sleep on your side tonight if you can — it reduces airway obstruction significantly. Avoid alcohol within 3 hours of bedtime this week and note whether your SpO2 improves.',
     actionHow: `You don't need to go anywhere. <strong>WatchPAT ONE</strong> and <strong>Lofta</strong> mail you a device, you wear it one night, mail it back, and get results reviewed by a sleep physician — all for around $150–200. No in-lab overnight stay. If you have insurance, your primary care doctor can order a home sleep study with a simple referral. Also worth trying: sleep on your side tonight — it reduces airway obstruction for most people immediately.`,
     askSage: 'What does my sleep breathing pattern tell you, and how worried should I be?',
     disclaimer: 'Ring-based detection is a screening signal, not a diagnostic. A formal sleep study is required for diagnosis.'
@@ -137,6 +139,7 @@ const SIGNAL_PATTERNS = [
       ];
     },
     action: 'Confirm with an arm cuff, then track for 7 days',
+    selfCare: 'Try to cut sodium today — skip processed food, restaurant meals, and anything with added salt. Drink an extra glass of water. A 10-minute walk this evening can lower BP by 5-8 points.',
     actionHow: `Pick up an <strong>Omron blood pressure cuff</strong> at any pharmacy ($30–40). Take readings at the same time each morning — sit quietly for 5 minutes first. Record 7 days. If your average stays above 130 systolic, bring that log to your doctor. In the meantime: reduce sodium, drink more water, take a 20-minute walk daily. These three changes can drop systolic BP by 5–10 points within two weeks.`,
     askSage: 'My blood pressure has been elevated this week — what should I do about it?',
     disclaimer: 'TK30 blood pressure is a cuffless estimate for trend tracking. Confirm with an arm cuff before making any medical decisions.'
@@ -180,6 +183,7 @@ const SIGNAL_PATTERNS = [
       ];
     },
     action: 'Start zone 2 cardio — 3x per week, 30 minutes',
+    selfCare: 'Try one 20-minute zone 2 cardio session today — a brisk walk where you can still hold a conversation. Do this 3 times this week and watch your HRV response.',
     actionHow: `Zone 2 cardio is the single most evidence-backed intervention for improving cardiovascular age. It means working at a pace where you can hold a conversation but not comfortably sing — a brisk walk, easy bike ride, or slow jog. <strong>30 minutes, 3 times per week</strong>. Studies show measurable HRV improvement within 4–6 weeks and resting HR reduction within 8 weeks. Track your progress in SageHealth — we'll show you when the numbers start moving.`,
     askSage: 'How do I improve my cardiovascular fitness based on what you see in my data?',
     disclaimer: 'Cardiovascular age is an estimate based on biometric proxies, not a clinical measurement.'
@@ -218,6 +222,7 @@ const SIGNAL_PATTERNS = [
       ];
     },
     action: 'Rest today. Hydrate aggressively. Watch for symptoms.',
+    selfCare: 'Rest today. Prioritize 8+ hours of sleep tonight. Stay hydrated — at least 2 liters of water. Avoid alcohol and intense exercise until your temperature returns to baseline.',
     actionHow: `<strong>Right now:</strong> Drink 16oz of water with electrolytes. Cancel anything strenuous today. Sleep an extra hour tonight if you can — sleep is your immune system's primary weapon. <strong>If symptoms develop:</strong> Test for COVID, flu, and strep — all available as rapid home tests. If temperature rises above 100.4°F or you feel worse after 48 hours, see a doctor. <strong>The goal:</strong> Many people who act on this signal recover faster than those who push through.`,
     askSage: 'My temperature spiked above baseline last night — what does that mean?',
     disclaimer: 'Temperature deviation is an early warning signal, not a diagnosis. Many causes are minor. Track and rest.'
@@ -258,6 +263,7 @@ const SIGNAL_PATTERNS = [
       ];
     },
     action: 'Talk to someone — and take one full rest day this week',
+    selfCare: 'Tonight, try a 5-minute breathing exercise before bed — breathe in for 4, hold for 4, out for 6. Do this 3 nights in a row and watch your HRV. Your nervous system responds faster than you think.',
     actionHow: `<strong>This week:</strong> Take one completely unscheduled day — no obligations, no performance. Your HRV will tell us within 48 hours if it helped. <strong>Longer term:</strong> Chronic HRV suppression with adequate sleep is often associated with anxiety or burnout. A few sessions with a therapist or counselor have stronger evidence for HRV recovery than almost any other intervention. If cost is a barrier, BetterHelp and similar services start at $65/week. Your ring will show us if things shift.`,
     askSage: 'My HRV has been suppressed all week even though I am sleeping. What is happening?',
     disclaimer: 'HRV suppression has many causes. This is an observation, not a mental health diagnosis.'
@@ -295,6 +301,7 @@ const SIGNAL_PATTERNS = [
       ];
     },
     action: 'Take 2 rest days. Reduce intensity by 40% this week.',
+    selfCare: 'Take a rest day today — no structured exercise. Sleep as much as your body wants tonight. Light walking only. Let your HRV tell us when you're recovered.',
     actionHow: `<strong>Today and tomorrow:</strong> Walk only — no runs, no hard workouts. Prioritize sleep over training. <strong>This week:</strong> Drop workout intensity by 40%. Elite athletes monitor HRV daily for exactly this reason — they know that training through suppressed HRV makes you slower and increases injury risk. Watch your HRV in SageHealth — if it's back above your baseline within 5 days, resume normal training. If not, extend the recovery window.`,
     askSage: 'My HRV is dropping even though I am training hard. Am I overtraining?',
     disclaimer: 'This is a recovery signal based on HRV and activity patterns. Individual training needs vary.'
@@ -342,6 +349,7 @@ const SIGNAL_PATTERNS = [
       ];
     },
     action: 'Ask your doctor about a TSH blood test',
+    selfCare: 'Keep a 3-day temperature and energy log. Note your temperature when you wake up and at 3pm. Also note your energy, hair texture, and bowel changes. This gives your doctor something concrete to work with.',
     actionHow: `A <strong>TSH (thyroid-stimulating hormone) blood test</strong> is a routine lab that any primary care doctor can order. You can also order it yourself through <strong>Ulta Lab Tests or Walk-In Lab</strong> for $29–45 without insurance or a referral. Fast for 8 hours. Results in 1–2 days. Normal TSH is 0.4–4.0 mIU/L. If yours is outside that range, bring the result to your doctor — thyroid conditions are very treatable.`,
     askSage: 'What does the thyroid pattern in my data mean, and should I be concerned?',
     disclaimer: 'Biometric patterns are not diagnostic of thyroid conditions. Only a blood test and physician can diagnose thyroid disorders.'
@@ -377,6 +385,7 @@ const SIGNAL_PATTERNS = [
       ];
     },
     action: 'Three specific changes — pick one to start tonight',
+    selfCare: 'Set a consistent bedtime tonight — same time you want to wake up, minus 8 hours. No screens for 30 minutes before bed. Keep your room cool and dark. One week of this changes your sleep architecture.',
     actionHow: `<strong>1. Temperature:</strong> Drop your bedroom to 65–68°F. Deep sleep requires core body cooling — this is the single highest-impact physical change. <strong>2. Timing:</strong> Move your bedtime 30 minutes earlier for one week. Deep sleep is concentrated in the first half of the night — going to bed later cuts into it disproportionately. <strong>3. Alcohol:</strong> If you drink, stop 3 hours before bed. Alcohol fragments sleep architecture and almost eliminates deep sleep even at low doses. Pick one. We'll check your numbers next week.`,
     askSage: 'I am getting enough sleep but my deep sleep is low. What can I do?',
     disclaimer: 'Sleep stage data from ring sensors is an estimate. Clinical sleep studies provide the most accurate staging.'
@@ -415,6 +424,7 @@ const SIGNAL_PATTERNS = [
       ];
     },
     action: 'Stand up slowly. Stay hydrated. Test with a simple stand-up check.',
+    selfCare: 'Increase salt and water intake today — it directly raises blood volume and reduces syncope risk. Avoid standing up quickly from sitting or lying down. If you feel lightheaded, sit or lie down immediately.',
     actionHow: `<strong>Right now:</strong> When rising from sitting or lying, pause at the edge for 10 seconds before standing fully. Drink 16oz of water — dehydration makes this significantly worse. <strong>To test:</strong> Sit for 5 minutes, stand up, note if you feel dizzy or see spots. If yes, mention it to your doctor — they can do a simple tilt-table test. <strong>Longer term:</strong> Compression socks and increased salt + water intake reduce episodes in most people.`,
     askSage: 'My blood pressure dropped suddenly and my heart rate spiked — what does that mean?',
     disclaimer: 'This is an observational blood pressure pattern, not a clinical diagnosis. Mention it to your physician if you experience dizziness when standing.'
@@ -452,6 +462,7 @@ const SIGNAL_PATTERNS = [
       ];
     },
     action: 'Take a static ECG reading and discuss with your physician today',
+    selfCare: 'Avoid caffeine and alcohol today — both are known AFib triggers. Stay hydrated. Avoid intense exercise until we understand this pattern better. If you feel palpitations, sit down and breathe slowly.',
     actionHow: `<strong>Today:</strong> A KardiaMobile (AliveCor) personal ECG device costs $89 and gives you a medical-grade single-lead ECG in 30 seconds. Available on Amazon with next-day delivery. Alternatively, walk into any urgent care — they can do a 12-lead ECG on the spot, usually $50-100 without insurance. <strong>Do not ignore this signal.</strong> Paroxysmal AFib is intermittent — it may not show on your next reading, but documenting it is important. Untreated AFib is one of the leading causes of stroke.`,
     askSage: 'My ring detected an unusual heart rhythm pattern last night — how worried should I be?',
     disclaimer: 'Ring PPG sensors cannot definitively diagnose AFib. This is a screening signal requiring clinical ECG confirmation. If you feel palpitations, chest pain, or shortness of breath, call 911.'
@@ -489,6 +500,7 @@ const SIGNAL_PATTERNS = [
       ];
     },
     action: 'Two recovery days, then reintroduce zone 2 cardio',
+    selfCare: 'Take an easy day today — light movement only. Go to bed 30 minutes earlier than usual. Your HRV should respond within 2-3 nights of better sleep and reduced load.',
     actionHow: `<strong>Days 1-2:</strong> Complete rest — walk only, no structured exercise. Prioritize 8h sleep. <strong>Day 3 onwards:</strong> Reintroduce exercise at 60% of normal intensity. Zone 2 cardio (conversational pace) specifically improves heart rate recovery faster than high-intensity work. <strong>Track weekly:</strong> If RHR doesn't begin declining within 10 days of recovery, see your doctor — a thyroid panel and basic cardiac workup are appropriate.`,
     askSage: 'My heart rate has been rising and my recovery has been declining — what is happening?',
     disclaimer: 'Cardiovascular recovery metrics are estimates based on resting HR and readiness proxies, not clinical heart rate recovery testing.'
@@ -528,6 +540,7 @@ const SIGNAL_PATTERNS = [
       ];
     },
     action: 'Log this pattern — bring it to your next OB/GYN visit',
+    selfCare: 'Track how you feel today — energy, mood, any physical symptoms. Note the date. This helps build a pattern over 2-3 cycles that gives your doctor something specific to work with.',
     actionHow: `This temperature pattern is consistent with normal luteal phase. <strong>To track your cycle:</strong> The ring's temperature data is the same method used by fertility apps like Natural Cycles (FDA-cleared). Log this week's readings in a cycle tracking app to build your personal baseline. <strong>When to mention to your doctor:</strong> If the temperature rise is absent for 2+ consecutive cycles, or if the pattern is highly irregular, mention it — it can indicate hormonal imbalance or anovulation.`,
     askSage: 'My overnight temperature has been elevated this week in a pattern — what does that mean for my cycle?',
     disclaimer: 'Temperature-based cycle tracking is an informational tool, not a contraceptive method or diagnostic. Consult your physician for reproductive health concerns.'
@@ -563,6 +576,7 @@ const SIGNAL_PATTERNS = [
       ];
     },
     action: 'Light exposure reset — 10 minutes of bright light within 30 minutes of waking',
+    selfCare: 'Get outside within 30 minutes of waking tomorrow — natural light is the strongest circadian reset signal. Set your alarm for the same time every day this week, even on weekends.',
     actionHow: `<strong>This morning:</strong> Go outside for 10 minutes within 30 minutes of waking. Morning bright light is the strongest signal your circadian clock responds to — it shifts your sleep phase earlier within 2-3 days. <strong>Tonight:</strong> No screens 60 minutes before bed, or use blue-light blocking glasses. Dim your lights after 9pm. <strong>Consistency:</strong> Same wake time every day — even weekends — is the most powerful circadian anchor. Your ring will show the shift in your HRV and deep sleep timing within a week.`,
     askSage: 'My sleep pattern seems to be shifted late — what can I do to reset my circadian rhythm?',
     disclaimer: 'Circadian phase assessment from ring data is an estimate. Formal diagnosis of circadian rhythm disorders requires clinical evaluation.'
@@ -597,6 +611,7 @@ const SIGNAL_PATTERNS = [
       ];
     },
     action: 'Side sleeping + nasal strips tonight — home sleep study this week',
+    selfCare: 'Sleep on your side tonight and elevate your head slightly. Avoid alcohol and sedatives before bed — they relax the airway. Note whether you feel more rested in the morning.',
     actionHow: `<strong>Tonight:</strong> Sleep on your side — it reduces airway resistance by 30-40% in most people. Try a nasal dilator strip (Breathe Right, $10 at any pharmacy). <strong>This week:</strong> Order a home sleep study — WatchPAT ONE or Lofta mail you a device. Upper airway resistance syndrome is frequently missed by standard sleep studies. Request that the physician specifically evaluate for UARS, not just apnea-hypopnea index (AHI). <strong>Do not use alcohol or sedatives</strong> — they relax airway muscles significantly.`,
     askSage: 'My ring is showing minor breathing disruptions during sleep — what is upper airway resistance and should I be concerned?',
     disclaimer: 'Ring sensors cannot diagnose sleep disorders. This is a screening observation only. A formal sleep study is required for any clinical diagnosis.'
@@ -640,6 +655,7 @@ const SIGNAL_PATTERNS = [
       ];
     },
     action: 'Full rest protocol — 72 hours minimum before reassessing',
+    selfCare: 'Your only job today is to rest. No decisions, no exercise, no stimulation if you can help it. Go to bed early. Your nervous system is asking for a full stop — give it one.',
     actionHow: `<strong>The next 3 days:</strong> No structured exercise. No alcohol. 8+ hours sleep with consistent bedtime. Cold exposure (cold shower, cold water on face) activates the parasympathetic system — try 30 seconds of cold water on your face and neck morning and evening. <strong>Breathwork:</strong> 4-7-8 breathing (inhale 4, hold 7, exhale 8) for 5 minutes before bed directly activates the vagus nerve and raises HRV measurably within 20 minutes. <strong>If this persists beyond 2 weeks</strong> with no improvement, consider talking to your doctor about burnout evaluation — cortisol testing is a reasonable next step.`,
     askSage: 'My HRV has been declining every single day this week. What is happening to my nervous system?',
     disclaimer: 'This is an observational pattern based on HRV and resting HR trends. Individual variation is normal. Discuss persistent patterns with your physician.'
@@ -678,6 +694,7 @@ const SIGNAL_PATTERNS = [
       ];
     },
     action: 'Hydrate aggressively today — give your body 48 hours',
+    selfCare: 'Hydrate aggressively today — 2-3 liters of water. Light movement only. A good night of sleep tonight will accelerate clearance. Your numbers should improve within 24-48 hours.',
     actionHow: `<strong>Today:</strong> 2-3 liters of water with electrolytes (Liquid IV, LMNT, or just water + a pinch of salt). Avoid caffeine for 6 hours — it compounds the cardiac strain. A light walk helps clear acetaldehyde (the toxic byproduct of alcohol metabolism). <strong>The data:</strong> Your ring just showed you exactly what one night of drinking costs you in sleep quality. That's information most people never get. Over time, this data tends to be more persuasive than any health advice.`,
     askSage: 'My ring showed a terrible sleep pattern last night with high temperature and no deep sleep — what happened?',
     disclaimer: 'This is an observational pattern, not a diagnosis. Many factors can cause this signature. This information is non-judgmental and educational only.'
@@ -718,6 +735,7 @@ const SIGNAL_PATTERNS = [
       ];
     },
     action: 'Morning light + consistent anchor times — 3-day reset protocol',
+    selfCare: 'Expose yourself to bright outdoor light first thing tomorrow morning — even 10 minutes makes a difference. Set a fixed wake time and stick to it for 5 days. Avoid blue light after 9pm.',
     actionHow: `<strong>Day 1:</strong> Set your wake time for the timezone you want to be in and stick to it regardless of how you feel. 10 minutes of outdoor light within 30 minutes of waking. <strong>Melatonin:</strong> 0.5mg (low dose) 90 minutes before your target sleep time — this is more effective than the 5-10mg doses commonly sold. <strong>Avoid:</strong> Napping longer than 20 minutes, alcohol, and bright screens after 9pm. <strong>Your ring will confirm recovery</strong> — watch for your temperature nadir to stabilize and your RHR to return to baseline over 3-5 days.`,
     askSage: 'My body temperature and heart rate patterns have shifted this week — could this be jet lag or something else?',
     disclaimer: 'Circadian rhythm assessment from consumer rings is approximate. Travel history and schedule changes provide important context.'
@@ -755,6 +773,7 @@ const SIGNAL_PATTERNS = [
       ];
     },
     action: 'Hydrate with electrolytes now — cool environment today',
+    selfCare: 'Drink a large glass of water right now. Aim for 2-3 liters today. Avoid caffeine and alcohol. If you have been in heat or exercising, add electrolytes — coconut water or a pinch of salt in your water.',
     actionHow: `<strong>Right now:</strong> 500ml of water with electrolytes before anything else — sodium and potassium are both depleted with dehydration and heat. Plain water alone can dilute electrolytes further. <strong>Today:</strong> Target 3 liters total fluid intake. Avoid alcohol and excessive caffeine. If you exercised hard yesterday in heat, your fluid deficit may be 1-2 liters. <strong>Cool down:</strong> A cool (not cold) shower lowers core temperature faster than cold water. Avoid intense exercise until your overnight temp returns to baseline. <strong>Warning sign:</strong> If you feel dizzy, have a headache, or your urine is dark yellow — drink immediately and rest.`,
     askSage: 'My ring shows elevated temperature and heart rate but not the illness pattern — could this be dehydration?',
     disclaimer: 'Dehydration and heat strain assessment from ring data is approximate. Severe symptoms require immediate medical attention.'

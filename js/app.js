@@ -1743,6 +1743,75 @@ async function readWeeklyNarrative() {
   }
 }
 
+
+/* ── SIGNAL CARD DETAIL ─────────────────────────────── */
+function openSignalCard(sigId) {
+  const sig = (typeof SIGNAL_PATTERNS !== 'undefined')
+    ? SIGNAL_PATTERNS.find(s => s.id === sigId) : null;
+  if (!sig) { startWt(); return; }
+
+  const level = sig.level || 'watch';
+  const levelColor = level === 'urgent' ? 'var(--urgent)' : level === 'watch' ? 'var(--watch)' : 'var(--accent)';
+  const levelBg    = level === 'urgent' ? '#FFF5F5' : level === 'watch' ? 'var(--watch-tint)' : 'var(--accent-tint)';
+  const levelLabel = level === 'urgent' ? 'Urgent' : level === 'watch' ? 'Watch · Pattern worth discussing' : 'Good to know';
+
+  // Build narrative
+  const narrative = (typeof data !== 'undefined' && data.length && typeof sig.narrative === 'function')
+    ? sig.narrative(data, profile || {}).replace(/<[^>]*>/g, '')
+    : sig.watchingFor || '';
+
+  // Self-care suggestion
+  const selfCare = sig.selfCare || '';
+
+  const modal = document.createElement('div');
+  modal.id = 'signal-card-modal';
+  modal.style.cssText = 'position:fixed;inset:0;z-index:600;';
+  modal.innerHTML =
+    // Backdrop
+    '<div onclick="document.getElementById('signal-card-modal').remove()" style="position:absolute;inset:0;background:rgba(22,36,43,.45);backdrop-filter:blur(4px);"></div>' +
+    // Sheet
+    '<div style="position:absolute;bottom:0;left:0;right:0;max-height:90vh;background:var(--surface);border-radius:28px 28px 0 0;overflow-y:auto;-webkit-overflow-scrolling:touch;">' +
+      // Handle
+      '<div style="display:flex;justify-content:center;padding:12px 0 0;"><div style="width:36px;height:4px;border-radius:2px;background:var(--hairline);"></div></div>' +
+      // Header
+      '<div style="padding:16px 24px 20px;">' +
+        '<div style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:8px;background:' + levelBg + ';margin-bottom:12px;">' +
+          '<span style="width:6px;height:6px;border-radius:50%;background:' + levelColor + ';"></span>' +
+          '<span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.10em;color:' + levelColor + ';">' + levelLabel + '</span>' +
+        '</div>' +
+        '<h2 style="font-size:22px;font-weight:700;letter-spacing:-.02em;color:var(--ink);line-height:1.3;margin:0 0 8px;">' + sig.title + '</h2>' +
+        '<p style="font-size:13px;color:var(--faint);margin:0;">' + (sig.category||'') + '</p>' +
+      '</div>' +
+      // Dr. Sage explanation
+      '<div style="margin:0 24px 16px;background:var(--accent-tint);border-radius:18px;padding:16px;">' +
+        '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);margin-bottom:8px;">What Dr. Sage sees</div>' +
+        '<p style="font-size:15px;line-height:1.6;color:#1B3F57;margin:0;">' + narrative + '</p>' +
+      '</div>' +
+      // Self-care — always first, most prominent
+      (selfCare ? '<div style="margin:0 24px 16px;background:#ECFDF5;border-left:3px solid var(--normal);border-radius:0 14px 14px 0;padding:14px 16px;">' +
+        '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--normal);margin-bottom:6px;">What to do today</div>' +
+        '<p style="font-size:14px;line-height:1.6;color:var(--ink);margin:0;">' + selfCare + '</p>' +
+      '</div>' : '') +
+      // Doctor action
+      '<div style="margin:0 24px 16px;background:var(--fill);border-radius:14px;padding:14px 16px;">' +
+        '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:6px;">If you see your doctor</div>' +
+        '<p style="font-size:14px;line-height:1.6;color:var(--ink-2);margin:0;">' + (sig.action||'') + '</p>' +
+      '</div>' +
+      // Disclaimer
+      '<p style="margin:0 24px 8px;font-size:11px;color:var(--faint);line-height:1.5;">' + (sig.disclaimer||'For informational purposes only — not a medical diagnosis.') + '</p>' +
+      // Action buttons
+      '<div style="padding:16px 24px 40px;display:flex;gap:10px;">' +
+        '<button onclick="document.getElementById('signal-card-modal').remove();setTimeout(()=>openVoiceConsult(''+sigId+'',''+sig.title.replace(/'/g,'')+'',''),100);" style="flex:1;height:50px;border-radius:14px;background:var(--accent);color:#fff;border:none;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">' +
+          '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="2.5" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0013 0"/></svg>' +
+          'Talk to Dr. Sage' +
+        '</button>' +
+        '<button onclick="document.getElementById('signal-card-modal').remove()" style="height:50px;padding:0 18px;border-radius:14px;background:var(--fill);border:1px solid var(--hairline);color:var(--muted);font-size:15px;font-weight:500;cursor:pointer;">Done</button>' +
+      '</div>' +
+    '</div>';
+
+  document.body.appendChild(modal);
+}
+
 /* ─── BATTERY ──────────────────────────────────────── */
 function logRingCharged() {
   localStorage.setItem('sh_last_charge', Date.now().toString());
