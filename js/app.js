@@ -764,30 +764,114 @@ function encTab(tab){
 }
 
 async function generateEncounter(){
-  const el=document.getElementById('encounter-content');if(el.dataset.generated==='1')return;
-  el.innerHTML='<div class="enc-generating"><div class="enc-spinner"></div>Generating clinical encounter...</div>';
-  const t=data[data.length-1],age=profile.age||48;
-  const prevEnc=JSON.parse(localStorage.getItem('sh_encounters')||'[]');
-  const openActs=JSON.parse(localStorage.getItem('sh_actions')||'[]').filter(a=>!a.done).map(a=>a.title);
-  const activeSigs=JSON.parse(localStorage.getItem('sh_active_signals')||'[]');
-  const sigSummary=activeSigs.length>0?`Active signals: ${activeSigs.map(s=>s.title+' ('+s.level+')').join(', ')}.`:'No active signals.';
-  const prompt=`You are SageHealth's clinical AI generating a formal encounter JSON. Evidence-based, specific.
-Patient: ${profile.name||'Frank'}, ${age}yo ${profile.sex||'Male'}, ${profile.weight||185}lbs. Conditions: ${profile.conditions||'None'}.
-Prior encounters: ${prevEnc.length}. Open items: ${openActs.join(', ')||'None'}.
-Wosheng TK30 biometrics this week:
-- Readiness: ${avg(data,'readiness')}/100 | HRV: ${avg(data,'hrv')}ms | RHR: ${avg(data,'rhr')} BPM
-- BP: ${avg(data,'bpSys')}/${avg(data,'bpDia')} mmHg | Temp: ${avgF(data,'tempF')}°F (baseline ${t.tempBaseF}°F, dev ${((t.tempDev*9/5)>=0?'+':'')+((t.tempDev*9/5).toFixed(1))}°F)
-- Sleep: ${avgF(data,'sleep')}h avg | Deep: ${t.deep}h | REM: ${t.rem}h
-- SpO₂: ${avgF(data,'spo2')}% | Apnea: ${data.reduce((s,d)=>s+d.apnea,0)} events/week
-- Steps: ${avg(data,'steps').toLocaleString()}/day
-${sigSummary}
-Return ONLY valid JSON (no markdown):
-{"chiefConcerns":["string"],"findings":[{"icon":"emoji","label":"string","value":"string","status":"normal|borderline|abnormal","interpretation":"string"}],"impression":"string","orderedTests":[{"name":"string","priority":"urgent|routine|optional","reason":"string","how":"specific patient instructions"}],"plan":[{"step":"string","timeframe":"now|this week|this month|ongoing","rationale":"string"}],"followUp":"string","priorActionReview":"string"}`;
-  try{
-    const res=await fetch('/.netlify/functions/claude',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:2000,messages:[{role:'user',content:prompt}]})});
-    const d=await res.json();const text=(d.content?.[0]?.text||'{}').replace(/```json|```/g,'').trim();
-    const enc=JSON.parse(text);renderEncounter(enc,el);saveEncounter(enc);el.dataset.generated='1';
-  }catch(e){el.innerHTML=`<div style="color:var(--muted);font-size:13px;padding:14px 0;">Unable to generate encounter. Error: ${e.message}</div>`;}
+  const el=document.getElementById('encounter-content');
+  if(el.dataset.generated==='1') return;
+
+  el.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;padding:40px 0;gap:12px;"><div class="enc-spinner"></div><p style="font-size:14px;color:var(--muted);">Finding the one thing to raise…</p></div>';
+
+  const t=data[data.length-1], age=profile.age||48;
+  const name=profile.name||'Frank';
+  const activeSigs=JSON.parse(localStorage.getItem('sh_active_signals')||'[]').filter(s=>s.fired);
+  const sigContext=activeSigs.length>0?'Active patterns: '+activeSigs.slice(0,2).map(s=>s.title+' ('+s.level+')').join(', ')+'.':'No active patterns flagged.';
+
+  const prompt=`You are Dr. Sage. Based on this patient's data, identify the single most important thing worth raising at their next doctor visit. Write it as one sentence the patient can say out loud in the doctor's office — conversational, specific, not alarming.
+
+Patient: ${name}, ${age}yo ${profile.sex||'Male'}. Conditions: ${profile.conditions||'none'}.
+This week: HRV ${avg(data,'hrv')}ms (${avg(data,'hrv')<50?'below':'healthy'} range). RHR ${avg(data,'rhr')} BPM. BP ${avg(data,'bpSys')}/${avg(data,'bpDia')} mmHg. Sleep ${avgF(data,'sleep')}h avg. SpO2 ${avgF(data,'spo2')}%. Readiness ${avg(data,'readiness')}/100. ${sigContext}
+
+Return ONLY a JSON object, no markdown:
+{
+  "topic": "2-3 word topic name e.g. HRV decline",
+  "question": "The one sentence the patient says to their doctor — specific numbers, conversational tone, phrased as something worth looking into not an alarm",
+  "why": "One sentence explaining why this is the most important thing this week",
+  "context": "One sentence of supporting data the doctor would want to know"
+}`;
+
+  try {
+    const res=await fetch('/.netlify/functions/claude',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:[{role:'user',content:prompt}],system:'You are Dr. Sage. Return only valid JSON. No markdown, no backticks, no explanation.',max_tokens:400})});
+    const json=await res.json();
+    const text=(json.content?.[0]?.text||'').replace(/```json|```/g,'').trim();
+    const prep=JSON.parse(text);
+    renderDoctorPrep(prep, el);
+    el.dataset.generated='1';
+  } catch(e) {
+    // Fallback based on data
+    const fallback = generateFallbackPrep();
+    renderDoctorPrep(fallback, el);
+    el.dataset.generated='1';
+  }
+}
+
+function generateFallbackPrep() {
+  const hrvAvg = avg(data,'hrv');
+  const bpAvg = avg(data,'bpSys');
+  const sleepAvg = avgF(data,'sleep');
+  const name = profile.name||'Frank';
+
+  if (hrvAvg < 45) {
+    return { topic:'HRV decline', question:`My heart rate variability has been running low this week — averaging ${hrvAvg}ms, which is below where I normally am. Is that something we should look into?`, why:'HRV is one of the most sensitive early indicators of cardiovascular and recovery stress.', context:`RHR is ${avg(data,'rhr')} BPM and readiness averaged ${avg(data,'readiness')}/100 this week.` };
+  } else if (bpAvg >= 130) {
+    return { topic:'Blood pressure', question:`My blood pressure has been averaging ${bpAvg}/${avg(data,'bpDia')} this week. I know that's on the higher side — is it something we should monitor more closely?`, why:'Sustained systolic above 130 warrants clinical attention.', context:`Readings were consistent across the week, not a one-off spike.` };
+  } else if (sleepAvg < 6.5) {
+    return { topic:'Sleep quality', question:`I've been averaging ${sleepAvg} hours of sleep this week, which is below where I want to be. Could that be affecting my other numbers?`, why:'Chronic sleep deficit impacts HRV, blood pressure, and immune function.', context:`Deep sleep averaged ${data[data.length-1].deep}h — below the 1.5h target.` };
+  } else {
+    return { topic:'Weekly check', question:`Everything looked pretty solid this week — readiness ${avg(data,'readiness')}/100, BP ${bpAvg}/${avg(data,'bpDia')}, HRV ${hrvAvg}ms. Anything specific you want me to keep an eye on?`, why:'Strong week with no major patterns to flag.', context:'All metrics within healthy ranges.' };
+  }
+}
+
+function renderDoctorPrep(prep, el) {
+  el.innerHTML =
+    // Header
+    '<div style="text-align:center;padding:20px 0 24px;">' +
+      '<div style="display:inline-flex;align-items:center;justify-content:center;width:52px;height:52px;border-radius:16px;background:var(--accent-tint);margin-bottom:14px;">' +
+        '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.8"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/></svg>' +
+      '</div>' +
+      '<p class="overline" style="margin-bottom:6px;">One thing to raise</p>' +
+      '<p style="font-size:18px;font-weight:700;color:var(--ink);">' + (prep.topic||'This week') + '</p>' +
+    '</div>' +
+
+    // The question — the centrepiece
+    '<div style="background:var(--accent);border-radius:18px;padding:20px 22px;margin-bottom:18px;">' +
+      '<p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.10em;color:rgba(255,255,255,.65);margin-bottom:10px;">Say this to your doctor</p>' +
+      '<p id="prep-question" style="font-size:17px;line-height:1.6;color:#fff;font-style:italic;margin:0;">"' + (prep.question||'') + '"</p>' +
+      '<button onclick="readDoctorPrep()" style="margin-top:14px;display:flex;align-items:center;gap:7px;background:rgba(255,255,255,.18);color:#fff;border:none;border-radius:9px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;" id="prep-read-btn">' +
+        '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>' +
+        'Read aloud' +
+      '</button>' +
+    '</div>' +
+
+    // Why this + context
+    '<div style="background:var(--fill);border-radius:14px;padding:16px 18px;margin-bottom:18px;">' +
+      '<p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:6px;">Why this matters</p>' +
+      '<p style="font-size:14px;line-height:1.6;color:var(--ink);margin:0 0 12px;">' + (prep.why||'') + '</p>' +
+      '<p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:6px;">Supporting data</p>' +
+      '<p style="font-size:14px;line-height:1.6;color:var(--ink-2);margin:0;">' + (prep.context||'') + '</p>' +
+    '</div>' +
+
+    // Full report CTA
+    '<button onclick="closeWeekly();openReportModal();" style="width:100%;height:48px;border-radius:13px;background:var(--fill);border:1px solid var(--hairline);color:var(--ink);font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">' +
+      '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>' +
+      'Need the full report? → Dr. Report' +
+    '</button>';
+}
+
+async function readDoctorPrep() {
+  const text = document.getElementById('prep-question')?.textContent?.trim();
+  if (!text) return;
+  const btn = document.getElementById('prep-read-btn');
+  if (btn) { btn.disabled=true; btn.innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg> Playing…'; }
+  try {
+    const res=await fetch('/.netlify/functions/tts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:text.replace(/^"|"$/g,'')})});
+    if(!res.ok) throw new Error('TTS failed');
+    const blob=await res.blob();
+    const url=URL.createObjectURL(blob);
+    const audio=new Audio(url);
+    audio.onended=()=>{ if(btn){btn.disabled=false;btn.innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg> Read aloud';} URL.revokeObjectURL(url); };
+    audio.play();
+  } catch(e) {
+    if(window.speechSynthesis){const u=new SpeechSynthesisUtterance(text.replace(/^"|"$/g,''));window.speechSynthesis.speak(u);}
+    if(btn){btn.disabled=false;btn.innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg> Read aloud';}
+  }
 }
 function renderEncounter(enc,el){
   const ts=JSON.parse(localStorage.getItem('sh_test_status')||'{}');let h='';
