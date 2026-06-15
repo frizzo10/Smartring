@@ -62,7 +62,7 @@ const SIGNAL_PATTERNS = [
       ];
     },
     action: 'Ask your doctor about fasting glucose and HbA1c testing',
-    selfCare: 'Try 20 minutes of walking after dinner for the next 3 days — it's one of the most effective ways to lower fasting glucose. Cut back on refined carbs and alcohol this week and let's see if your numbers respond.',
+    selfCare: 'Try 20 minutes of walking after dinner for the next 3 days — it is one of the most effective ways to lower fasting glucose. Cut back on refined carbs and alcohol this week and let us see if your numbers respond.',
     actionHow: `You don't need a doctor's referral. Walk into any <strong>Quest Diagnostics or LabCorp</strong> location — no appointment needed. Ask for "fasting glucose and HbA1c." Fast for 8 hours beforehand (water is fine). Costs $35–50 without insurance. Results in 1–2 days. Normal fasting glucose is below 100 mg/dL. Prediabetes range is 100–125. This single test tells you exactly where you stand.`,
     askSage: 'Tell me more about what this metabolic pattern means for me.',
     disclaimer: 'This is a pattern observation, not a diagnosis. Only a licensed physician can diagnose prediabetes or any medical condition.'
@@ -301,7 +301,7 @@ const SIGNAL_PATTERNS = [
       ];
     },
     action: 'Take 2 rest days. Reduce intensity by 40% this week.',
-    selfCare: 'Take a rest day today — no structured exercise. Sleep as much as your body wants tonight. Light walking only. Let your HRV tell us when you're recovered.',
+    selfCare: 'Take a rest day today — no structured exercise. Sleep as much as your body wants tonight. Light walking only. Let your HRV tell us when you are recovered.',
     actionHow: `<strong>Today and tomorrow:</strong> Walk only — no runs, no hard workouts. Prioritize sleep over training. <strong>This week:</strong> Drop workout intensity by 40%. Elite athletes monitor HRV daily for exactly this reason — they know that training through suppressed HRV makes you slower and increases injury risk. Watch your HRV in SageHealth — if it's back above your baseline within 5 days, resume normal training. If not, extend the recovery window.`,
     askSage: 'My HRV is dropping even though I am training hard. Am I overtraining?',
     disclaimer: 'This is a recovery signal based on HRV and activity patterns. Individual training needs vary.'

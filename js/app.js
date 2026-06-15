@@ -1745,6 +1745,7 @@ async function readWeeklyNarrative() {
 
 
 /* ── SIGNAL CARD DETAIL ─────────────────────────────── */
+function closeSignalCard(){const m=document.getElementById("signal-card-modal");if(m)m.remove();}
 function openSignalCard(sigId) {
   const sig = (typeof SIGNAL_PATTERNS !== 'undefined')
     ? SIGNAL_PATTERNS.find(s => s.id === sigId) : null;
@@ -1768,7 +1769,7 @@ function openSignalCard(sigId) {
   modal.style.cssText = 'position:fixed;inset:0;z-index:600;';
   modal.innerHTML =
     // Backdrop
-    '<div onclick="document.getElementById('signal-card-modal').remove()" style="position:absolute;inset:0;background:rgba(22,36,43,.45);backdrop-filter:blur(4px);"></div>' +
+    '<div onclick="closeSignalCard()" style="position:absolute;inset:0;background:rgba(22,36,43,.45);backdrop-filter:blur(4px);"></div>' +
     // Sheet
     '<div style="position:absolute;bottom:0;left:0;right:0;max-height:90vh;background:var(--surface);border-radius:28px 28px 0 0;overflow-y:auto;-webkit-overflow-scrolling:touch;">' +
       // Handle
