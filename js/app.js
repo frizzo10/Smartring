@@ -1588,6 +1588,43 @@ function renderWeeklyRecoveryBars(data) {
 const _origOpenWeekly = typeof openWeekly === 'function' ? openWeekly : null;
 
 
+
+async function readWeeklyNarrative() {
+  const text = document.getElementById('wk-narrative')?.textContent?.trim();
+  if (!text || text === 'Loading your weekly summary…') return;
+
+  const btn = document.getElementById('wk-read-btn');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg> Playing…'; }
+
+  try {
+    const res = await fetch('/.netlify/functions/tts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text })
+    });
+    if (!res.ok) throw new Error('TTS failed');
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const audio = new Audio(url);
+    audio.onended = () => {
+      if (btn) { btn.disabled = false; btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg> Read aloud'; }
+      URL.revokeObjectURL(url);
+    };
+    audio.onerror = () => {
+      if (btn) { btn.disabled = false; btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg> Read aloud'; }
+    };
+    audio.play();
+  } catch(e) {
+    // Fallback to browser TTS
+    if (window.speechSynthesis) {
+      const utt = new SpeechSynthesisUtterance(text);
+      utt.onend = () => { if (btn) { btn.disabled = false; btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg> Read aloud'; } };
+      window.speechSynthesis.speak(utt);
+    }
+    if (btn) { btn.disabled = false; btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg> Read aloud'; }
+  }
+}
+
 /* ─── BATTERY ──────────────────────────────────────── */
 function logRingCharged() {
   localStorage.setItem('sh_last_charge', Date.now().toString());
