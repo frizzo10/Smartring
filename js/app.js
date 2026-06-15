@@ -1940,6 +1940,32 @@ function restartOnboarding() {
   ob.style.display = 'block'; // show outer container
 }
 
+
+async function playDrSageIntro(btn) {
+  if (btn) { btn.disabled = true; btn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg> Dr. Sage is speaking…'; }
+
+  const introText = "Hi, I'm Dr. Sage — your personal health concierge. I keep an eye on your health between doctor visits, and make sure that every time you see your doctor, you arrive prepared with real data they can actually use. I'm always watching your ring, and I'll be here every morning with what I noticed. Let's get started.";
+
+  try {
+    const res = await fetch('/.netlify/functions/tts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: introText })
+    });
+    if (!res.ok) throw new Error('TTS failed');
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const audio = new Audio(url);
+    audio.onended = () => {
+      URL.revokeObjectURL(url);
+      if (btn) { btn.disabled = false; btn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2.5" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0013 0M12 17.5V21M8.5 21h7"/></svg> Hear Dr. Sage again'; }
+    };
+    audio.play();
+  } catch(e) {
+    if (btn) { btn.disabled = false; btn.textContent = 'Try again'; }
+  }
+}
+
 /* ─── BATTERY ──────────────────────────────────────── */
 function logRingCharged() {
   localStorage.setItem('sh_last_charge', Date.now().toString());
