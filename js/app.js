@@ -1250,11 +1250,6 @@ const OB_QUESTIONS = [
   { q: "Are you taking any medications regularly?", hint: "Even supplements are worth mentioning.", key: 'medications' },
   { q: "Is there anything in your family's health history I should keep in mind?", hint: "Heart disease, diabetes, anything at all.", key: 'family_history' },
 ];
-let obStep = 0;
-let obAnswers = {};
-let obRecognition = null;
-let obListening = false;
-
 function startVoiceOnboarding() {
   document.getElementById('ob-welcome').style.display = 'none';
   const v = document.getElementById('ob-voice');
