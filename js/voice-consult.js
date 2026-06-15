@@ -31,13 +31,15 @@ function openVoiceConsult(sigId, sigTitle, askQuestion, isIntro = false) {
   document.getElementById('vc-status').textContent = 'Connecting to Dr. Sage...';
   document.getElementById('vc-status').className = 'vc-status';
   document.getElementById('vc-transcript').textContent = '';
+  const _cl = document.getElementById('vc-current-line'); if(_cl) _cl.textContent = '';
+  const _pl = document.getElementById('vc-prior-line'); if(_pl) _pl.textContent = '';
   document.getElementById('vc-commitment-box').style.display = 'none';
   document.getElementById('vc-btn-commit').style.display = 'none';
-  document.getElementById('vc-signal-label').textContent = sigTitle;
-  document.getElementById('vc-mic').className = 'vc-mic';
-  document.getElementById('vc-mic').textContent = '🎤';
+  const _sl = document.getElementById('vc-signal-label'); if(_sl) _sl.textContent = sigTitle || 'Health consultation';
+  // v2: mic button is SVG — don't reset innerHTML
+  const _vcMic = document.getElementById('vc-mic'); if(_vcMic && _vcMic.textContent.trim()==='🎤') { _vcMic.className = 'vc-mic'; _vcMic.textContent = '🎤'; }
 
-  modal.style.display = 'flex';
+  modal.style.display = 'block';
 
   // Load best voice
   pickVoice();
@@ -284,7 +286,7 @@ async function startVoiceOnboarding() {
   document.getElementById('vc-commitment-box').style.display = 'none';
   document.getElementById('vc-btn-commit').style.display = 'none';
 
-  modal.style.display = 'flex';
+  modal.style.display = 'block';
   pickVoice();
 
   await nextOnboardStep();
@@ -489,6 +491,8 @@ function stopListening() {
 async function handleUserSpeech(text) {
   if (!text) return;
   document.getElementById('vc-transcript').textContent = '';
+  const _cl = document.getElementById('vc-current-line'); if(_cl) _cl.textContent = '';
+  const _pl = document.getElementById('vc-prior-line'); if(_pl) _pl.textContent = '';
   addVcMessage('user', text);
   vcState.messages.push({ role: 'user', content: text });
 
@@ -859,15 +863,20 @@ function setVcStatus(text, cls) {
 function setMicState(state) {
   const mic = document.getElementById('vc-mic');
   if (!mic) return;
-  const states = {
-    idle:      { cls: 'vc-mic',           icon: '🎤' },
-    listening: { cls: 'vc-mic listening', icon: '🔴' },
-    speaking:  { cls: 'vc-mic speaking',  icon: '🔊' },
-    thinking:  { cls: 'vc-mic thinking',  icon: '⏳' }
-  };
-  const s = states[state] || states.idle;
-  mic.className = s.cls;
-  mic.textContent = s.icon;
+  // v2 redesign: use updateVoiceState for orb + label
+  if (typeof updateVoiceState === 'function') updateVoiceState(state);
+  // Legacy mic button (emoji style) — only update if not SVG
+  if (mic.querySelector('svg') === null) {
+    const states = {
+      idle:      { cls: 'vc-mic',           icon: '🎤' },
+      listening: { cls: 'vc-mic listening', icon: '🔴' },
+      speaking:  { cls: 'vc-mic speaking',  icon: '🔊' },
+      thinking:  { cls: 'vc-mic thinking',  icon: '⏳' }
+    };
+    const s = states[state] || states.idle;
+    mic.className = s.cls;
+    mic.textContent = s.icon;
+  }
 }
 
 /* ── CLOSE ───────────────────────────────────────── */
