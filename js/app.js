@@ -1408,7 +1408,7 @@ function obShowAllSet() {
         '<div style="width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0;margin-top:5px;"></div>' +
         '<div><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);margin-bottom:2px;">' + (labels[k]||k) + '</div>' +
         '<div style="font-size:15px;color:var(--ink);">' + v + '</div></div></div>';
-    }).join('') || '<div style="font-size:14px;color:var(--muted);">I'll learn more about you as we talk.</div>';
+    }).join('') || '<div style="font-size:14px;color:var(--muted);">I will learn more about you as we talk.</div>';
   }
 
   // Save all answers to profile
