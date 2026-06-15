@@ -691,23 +691,16 @@ function openWeekly(){
   ].map(it=>{const p=it.inv?Math.max(0,Math.min(100,(1-it.v/it.g)*100)):Math.min(100,it.v/it.g*100);const col=p>=80?'var(--green)':p>=50?'var(--amber)':'var(--red)';return`<div class="goal-row"><div class="goal-label">${it.l}</div><div class="goal-bar"><div class="goal-fill" style="width:${Math.round(p)}%;background:${col};"></div></div><div class="goal-vals">${it.fmt(it.v)} / ${it.fmt(it.g)}</div></div>`;}).join('');
   const ec=document.getElementById('encounter-content');if(ec)ec.dataset.generated='';
 
-  // Render worth-noting rows in new design format
-  const tLast=data[data.length-1];
-  const best=data.reduce((b,d)=>d.sleep>b.sleep?d:b);
-  const insightsEl = document.getElementById('wk-insights');
-  if (insightsEl) {
-    const insights = [
-      {t:'Recovery driver', b:`Best recovery day (readiness ${data.reduce((b,d)=>d.readiness>b.readiness?d:b).readiness}/100) followed ${best.sleep}h sleep with ${best.deep}h deep.`, good:true},
-      {t:'Blood pressure', b:`Average systolic ${avg(data,'bpSys')} mmHg. ${avg(data,'bpSys')<130?'Healthy range.':'Elevated — worth discussing.'}`, good:avg(data,'bpSys')<130},
-      {t:'Temperature', b:data.some(d=>d.tempDev>0.5)?'Elevated on '+data.filter(d=>d.tempDev>0.5).length+' night(s) this week.':'Within baseline all week.', good:!data.some(d=>d.tempDev>0.5)},
-      {t:'Cardiovascular load', b:`HRV ${avg(data,'hrv')}ms, RHR ${avg(data,'rhr')} BPM. ${avg(data,'hrv')>=55?'Both indicate healthy adaptation.':'HRV trending below optimal.'}`, good:avg(data,'hrv')>=55},
-    ];
-    insightsEl.innerHTML = insights.map(ins =>
-      '<div style="background:var(--fill);border-left:3px solid ' + (ins.good?'var(--normal)':'var(--watch)') + ';border-radius:0 12px 12px 0;padding:12px 14px;margin-bottom:10px;">' +
-      '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:4px;">' + ins.t + '</div>' +
-      '<div style="font-size:14px;color:var(--ink);line-height:1.5;">' + ins.b + '</div>' +
-      '</div>'
-    ).join('');
+  // Restyle insights in new design format
+  const insightsEl2 = document.getElementById('wk-insights');
+  if (insightsEl2 && insightsEl2.innerHTML) {
+    insightsEl2.querySelectorAll('.insight').forEach(el => {
+      const title = el.querySelector('.insight-title')?.textContent || '';
+      const body = el.querySelector('.insight-body')?.textContent || '';
+      const isWarn = el.classList.contains('warn');
+      el.style.cssText = 'background:var(--fill);border-left:3px solid '+(isWarn?'var(--watch)':'var(--normal)')+';border-radius:0 12px 12px 0;padding:12px 14px;margin-bottom:10px;';
+      el.innerHTML = '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:4px;">'+title+'</div><div style="font-size:14px;color:var(--ink);line-height:1.5;">'+body+'</div>';
+    });
   }
 
   // Generate Groq weekly narrative
