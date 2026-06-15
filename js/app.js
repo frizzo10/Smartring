@@ -692,14 +692,14 @@ function openWeekly(){
   const ec=document.getElementById('encounter-content');if(ec)ec.dataset.generated='';
 
   // Render worth-noting rows in new design format
-  const t=data[data.length-1];
+  const tLast=data[data.length-1];
   const best=data.reduce((b,d)=>d.sleep>b.sleep?d:b);
   const insightsEl = document.getElementById('wk-insights');
   if (insightsEl) {
     const insights = [
       {t:'Recovery driver', b:`Best recovery day (readiness ${data.reduce((b,d)=>d.readiness>b.readiness?d:b).readiness}/100) followed ${best.sleep}h sleep with ${best.deep}h deep.`, good:true},
       {t:'Blood pressure', b:`Average systolic ${avg(data,'bpSys')} mmHg. ${avg(data,'bpSys')<130?'Healthy range.':'Elevated — worth discussing.'}`, good:avg(data,'bpSys')<130},
-      {t:'Temperature', b:data.some(d=>d.tempDev>0.5)?`Elevated on ${data.filter(d=>d.tempDev>0.5).length} night(s) this week.`:'Within baseline all week.', good:!data.some(d=>d.tempDev>0.5)},
+      {t:'Temperature', b:data.some(d=>d.tempDev>0.5)?'Elevated on '+data.filter(d=>d.tempDev>0.5).length+' night(s) this week.':'Within baseline all week.', good:!data.some(d=>d.tempDev>0.5)},
       {t:'Cardiovascular load', b:`HRV ${avg(data,'hrv')}ms, RHR ${avg(data,'rhr')} BPM. ${avg(data,'hrv')>=55?'Both indicate healthy adaptation.':'HRV trending below optimal.'}`, good:avg(data,'hrv')>=55},
     ];
     insightsEl.innerHTML = insights.map(ins =>
