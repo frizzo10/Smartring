@@ -362,12 +362,29 @@ function buildDashboard(){
     return{grade:'D',label:'Needs attention',color:'var(--red)',bg:'var(--red-bg)',desc:'Multiple metrics outside healthy range'};
   })();
 
-  let br=`Readiness <strong>${t.readiness}/100</strong>. BP <strong>${t.bpSys}/${t.bpDia}</strong> mmHg. SpO₂ <strong>${t.spo2}%</strong>. Temp <strong>${t.tempF}°F</strong>${t.tempDev>0.4?` <span class="warn">(+${(t.tempDev*9/5).toFixed(1)}°F above baseline — monitor)</span>`:' (baseline normal)'}. HRV <strong>${t.hrv}ms</strong>. `;
-  if(t.apnea>2)br+=`<span class="warn">⚠ ${t.apnea} airway events overnight.</span> `;
-  const sl=Math.max(0,stepsGoal-t.steps);
-  br+=sl>0?`<span class="warn">${sl.toLocaleString()} steps to goal.</span>`:`Step goal achieved. `;
-  if(ca<age)br+=`CV age estimate <strong>${ca}</strong> — ${age-ca} yrs younger than actual.`;
-  br+=` <span style="display:inline-flex;align-items:baseline;gap:5px;margin-left:4px;"><span style="font-size:15px;font-weight:800;color:${grade.color};">${grade.grade}</span><span style="font-size:11px;color:${grade.color};font-weight:600;">${grade.label}</span></span>`;
+  // Build a human-sentence briefing (Dr. Sage voice)
+  let br = '';
+  const sleepH = Math.floor(t.sleep), sleepM = Math.round((t.sleep - sleepH) * 60);
+  const sleepStr = sleepH + 'h ' + (sleepM > 0 ? sleepM + 'm' : '');
+
+  if (t.readiness >= 85) {
+    br = `You're in great shape today — readiness <strong>${t.readiness}/100</strong>, sleep ${sleepStr}, HRV <strong>${t.hrv}ms</strong>. Everything is tracking well.`;
+  } else if (t.readiness >= 70) {
+    br = `Solid start to the day. You slept ${sleepStr} and your HRV is <strong>${t.hrv}ms</strong>.`;
+    if (t.hrv < 50) br += ` HRV is a little low — worth keeping an eye on.`;
+    else br += ` Nothing urgent to flag.`;
+  } else if (t.readiness >= 55) {
+    br = `Recovery is a bit lower today — readiness <strong>${t.readiness}/100</strong>. `;
+    if (t.sleep < 6.5) br += `Sleep was short at ${sleepStr}. `;
+    if (t.hrv < 45) br += `HRV dipped to <strong>${t.hrv}ms</strong>. `;
+    br += `A lighter day might help.`;
+  } else {
+    br = `Your body is asking for rest today — readiness <strong>${t.readiness}/100</strong>. `;
+    if (t.sleep < 6) br += `You only got ${sleepStr} of sleep. `;
+    br += `Take it easy and let's talk about what's going on.`;
+  }
+  if (t.tempDev > 0.5) br += ` <span class="warn">Your temperature is slightly elevated — ${(t.tempDev*9/5).toFixed(1)}°F above your baseline.</span>`;
+  if (t.apnea > 3) br += ` <span class="warn">${t.apnea} breathing events overnight.</span>`;
   document.getElementById('dailySummary').innerHTML=br;
 
   // ── v2 redesign: update new metric tiles + health ring ──
