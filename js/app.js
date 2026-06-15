@@ -643,6 +643,9 @@ function toggleWtVoice(){wtVoiceOn=!wtVoiceOn;const b=document.getElementById('w
 
 /* ─── WEEKLY MODAL ──────────────────────────────── */
 function openWeekly(){
+  try { renderWeeklyRecoveryBars(data); } catch(e) {}
+  // Set week label
+  const wl = document.getElementById('wm-week-label'); if (wl) { const d = new Date(); wl.textContent = 'Week of ' + d.toLocaleDateString('en-US',{month:'short',day:'numeric'}); }
   const w=new Date(),ws=new Date(w); ws.setDate(w.getDate()-6);
   document.getElementById('wm-week-label').textContent=ws.toLocaleDateString('en-US',{month:'long',day:'numeric'})+' – '+w.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
   const t=data[data.length-1];
@@ -1237,6 +1240,275 @@ function shareReport() {
   }
 }
 
+
+/* ── ONBOARDING v2 ─────────────────────────────────── */
+const OB_QUESTIONS = [
+  { q: "What's your name?", hint: "Just say it out loud — there's no wrong answer.", key: 'name' },
+  { q: "How old are you?", hint: "Your age helps me calibrate every reading.", key: 'age' },
+  { q: "Are you male or female, or would you describe yourself differently?", hint: "This helps with baseline ranges.", key: 'sex' },
+  { q: "Do you have any health conditions I should know about — like high blood pressure, diabetes, or anything else?", hint: "Say none if not. No wrong answers.", key: 'conditions' },
+  { q: "Are you taking any medications regularly?", hint: "Even supplements are worth mentioning.", key: 'medications' },
+  { q: "Is there anything in your family's health history I should keep in mind?", hint: "Heart disease, diabetes, anything at all.", key: 'family_history' },
+];
+let obStep = 0;
+let obAnswers = {};
+let obRecognition = null;
+let obListening = false;
+
+function startVoiceOnboarding() {
+  document.getElementById('ob-welcome').style.display = 'none';
+  const v = document.getElementById('ob-voice');
+  v.style.display = 'flex';
+  obStep = 0;
+  obShowQuestion();
+  // Auto-play first question via TTS
+  setTimeout(() => obSpeakQuestion(), 600);
+}
+
+function startTypingOnboarding() {
+  document.getElementById('ob-welcome').style.display = 'none';
+  document.getElementById('ob-typing').style.display = 'block';
+}
+
+function obShowQuestion() {
+  const q = OB_QUESTIONS[obStep];
+  if (!q) { obShowAllSet(); return; }
+
+  document.getElementById('ob-question').textContent = q.q;
+  document.getElementById('ob-hint').textContent = q.hint;
+  document.getElementById('ob-progress-label').textContent = 'Getting to know you · ' + (obStep + 1) + ' of ' + OB_QUESTIONS.length;
+
+  // Update progress bars
+  const bars = document.getElementById('ob-progress-bars');
+  if (bars) {
+    bars.querySelectorAll('span').forEach((bar, i) => {
+      bar.style.background = i <= obStep ? 'var(--accent)' : 'var(--hairline)';
+    });
+  }
+  // State: Dr. Sage is speaking
+  obSetState('speaking');
+}
+
+function obSetState(state) {
+  const dot = document.getElementById('ob-state-dot');
+  const txt = document.getElementById('ob-state-text');
+  const wave = document.getElementById('ob-waveform');
+  const pulse = document.getElementById('ob-mic-pulse');
+  const micLabel = document.getElementById('ob-mic-label');
+
+  if (state === 'speaking') {
+    if (dot) dot.style.background = 'var(--urgent)';
+    if (txt) txt.textContent = 'DR. SAGE IS SPEAKING';
+    if (wave) wave.style.display = 'none';
+    if (pulse) pulse.style.display = 'none';
+    if (micLabel) micLabel.textContent = 'Tap to respond';
+  } else if (state === 'listening') {
+    if (dot) dot.style.background = 'var(--normal)';
+    if (txt) txt.textContent = 'LISTENING…';
+    if (wave) wave.style.display = 'flex';
+    if (pulse) pulse.style.display = 'block';
+    if (micLabel) { micLabel.textContent = 'Listening…'; micLabel.style.color = 'var(--normal)'; }
+  } else {
+    if (dot) dot.style.background = 'var(--faint)';
+    if (txt) txt.textContent = 'TAP MIC TO ANSWER';
+  }
+}
+
+async function obSpeakQuestion() {
+  const q = OB_QUESTIONS[obStep];
+  if (!q) return;
+  try {
+    const res = await fetch('/.netlify/functions/tts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: q.q })
+    });
+    if (!res.ok) throw new Error('TTS failed');
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const audio = new Audio(url);
+    audio.onended = () => { obSetState('idle'); };
+    audio.play();
+  } catch(e) {
+    console.log('OB TTS:', e.message);
+    obSetState('idle');
+  }
+}
+
+function obToggleMic() {
+  if (obListening) {
+    if (obRecognition) obRecognition.stop();
+    obListening = false;
+    obSetState('idle');
+  } else {
+    obStartListening();
+  }
+}
+
+function obStartListening() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) {
+    document.getElementById('ob-type-fallback').style.display = 'block';
+    return;
+  }
+  obRecognition = new SR();
+  obRecognition.continuous = false;
+  obRecognition.interimResults = false;
+  obRecognition.onresult = (e) => {
+    const answer = e.results[0][0].transcript;
+    obSaveAnswer(answer);
+  };
+  obRecognition.onerror = () => { obListening = false; obSetState('idle'); };
+  obRecognition.onend = () => { obListening = false; };
+  obRecognition.start();
+  obListening = true;
+  obSetState('listening');
+}
+
+function obSubmitTyped() {
+  const input = document.getElementById('ob-type-input');
+  if (input && input.value.trim()) {
+    obSaveAnswer(input.value.trim());
+    input.value = '';
+  }
+}
+
+function obSaveAnswer(answer) {
+  const q = OB_QUESTIONS[obStep];
+  if (q) obAnswers[q.key] = answer;
+
+  // Save key profile fields immediately
+  if (q?.key === 'name') {
+    const p = JSON.parse(localStorage.getItem('sh_profile') || '{}');
+    p.name = answer.split(' ')[0]; // first name only
+    localStorage.setItem('sh_profile', JSON.stringify(p));
+  }
+  if (q?.key === 'age') {
+    const p = JSON.parse(localStorage.getItem('sh_profile') || '{}');
+    p.age = parseInt(answer) || 48;
+    localStorage.setItem('sh_profile', JSON.stringify(p));
+  }
+
+  obStep++;
+  if (obStep >= OB_QUESTIONS.length) {
+    obShowAllSet();
+  } else {
+    obShowQuestion();
+    setTimeout(() => obSpeakQuestion(), 400);
+  }
+}
+
+function obShowAllSet() {
+  document.getElementById('ob-voice').style.display = 'none';
+  const allset = document.getElementById('ob-allset');
+  allset.style.display = 'flex';
+
+  // Show first memories recap
+  const mem = document.getElementById('ob-memories');
+  if (mem) {
+    const items = Object.entries(obAnswers).filter(([k,v]) => v && k !== 'family_history').slice(0,3);
+    mem.innerHTML = items.map(([k,v]) => {
+      const labels = { name: 'Your name', age: 'Your age', sex: 'Biological sex', conditions: 'Conditions', medications: 'Medications' };
+      return '<div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:12px;">' +
+        '<div style="width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0;margin-top:5px;"></div>' +
+        '<div><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);margin-bottom:2px;">' + (labels[k]||k) + '</div>' +
+        '<div style="font-size:15px;color:var(--ink);">' + v + '</div></div></div>';
+    }).join('') || '<div style="font-size:14px;color:var(--muted);">I'll learn more about you as we talk.</div>';
+  }
+
+  // Save all answers to profile
+  const p = JSON.parse(localStorage.getItem('sh_profile') || '{}');
+  if (obAnswers.conditions) p.conditions = obAnswers.conditions;
+  if (obAnswers.medications) p.medications = obAnswers.medications;
+  if (obAnswers.sex) p.sex = obAnswers.sex;
+  localStorage.setItem('sh_profile', JSON.stringify(p));
+}
+
+/* ── PROFILE PAGE POPULATION ────────────────────────── */
+function populateProfilePage() {
+  const p = profile || {};
+
+  // Avatar initials
+  const bigAv = document.getElementById('profile-avatar-big');
+  if (bigAv && p.name) {
+    const parts = p.name.trim().split(' ');
+    bigAv.textContent = (parts[0]?.[0]||'') + (parts[1]?.[0]||'');
+  }
+
+  const nameEl = document.getElementById('profile-name-display');
+  if (nameEl) nameEl.textContent = p.name || 'Your name';
+
+  const ageSex = document.getElementById('profile-age-sex');
+  if (ageSex) ageSex.textContent = (p.age ? p.age + 'yo' : '--') + ' · ' + (p.sex || '--');
+
+  const cond = document.getElementById('profile-conditions');
+  if (cond) cond.textContent = p.conditions || 'None reported';
+
+  const meds = document.getElementById('profile-medications');
+  if (meds) meds.textContent = p.medications || 'None reported';
+}
+
+function showProfileEdit() {
+  // Show the typing onboarding form as an edit sheet
+  const typing = document.getElementById('ob-typing');
+  if (typing) {
+    typing.style.display = 'block';
+    // Pre-fill
+    if (profile) {
+      const f = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+      f('ob_name', profile.name); f('ob_age', profile.age); f('ob_conditions', profile.conditions);
+      const sex = document.getElementById('ob_sex');
+      if (sex && profile.sex) sex.value = profile.sex;
+    }
+    document.getElementById('onboarding').style.display = 'block';
+  }
+}
+
+function openMemoryView() {
+  showToast('Dr. Sage remembers', 'Memory viewer coming soon — manage what Dr. Sage knows about you.');
+}
+
+function exportHealthData() {
+  showToast('Export', 'Data export coming soon — all your biometric data as CSV.');
+}
+
+function sendChatQ(text) {
+  document.getElementById('chatInput').value = text;
+  sendChat();
+  // Hide suggested questions after first use
+  const qs = document.getElementById('wk-suggested-qs');
+  if (qs) qs.style.display = 'none';
+}
+
+/* ── WEEKLY RECOVERY BARS ───────────────────────────── */
+function renderWeeklyRecoveryBars(data) {
+  const barsEl = document.getElementById('wk-recovery-bars');
+  const labelsEl = document.getElementById('wk-day-labels');
+  if (!barsEl || !data || !data.length) return;
+
+  const days = ['M','T','W','T','F','S','S'];
+  const maxVal = Math.max(...data.map(d => d.readiness || 50), 1);
+
+  barsEl.innerHTML = data.slice(-7).map((d, i) => {
+    const val = d.readiness || 50;
+    const pct = Math.round((val / 100) * 100);
+    const color = val >= 75 ? 'var(--normal)' : val >= 55 ? 'var(--watch)' : 'var(--urgent)';
+    return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;">' +
+      '<div style="width:100%;max-width:32px;background:' + color + ';border-radius:5px 5px 0 0;height:' + pct + '%;min-height:8px;"></div>' +
+      '</div>';
+  }).join('');
+
+  if (labelsEl) {
+    labelsEl.innerHTML = data.slice(-7).map((d, i) => {
+      return '<div style="flex:1;text-align:center;font-size:11px;font-weight:600;color:var(--faint);">' + (days[i] || '') + '</div>';
+    }).join('');
+  }
+}
+
+/* ── WEEKLY MODAL OPEN: populate recovery bars ── */
+const _origOpenWeekly = typeof openWeekly === 'function' ? openWeekly : null;
+
+
 /* ─── BATTERY ──────────────────────────────────────── */
 function logRingCharged() {
   localStorage.setItem('sh_last_charge', Date.now().toString());
@@ -1281,6 +1553,8 @@ window.addEventListener('load',()=>{const sp=localStorage.getItem('sh_profile'),
 
 /* ── MOBILE NAV ─────────────────────────────────────── */
 function mobileNav(id, btn) {
+  if (id === 'profile') { populateProfilePage(); }
+  mobileNavActive(btn);
   // Navigate page
   showPage(id, null);
   // Update bottom tab bar
