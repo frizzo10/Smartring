@@ -1889,26 +1889,27 @@ function openSignalCard(sigId) {
 
 
 function restartOnboarding() {
-  // Show the onboarding overlay — welcome screen first
   const ob = document.getElementById('onboarding');
   if (!ob) return;
 
-  // Reset to welcome screen
-  ['ob-welcome','ob-voice','ob-allset','ob-typing'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.style.display = id === 'ob-welcome' ? 'flex' : 'none';
-  });
-
-  // Reset onboarding state
+  // Reset state
   obStep = 0;
   obAnswers = {};
   obListening = false;
   if (obRecognition) { try { obRecognition.stop(); } catch(e) {} obRecognition = null; }
 
-  ob.style.display = 'block';
+  // Show welcome, hide all others
+  const welcome = document.getElementById('ob-welcome');
+  const voice   = document.getElementById('ob-voice');
+  const allset  = document.getElementById('ob-allset');
+  const typing  = document.getElementById('ob-typing');
 
-  // Navigate back to home tab
-  mobileNav('dashboard', document.getElementById('mob-dashboard'));
+  if (voice)  voice.style.display  = 'none';
+  if (allset) allset.style.display = 'none';
+  if (typing) typing.style.display = 'none';
+  if (welcome) welcome.style.display = 'flex'; // flex — not block
+
+  ob.style.display = 'block'; // show outer container
 }
 
 /* ─── BATTERY ──────────────────────────────────────── */
