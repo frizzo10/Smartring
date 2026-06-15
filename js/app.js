@@ -1746,10 +1746,13 @@ async function readWeeklyNarrative() {
 
 /* ── SIGNAL CARD DETAIL ─────────────────────────────── */
 function closeSignalCard(){const m=document.getElementById("signal-card-modal");if(m)m.remove();}
+let currentSigId='', currentSigTitle='';
 function openSignalCard(sigId) {
+  currentSigId = sigId;
   const sig = (typeof SIGNAL_PATTERNS !== 'undefined')
     ? SIGNAL_PATTERNS.find(s => s.id === sigId) : null;
   if (!sig) { startWt(); return; }
+  currentSigTitle = sig.title || sigId;
 
   const level = sig.level || 'watch';
   const levelColor = level === 'urgent' ? 'var(--urgent)' : level === 'watch' ? 'var(--watch)' : 'var(--accent)';
@@ -1802,11 +1805,11 @@ function openSignalCard(sigId) {
       '<p style="margin:0 24px 8px;font-size:11px;color:var(--faint);line-height:1.5;">' + (sig.disclaimer||'For informational purposes only — not a medical diagnosis.') + '</p>' +
       // Action buttons
       '<div style="padding:16px 24px 40px;display:flex;gap:10px;">' +
-        '<button onclick="document.getElementById('signal-card-modal').remove();setTimeout(()=>openVoiceConsult(''+sigId+'',''+sig.title.replace(/'/g,'')+'',''),100);" style="flex:1;height:50px;border-radius:14px;background:var(--accent);color:#fff;border:none;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">' +
+        '<button onclick="closeSignalCard();setTimeout(()=>openVoiceConsult(currentSigId,currentSigTitle,\'\'),100);" style="flex:1;height:50px;border-radius:14px;background:var(--accent);color:#fff;border:none;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">' +
           '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="2.5" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0013 0"/></svg>' +
           'Talk to Dr. Sage' +
         '</button>' +
-        '<button onclick="document.getElementById('signal-card-modal').remove()" style="height:50px;padding:0 18px;border-radius:14px;background:var(--fill);border:1px solid var(--hairline);color:var(--muted);font-size:15px;font-weight:500;cursor:pointer;">Done</button>' +
+        '<button onclick="closeSignalCard()" style="height:50px;padding:0 18px;border-radius:14px;background:var(--fill);border:1px solid var(--hairline);color:var(--muted);font-size:15px;font-weight:500;cursor:pointer;">Done</button>' +
       '</div>' +
     '</div>';
 
