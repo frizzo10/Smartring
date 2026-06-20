@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "myDrSage health monitoring platform",
   "dependencies": {
+    "@supabase/supabase-js": "^2.0.0",
     "pdfkit": "^0.15.0"
   }
 }
