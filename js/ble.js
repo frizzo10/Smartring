@@ -331,10 +331,33 @@ const BLE = {
     if (rs) rs.textContent = 'Connected · live data';
     const model = document.getElementById('ring-model-name');
     if (model) model.textContent = 'V80 Smart Ring';
-    const batt = document.getElementById('ring-batt-pct');
-    if (batt && r.battery) batt.textContent = r.battery + '%';
-    const battBar = document.getElementById('ring-batt-bar');
-    if (battBar && r.battery) battBar.style.width = r.battery + '%';
+    if (r.battery) {
+      // Battery percentage
+      const batt = document.getElementById('ring-batt-pct');
+      if (batt) batt.textContent = r.battery + '%';
+      const battBar = document.getElementById('ring-batt-bar');
+      if (battBar) {
+        battBar.style.width = r.battery + '%';
+        battBar.style.background = r.battery > 40 ? 'var(--normal)' : r.battery > 20 ? 'var(--watch)' : 'var(--urgent)';
+      }
+
+      // Project hours remaining — V80 rated 4 days = 96h at full charge
+      const hoursLeft = Math.round((r.battery / 100) * 96);
+      const daysLeft  = Math.floor(hoursLeft / 24);
+      const hrsLeft   = hoursLeft % 24;
+      const projection = daysLeft > 0
+        ? daysLeft + 'd ' + hrsLeft + 'h remaining'
+        : hoursLeft + 'h remaining';
+
+      const battProj = document.getElementById('ring-batt-projection');
+      if (battProj) battProj.textContent = projection;
+
+      // Also show in connect bar
+      const bleText = document.getElementById('ble-status-text');
+      if (bleText && BLE.connected) {
+        bleText.textContent = 'V80 connected · ' + r.battery + '% · ' + projection;
+      }
+    }
 
     // Emit combined reading for signal engine
     BLE.emit('readings', { ...r });
