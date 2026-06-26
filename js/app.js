@@ -1966,6 +1966,86 @@ async function playDrSageIntro(btn) {
   }
 }
 
+
+/* ── RING CONNECTION ────────────────────────────────────── */
+async function connectRing(btn) {
+  if (!navigator.bluetooth) {
+    showToast('Bluetooth not available', 'Open this app in Bluefy from the App Store to connect your V80 ring.');
+    return;
+  }
+
+  if (BLE.connected) {
+    await BLE.disconnect();
+    setBleStatus('disconnected');
+    return;
+  }
+
+  if (btn) { btn.disabled = true; btn.textContent = 'Scanning...'; }
+
+  // Wire up BLE events to dashboard
+  BLE.on('status', setBleStatus);
+  BLE.on('readings', onRingReadings);
+  BLE.on('raw', hex => console.log('V80 raw:', hex));
+
+  try {
+    const name = await BLE.connect();
+    showToast('✓ V80 connected', 'Real ring data is now live.');
+    if (btn) { btn.textContent = 'Disconnect'; btn.style.background = 'var(--normal)'; btn.disabled = false; }
+  } catch(e) {
+    if (btn) { btn.disabled = false; btn.textContent = 'Connect'; }
+    if (e.name === 'NotFoundError') {
+      showToast('Ring not found', 'Make sure the V80 is charged and on your finger.');
+    } else if (e.name === 'SecurityError') {
+      showToast('Bluetooth blocked', 'Allow Bluetooth access when prompted.');
+    } else {
+      showToast('Connection failed', e.message);
+    }
+  }
+}
+
+function setBleStatus(status) {
+  const dot  = document.getElementById('ble-status-dot');
+  const text = document.getElementById('ble-status-text');
+  const btn  = document.getElementById('ble-connect-btn');
+
+  const states = {
+    scanning:      { color: 'var(--watch)',  label: 'Scanning for V80...', btn: 'Cancel' },
+    connecting:    { color: 'var(--watch)',  label: 'Connecting...', btn: 'Cancel' },
+    connected:     { color: 'var(--normal)', label: 'V80 connected · live data', btn: 'Disconnect' },
+    disconnected:  { color: 'var(--faint)',  label: 'V80 ring not connected', btn: 'Connect' },
+    reconnecting:  { color: 'var(--watch)',  label: 'Reconnecting...', btn: 'Cancel' },
+  };
+
+  const s = states[status] || states.disconnected;
+  if (dot)  dot.style.background = s.color;
+  if (text) text.textContent = s.label;
+  if (btn)  {
+    btn.textContent = s.btn;
+    btn.style.background = status === 'connected' ? 'var(--normal)' : 'var(--accent)';
+    btn.disabled = false;
+  }
+}
+
+function onRingReadings(readings) {
+  // Feed live ring data into the signal engine
+  if (typeof data !== 'undefined' && data.length) {
+    const last = data[data.length - 1];
+    if (readings.hr)     last.rhr    = readings.hr;
+    if (readings.spo2)   last.spo2   = readings.spo2;
+    if (readings.bp_sys) last.bpSys  = readings.bp_sys;
+    if (readings.bp_dia) last.bpDia  = readings.bp_dia;
+    if (readings.temp_c) {
+      last.tempF = parseFloat(((readings.temp_c * 9/5) + 32).toFixed(1));
+      last.tempDev = parseFloat((last.tempF - last.tempBaseF).toFixed(2));
+    }
+    if (readings.steps)  last.steps  = readings.steps;
+    if (readings.battery) last.battery = readings.battery;
+
+    // Re-run signal engine with live data
+    if (typeof checkSignals === 'function') checkSignals(data);
+  }
+}
+
 /* ─── BATTERY ──────────────────────────────────────── */
 function logRingCharged() {
   localStorage.setItem('sh_last_charge', Date.now().toString());
