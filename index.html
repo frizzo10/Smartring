@@ -843,12 +843,21 @@ body{background:var(--surface-grouped);color:var(--ink);font-family:var(--font);
   </div>
 
   <!-- Ring connect bar -->
-  <div id="ring-connect-bar" style="margin:10px 24px 0;display:flex;align-items:center;justify-content:space-between;background:var(--fill);border:1px solid var(--hairline);border-radius:14px;padding:10px 14px;">
+  <div id="ring-connect-bar" style="margin:10px 24px 0;display:flex;align-items:center;justify-content:space-between;background:var(--fill);border:1px solid var(--hairline);border-radius:14px;padding:10px 14px;" ondblclick="toggleBleDebug()">
     <div style="display:flex;align-items:center;gap:10px;">
       <div style="width:8px;height:8px;border-radius:50%;background:var(--faint);" id="ble-status-dot"></div>
       <span id="ble-status-text" style="font-size:13px;font-weight:500;color:var(--muted);">V80 ring not connected</span>
     </div>
     <button onclick="connectRing(this)" id="ble-connect-btn" style="background:var(--accent);color:#fff;border:none;border-radius:9px;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer;">Connect</button>
+  </div>
+
+  <!-- BLE Debug panel (hidden by default, tap connect bar to toggle) -->
+  <div id="ble-debug" style="display:none;margin:8px 24px 0;background:#0A1628;border-radius:12px;padding:12px 14px;max-height:160px;overflow-y:auto;">
+    <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+      <span style="font-size:10px;font-weight:700;color:#4A9EBF;letter-spacing:.1em;">RAW BLE PACKETS</span>
+      <button onclick="document.getElementById('ble-raw-log').innerHTML=''" style="font-size:10px;color:#4A9EBF;background:none;border:none;cursor:pointer;">Clear</button>
+    </div>
+    <div id="ble-raw-log" style="font-family:monospace;font-size:10px;color:#7FBBCC;line-height:1.8;"></div>
   </div>
 
   <!-- Dr. Sage note card — tappable, opens voice consult -->

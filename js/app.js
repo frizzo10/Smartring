@@ -2046,6 +2046,45 @@ function onRingReadings(readings) {
   }
 }
 
+
+function toggleBleDebug() {
+  const panel = document.getElementById('ble-debug');
+  if (!panel) return;
+  const showing = panel.style.display !== 'none';
+  panel.style.display = showing ? 'none' : 'block';
+
+  if (!showing) {
+    // Wire raw packet log
+    if (window.BLE) {
+      BLE.off('raw', window._bleDebugRaw);
+      BLE.off('response', window._bleDebugResp);
+      window._bleDebugRaw = (hex) => {
+        const log = document.getElementById('ble-raw-log');
+        if (!log) return;
+        const line = document.createElement('div');
+        line.textContent = '← ' + hex;
+        line.style.color = '#7FBBCC';
+        log.appendChild(line);
+        log.scrollTop = log.scrollHeight;
+        // Keep last 50 lines
+        while (log.children.length > 50) log.removeChild(log.firstChild);
+      };
+      window._bleDebugResp = (hex) => {
+        const log = document.getElementById('ble-raw-log');
+        if (!log) return;
+        const line = document.createElement('div');
+        line.textContent = '↩ ' + hex;
+        line.style.color = '#4AB87A';
+        log.appendChild(line);
+        log.scrollTop = log.scrollHeight;
+        while (log.children.length > 50) log.removeChild(log.firstChild);
+      };
+      BLE.on('raw', window._bleDebugRaw);
+      BLE.on('response', window._bleDebugResp);
+    }
+  }
+}
+
 /* ─── BATTERY ──────────────────────────────────────── */
 function logRingCharged() {
   localStorage.setItem('sh_last_charge', Date.now().toString());
