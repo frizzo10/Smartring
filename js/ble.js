@@ -99,13 +99,17 @@ const BLE = {
     await BLE.sleep(300);
     await BLE.sendCmd(BLE.CMD.GET_STEPS);
     await BLE.sleep(300);
+    await BLE.syncDayHistory();
+    await BLE.sleep(500);
     await BLE.startAllMeasurements();
+    BLE.startPeriodicRefresh();
 
     return BLE.device.name;
   },
 
   // ── DISCONNECT ───────────────────────────────────────────
   async disconnect() {
+    BLE.stopPeriodicRefresh();
     await BLE.stopAllMeasurements();
     if (BLE.device && BLE.device.gatt.connected) {
       BLE.device.gatt.disconnect();
@@ -142,6 +146,33 @@ const BLE = {
     await BLE.sendCmd(BLE.CMD.START_BP);
     await BLE.sleep(200);
     await BLE.sendCmd(BLE.CMD.START_TEMP);
+  },
+
+  async syncDayHistory() {
+    await BLE.sendCmd(BLE.CMD.SYNC_HISTORY);
+    await BLE.sleep(300);
+    await BLE.sendCmd([0xAB, 0x00, 0x04, 0xFF, 0x51, 0x80, 0x04, 0x00]); // HR history
+    await BLE.sleep(300);
+    await BLE.sendCmd([0xAB, 0x00, 0x04, 0xFF, 0x51, 0x80, 0x05, 0x00]); // BP history
+    await BLE.sleep(300);
+    await BLE.sendCmd([0xAB, 0x00, 0x04, 0xFF, 0x51, 0x80, 0x06, 0x00]); // SpO2 history
+  },
+
+  startPeriodicRefresh() {
+    BLE._refreshTimer = setInterval(async () => {
+      if (!BLE.connected) return;
+      await BLE.sendCmd(BLE.CMD.START_HR);
+      await BLE.sleep(200);
+      await BLE.sendCmd(BLE.CMD.START_SPO2);
+      await BLE.sleep(200);
+      await BLE.sendCmd(BLE.CMD.GET_BATTERY);
+      await BLE.sleep(200);
+      await BLE.sendCmd(BLE.CMD.GET_STEPS);
+    }, 120000); // every 2 minutes
+  },
+
+  stopPeriodicRefresh() {
+    if (BLE._refreshTimer) { clearInterval(BLE._refreshTimer); BLE._refreshTimer = null; }
   },
 
   async stopAllMeasurements() {

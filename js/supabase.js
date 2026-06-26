@@ -484,8 +484,9 @@ async function checkFirstTimeUser() {
   const hasProfile = localStorage.getItem('sh_profile');
   const shownIntro = localStorage.getItem('sage_intro_shown');
 
-  if (!shownIntro && !hasMemory) {
-    setTimeout(() => showFirstConversationPrompt(), 3000);
+  // Don't show if already dismissed, has memory, or has profile
+  if (!shownIntro && !hasMemory && !hasProfile) {
+    setTimeout(() => showFirstConversationPrompt(), 4000);
   }
 }
 
@@ -493,8 +494,9 @@ function showFirstConversationPrompt() {
   if (localStorage.getItem('sage_intro_shown')) return;
 
   const banner = document.createElement('div');
+  banner.className = 'sage-intro-banner';
   banner.style.cssText = `
-    position:fixed;bottom:80px;left:50%;transform:translateX(-50%);
+    position:fixed;bottom:88px;left:50%;transform:translateX(-50%);
     background:white;border:1px solid rgba(29,111,164,.3);border-radius:16px;
     padding:20px 24px;max-width:420px;width:calc(100vw - 40px);
     z-index:800;box-shadow:0 8px 32px rgba(29,111,164,.2);
@@ -513,9 +515,7 @@ function showFirstConversationPrompt() {
       <button onclick="startFirstConversation()" style="flex:1;background:linear-gradient(135deg,var(--blue),var(--cyan));color:white;border:none;border-radius:10px;padding:11px;font-size:13px;font-weight:700;cursor:pointer;">
         🎤 Talk to Dr. Sage
       </button>
-      <button onclick="this.closest('div[style]').remove();localStorage.setItem('sage_intro_shown','1')" style="background:var(--bg);border:1px solid var(--border2);color:var(--muted);border-radius:10px;padding:11px 16px;font-size:12px;cursor:pointer;">
-        Later
-      </button>
+      <button onclick="document.querySelectorAll('.sage-intro-banner').forEach(el=>el.remove());localStorage.setItem('sage_intro_shown','1')" style="background:var(--bg);border:1px solid var(--border2);color:var(--muted);border-radius:10px;padding:11px 16px;font-size:13px;cursor:pointer;">Later</button>
     </div>
   `;
   document.body.appendChild(banner);
