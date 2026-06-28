@@ -83,10 +83,22 @@ function updateDashboardV2(stateMap) {
     sh >= 7 ? 'Restful' : sh >= 6 ? 'Short' : 'Watch',
     sh >= 7 ? 'normal' : sh >= 6 ? 'muted' : 'watch');
 
-  setTile('tile-temp', t.last_night_f ? (t.deviation_f > 0 ? '+' : '') + t.deviation_f : '--',
+  setTile('tile-temp', t.last_night_f ? (t.deviation_f > 0 ? '+' : '') + t.deviation_f + '°' : '--',
     'tile-temp-status',
     t.status === 'elevated' ? 'Elevated' : t.deviation_f > 0.5 ? 'Slight' : 'Baseline',
     t.status === 'elevated' ? 'watch' : 'muted');
+
+  // Steps tile
+  const stepsEl = document.getElementById('tile-steps');
+  const stepsSt = document.getElementById('tile-steps-status');
+  if (stepsEl && a.steps_avg7d) {
+    stepsEl.textContent = (a.steps_avg7d || 0).toLocaleString();
+    if (stepsSt) { stepsSt.textContent = Math.round((a.steps_avg7d/8000)*100) + '% of goal'; stepsSt.className = 'mt-status ' + (a.steps_avg7d >= 8000 ? 'normal' : 'muted'); }
+  }
+
+  // Glucose tile — show from BLE if available, otherwise demo
+  const gEl = document.getElementById('tile-glucose');
+  if (gEl && !gEl.textContent.match(/^\d+$/)) gEl.textContent = '--';
 }
 
 function renderSignalsPanelV2(signals) {
@@ -2038,7 +2050,13 @@ function onRingReadings(readings) {
       last.tempF = parseFloat(((readings.temp_c * 9/5) + 32).toFixed(1));
       last.tempDev = parseFloat((last.tempF - last.tempBaseF).toFixed(2));
     }
-    if (readings.steps)  last.steps  = readings.steps;
+    if (readings.steps) {
+    last.steps = readings.steps;
+    const stEl = document.getElementById('tile-steps');
+    if (stEl) stEl.textContent = readings.steps.toLocaleString();
+    const stSt = document.getElementById('tile-steps-status');
+    if (stSt) stSt.textContent = Math.round((readings.steps/8000)*100) + '% of goal';
+  }
     if (readings.battery) last.battery = readings.battery;
 
     // Re-run signal engine with live data

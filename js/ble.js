@@ -49,7 +49,7 @@ const BLE = {
   readings: {
     hr: null, spo2: null, bp_sys: null, bp_dia: null,
     temp_c: null, steps: null, battery: null,
-    hrv: null, timestamp: null
+    hrv: null, glucose_mgdl: null, glucose_mmol: null, stress: null, stress_label: null, timestamp: null
   },
 
   // ── CONNECT ─────────────────────────────────────────────
@@ -288,6 +288,47 @@ const BLE = {
           BLE.emit('steps', steps);
         }
         break;
+
+      // Blood Glucose (mmol/L → convert to mg/dL for US display)
+      case 0x8880:
+      case 0x0880:
+        if (bytes.length >= 9) {
+          const rawMmol = ((bytes[7] << 8) | bytes[8]) / 100;
+          if (rawMmol > 1 && rawMmol < 30) {
+            const mgdl = Math.round(rawMmol * 18.0182);
+            BLE.readings.glucose_mgdl = mgdl;
+            BLE.readings.glucose_mmol = rawMmol;
+            BLE.emit('glucose', { mgdl, mmol: rawMmol });
+            BLE.updateDashboard();
+          }
+        }
+        break;
+
+      // Stress / EDA
+      case 0x8980:
+      case 0x0980:
+        if (bytes.length >= 8) {
+          const stress = bytes[7];
+          const stressLabel = stress < 30 ? 'Relaxed' : stress < 60 ? 'Normal' : stress < 80 ? 'Elevated' : 'High';
+          BLE.readings.stress = stress;
+          BLE.readings.stress_label = stressLabel;
+          BLE.emit('stress', { value: stress, label: stressLabel });
+          BLE.updateDashboard();
+        }
+        break;
+
+      // HRV
+      case 0x8A80:
+      case 0x0A80:
+        if (bytes.length >= 9) {
+          const hrv = (bytes[7] << 8) | bytes[8];
+          if (hrv > 10 && hrv < 200) {
+            BLE.readings.hrv = hrv;
+            BLE.emit('hrv', hrv);
+            BLE.updateDashboard();
+          }
+        }
+        break;
     }
   },
 
@@ -320,6 +361,30 @@ const BLE = {
       const temp_f = (r.temp_c * 9/5) + 32;
       const el = document.getElementById('tile-temp');
       if (el) el.textContent = '+' + (temp_f - 98.6).toFixed(1);
+    }
+
+    // Glucose tile
+    if (r.glucose_mgdl) {
+      const gEl = document.getElementById('tile-glucose');
+      if (gEl) gEl.textContent = r.glucose_mgdl;
+      const gSt = document.getElementById('tile-glucose-status');
+      if (gSt) {
+        const status = r.glucose_mgdl < 100 ? 'Normal' : r.glucose_mgdl < 126 ? 'Pre-range' : 'Elevated';
+        const cls = r.glucose_mgdl < 100 ? 'normal' : 'watch';
+        gSt.textContent = status;
+        gSt.className = 'mt-status ' + cls;
+      }
+    }
+
+    // Stress tile
+    if (r.stress !== null) {
+      const sEl = document.getElementById('tile-stress');
+      if (sEl) sEl.textContent = r.stress;
+      const sSt = document.getElementById('tile-stress-status');
+      if (sSt) {
+        sSt.textContent = r.stress_label || 'Normal';
+        sSt.className = 'mt-status ' + (r.stress < 60 ? 'normal' : 'watch');
+      }
     }
 
     // Show ring online dot

@@ -892,14 +892,17 @@ body{background:var(--surface-grouped);color:var(--ink);font-family:var(--font);
     </div>
   </div>
 
-  <!-- 3×2 metric tile grid -->
+  <!-- Metric tile grid — mirrors ring data in US units -->
   <div style="margin:14px 24px 0;display:grid;grid-template-columns:1fr 1fr 1fr;gap:11px;" id="metric-tiles-new">
-    <div class="metric-tile"><p class="mt-label">HRV</p><p class="mt-value"><span id="tile-hrv">--</span><span> ms</span></p><p class="mt-status watch" id="tile-hrv-status">↓ 12</p></div>
-    <div class="metric-tile"><p class="mt-label">Rest HR</p><p class="mt-value"><span id="tile-rhr">--</span><span> bpm</span></p><p class="mt-status normal" id="tile-rhr-status">Normal</p></div>
+    <div class="metric-tile"><p class="mt-label">Heart Rate</p><p class="mt-value"><span id="tile-rhr">--</span><span> bpm</span></p><p class="mt-status normal" id="tile-rhr-status">Normal</p></div>
+    <div class="metric-tile"><p class="mt-label">HRV</p><p class="mt-value"><span id="tile-hrv">--</span><span> ms</span></p><p class="mt-status normal" id="tile-hrv-status">Normal</p></div>
     <div class="metric-tile"><p class="mt-label">SpO₂</p><p class="mt-value"><span id="tile-spo2">--</span><span> %</span></p><p class="mt-status normal" id="tile-spo2-status">Normal</p></div>
-    <div class="metric-tile"><p class="mt-label">Blood pr.</p><p class="mt-value"><span id="tile-bp-s">--</span><span id="tile-bp-d">/--</span></p><p class="mt-status normal" id="tile-bp-status">Normal</p></div>
-    <div class="metric-tile"><p class="mt-label">Sleep</p><p class="mt-value"><span id="tile-sleep-h">--</span><span>h</span><span id="tile-sleep-m">--</span><span>m</span></p><p class="mt-status normal" id="tile-sleep-status">Restful</p></div>
-    <div class="metric-tile"><p class="mt-label">Skin temp</p><p class="mt-value"><span id="tile-temp">--</span><span>°</span></p><p class="mt-status muted" id="tile-temp-status">Baseline</p></div>
+    <div class="metric-tile"><p class="mt-label">Blood Pressure</p><p class="mt-value"><span id="tile-bp-s">--</span><span id="tile-bp-d">/--</span></p><p class="mt-status normal" id="tile-bp-status">Normal</p></div>
+    <div class="metric-tile"><p class="mt-label">Blood Sugar</p><p class="mt-value"><span id="tile-glucose">--</span><span> mg/dL</span></p><p class="mt-status normal" id="tile-glucose-status">Normal</p></div>
+    <div class="metric-tile"><p class="mt-label">Stress</p><p class="mt-value"><span id="tile-stress">--</span></p><p class="mt-status normal" id="tile-stress-status">Relaxed</p></div>
+    <div class="metric-tile"><p class="mt-label">Sleep</p><p class="mt-value"><span id="tile-sleep-h">--</span><span>h</span><span id="tile-sleep-m">--</span><span>m</span></p><p class="mt-status normal" id="tile-sleep-status">--</p></div>
+    <div class="metric-tile"><p class="mt-label">Skin Temp</p><p class="mt-value"><span id="tile-temp">--</span><span>°F</span></p><p class="mt-status muted" id="tile-temp-status">Baseline</p></div>
+    <div class="metric-tile"><p class="mt-label">Steps</p><p class="mt-value"><span id="tile-steps">--</span></p><p class="mt-status muted" id="tile-steps-status">Today</p></div>
   </div>
 
   <!-- Active signals row -->
