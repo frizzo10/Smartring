@@ -9,7 +9,11 @@ function updateDashboardV2(stateMap) {
   const a  = m.activity || {};
   const r  = m.recovery || {};
 
-  // Greeting
+  // Only update tiles if BLE ring is connected with real data
+  // Tiles start at -- and only get real values from the ring
+  const bleConnected = window.BLE && window.BLE.connected;
+
+  // Greeting always updates
   const hour = new Date().getHours();
   const greet = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
   const name = profile?.name ? `, ${profile.name.split(' ')[0]}.` : '.';
@@ -30,10 +34,11 @@ function updateDashboardV2(stateMap) {
   const dot = document.getElementById('ring-online-dot');
   if (dot) dot.style.display = 'block';
 
-  // Health ring score
-  const score = r.readiness || m.health_grade_num || 84;
+  // Health ring score — only show if ring connected
+  const isConnected = window.BLE && window.BLE.connected;
+  const score = isConnected ? (r.readiness || m.health_grade_num || 84) : null;
   const scoreEl = document.getElementById('health-ring-score');
-  if (scoreEl) scoreEl.textContent = score;
+  if (scoreEl) scoreEl.textContent = score || '--';
   const arc = document.getElementById('health-ring-arc');
   if (arc) {
     const circumference = 264;
@@ -54,51 +59,49 @@ function updateDashboardV2(stateMap) {
     if (sEl) { sEl.textContent = statusText; sEl.className = 'mt-status ' + (statusClass||'muted'); }
   }
 
-  setTile('tile-hrv', cv.hrv?.current, 'tile-hrv-status',
-    cv.hrv?.trend?.label || (cv.hrv?.current < 40 ? '↓ low' : 'Normal'),
-    cv.hrv?.status === 'watch' || cv.hrv?.current < 40 ? 'watch' : 'normal');
-
-  setTile('tile-rhr', cv.rhr?.current, 'tile-rhr-status',
-    cv.rhr?.status === 'normal' ? 'Normal' : cv.rhr?.trend?.label || '--',
-    cv.rhr?.status || 'muted');
-
-  setTile('tile-spo2', cv.spo2?.current, 'tile-spo2-status',
-    cv.spo2?.current >= 95 ? 'Normal' : 'Watch',
-    cv.spo2?.current >= 95 ? 'normal' : 'watch');
-
-  const bpEl = document.getElementById('tile-bp-s');
-  const bpDEl = document.getElementById('tile-bp-d');
-  if (bpEl) bpEl.textContent = cv.bp?.systolic || '--';
-  if (bpDEl) bpDEl.textContent = '/' + (cv.bp?.diastolic || '--');
-  setTile(null, null, 'tile-bp-status',
-    cv.bp?.status === 'normal' ? 'Normal' : cv.bp?.status || '--',
-    cv.bp?.status || 'muted');
-
-  const sh = sl.total?.avg7d || 0;
-  const shH = Math.floor(sh), shM = Math.round((sh - shH) * 60);
-  setTile('tile-sleep-h', shH || '--', null, null, null);
-  const smEl = document.getElementById('tile-sleep-m');
-  if (smEl) smEl.textContent = shM || '';
-  setTile(null, null, 'tile-sleep-status',
-    sh >= 7 ? 'Restful' : sh >= 6 ? 'Short' : 'Watch',
-    sh >= 7 ? 'normal' : sh >= 6 ? 'muted' : 'watch');
-
-  setTile('tile-temp', t.last_night_f ? (t.deviation_f > 0 ? '+' : '') + t.deviation_f + '°' : '--',
-    'tile-temp-status',
-    t.status === 'elevated' ? 'Elevated' : t.deviation_f > 0.5 ? 'Slight' : 'Baseline',
-    t.status === 'elevated' ? 'watch' : 'muted');
-
-  // Steps tile
-  const stepsEl = document.getElementById('tile-steps');
-  const stepsSt = document.getElementById('tile-steps-status');
-  if (stepsEl && a.steps_avg7d) {
-    stepsEl.textContent = (a.steps_avg7d || 0).toLocaleString();
-    if (stepsSt) { stepsSt.textContent = Math.round((a.steps_avg7d/8000)*100) + '% of goal'; stepsSt.className = 'mt-status ' + (a.steps_avg7d >= 8000 ? 'normal' : 'muted'); }
+  // Only populate tiles from real ring data via BLE
+  // Sleep can come from ring history even when not live-connected
+  if (bleConnected || (window.BLE && window.BLE.readings && window.BLE.readings.hr)) {
+    // BLE has real data — tiles already updated by BLE.updateDashboard()
+    // Just update sleep from ring if available
+  } else {
+    // No ring connected — show -- on all live metric tiles
+    ['tile-hrv','tile-rhr','tile-spo2','tile-bp-s','tile-glucose','tile-stress','tile-temp'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = '--';
+    });
+    const bpD = document.getElementById('tile-bp-d');
+    if (bpD) bpD.textContent = '/--';
   }
 
-  // Glucose tile — show from BLE if available, otherwise demo
-  const gEl = document.getElementById('tile-glucose');
-  if (gEl && !gEl.textContent.match(/^\d+$/)) gEl.textContent = '--';
+  // Sleep comes from ring history — show if available
+  const bleHrv = window.BLE?.readings?.hrv;
+  if (bleHrv) {
+    setTile('tile-hrv', bleHrv, 'tile-hrv-status',
+      bleHrv >= 55 ? 'Normal' : bleHrv >= 40 ? 'Low-normal' : 'Low',
+      bleHrv >= 40 ? 'normal' : 'watch');
+  }
+
+  // Sleep tile — from ring history sync
+  const sh = sl.total?.avg7d || 0;
+  if (sh > 0 && bleConnected) {
+    const shH = Math.floor(sh), shM = Math.round((sh - shH) * 60);
+    setTile('tile-sleep-h', shH, null, null, null);
+    const smEl = document.getElementById('tile-sleep-m');
+    if (smEl) smEl.textContent = shM;
+    setTile(null, null, 'tile-sleep-status',
+      sh >= 7 ? 'Restful' : sh >= 6 ? 'Short' : 'Watch',
+      sh >= 7 ? 'normal' : sh >= 6 ? 'muted' : 'watch');
+  }
+
+  // Steps from ring
+  const bleSteps = window.BLE?.readings?.steps;
+  if (bleSteps) {
+    const stepsEl = document.getElementById('tile-steps');
+    const stepsSt = document.getElementById('tile-steps-status');
+    if (stepsEl) stepsEl.textContent = bleSteps.toLocaleString();
+    if (stepsSt) { stepsSt.textContent = Math.round((bleSteps/8000)*100) + '% of goal'; stepsSt.className = 'mt-status ' + (bleSteps >= 8000 ? 'normal' : 'muted'); }
+  }
 }
 
 function renderSignalsPanelV2(signals) {
@@ -397,7 +400,13 @@ function buildDashboard(){
   }
   if (t.tempDev > 0.5) br += ` <span class="warn">Your temperature is slightly elevated — ${(t.tempDev*9/5).toFixed(1)}°F above your baseline.</span>`;
   if (t.apnea > 3) br += ` <span class="warn">${t.apnea} breathing events overnight.</span>`;
-  document.getElementById('dailySummary').innerHTML=br;
+  // Only show real data briefing if ring is connected
+  const isRingConnected = window.BLE && window.BLE.connected && window.BLE.readings && window.BLE.readings.hr;
+  if (!isRingConnected) {
+    document.getElementById('dailySummary').innerHTML = 'Connect your V80 ring to see your health briefing.';
+  } else {
+    document.getElementById('dailySummary').innerHTML = br;
+  }
 
   // ── v2 redesign: update new metric tiles + health ring ──
   try {
