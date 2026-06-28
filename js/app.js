@@ -401,9 +401,12 @@ function buildDashboard(){
   if (t.tempDev > 0.5) br += ` <span class="warn">Your temperature is slightly elevated — ${(t.tempDev*9/5).toFixed(1)}°F above your baseline.</span>`;
   if (t.apnea > 3) br += ` <span class="warn">${t.apnea} breathing events overnight.</span>`;
   // Only show real data briefing if ring is connected
-  const isRingConnected = window.BLE && window.BLE.connected && window.BLE.readings && window.BLE.readings.hr;
+  const isRingConnected = window.BLE && window.BLE.connected;
+  const hasRingData = window.BLE && window.BLE.readings && window.BLE.readings.hr;
   if (!isRingConnected) {
     document.getElementById('dailySummary').innerHTML = 'Connect your V80 ring to see your health briefing.';
+  } else if (!hasRingData) {
+    document.getElementById('dailySummary').innerHTML = 'V80 connected — syncing your data now...';
   } else {
     document.getElementById('dailySummary').innerHTML = br;
   }
@@ -2011,6 +2014,9 @@ async function connectRing(btn) {
   try {
     const name = await BLE.connect();
     showToast('✓ V80 connected', 'Real ring data is now live.');
+    // Auto-open debug panel to capture raw packets
+    document.getElementById('ble-debug').style.display = 'block';
+    toggleBleDebug(); // wire up listeners
     if (btn) { btn.textContent = 'Disconnect'; btn.style.background = 'var(--normal)'; btn.disabled = false; }
   } catch(e) {
     if (btn) { btn.disabled = false; btn.textContent = 'Connect'; }

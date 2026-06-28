@@ -81,13 +81,19 @@ const BLE = {
     BLE.chars.notify   = await BLE.service.getCharacteristic('fea1');
     BLE.chars.bidir    = await BLE.service.getCharacteristic('fea2');
 
-    // Subscribe to data stream
+    // Subscribe to data stream (FEA1 - Notify)
     await BLE.chars.notify.startNotifications();
     BLE.chars.notify.addEventListener('characteristicvaluechanged', BLE.onData);
 
-    // Subscribe to command responses
+    // Subscribe to command responses (FEC8 - Indicate)
     await BLE.chars.indicate.startNotifications();
     BLE.chars.indicate.addEventListener('characteristicvaluechanged', BLE.onResponse);
+
+    // Subscribe to bidirectional channel (FEA2 - Indicate)
+    try {
+      await BLE.chars.bidir.startNotifications();
+      BLE.chars.bidir.addEventListener('characteristicvaluechanged', BLE.onData);
+    } catch(e) { console.log('FEA2 subscribe:', e.message); }
 
     BLE.connected = true;
     BLE.emit('status', 'connected');
@@ -129,11 +135,22 @@ const BLE = {
 
   // ── SEND COMMAND ─────────────────────────────────────────
   async sendCmd(bytes) {
-    if (!BLE.chars.write) return;
-    try {
-      await BLE.chars.write.writeValueWithoutResponse(new Uint8Array(bytes));
-    } catch(e) {
-      console.log('BLE write error:', e.message);
+    const data = new Uint8Array(bytes);
+    // Try FEC7 (primary write channel)
+    if (BLE.chars.write) {
+      try {
+        await BLE.chars.write.writeValueWithoutResponse(data);
+      } catch(e) {
+        console.log('FEC7 write error:', e.message);
+      }
+    }
+    // Also try FEA2 (bidirectional) if FEC7 fails to get response
+    if (BLE.chars.bidir) {
+      try {
+        await BLE.chars.bidir.writeValue(data);
+      } catch(e) {
+        // FEA2 write failed — that's ok, FEC7 may have worked
+      }
     }
   },
 
@@ -188,9 +205,10 @@ const BLE = {
     const bytes = new Uint8Array(val.buffer);
     BLE.rawBuffer.push(bytes);
 
-    // Log raw for debugging
     const hex = Array.from(bytes).map(b => b.toString(16).padStart(2,'0')).join(' ');
-    BLE.emit('raw', hex);
+    const src = event.target.uuid?.slice(-4).toUpperCase() || 'UNK';
+    BLE.emit('raw', '[' + src + '] ' + hex);
+    console.log('V80 data [' + src + ']:', hex);
 
     BLE.parsePacket(bytes);
   },
