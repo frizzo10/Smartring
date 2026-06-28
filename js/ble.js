@@ -99,15 +99,8 @@ const BLE = {
     BLE.emit('status', 'connected');
     BLE.emit('connected', BLE.device.name);
 
-    // Initial data fetch
-    await BLE.sleep(500);
-    await BLE.sendCmd(BLE.CMD.GET_BATTERY);
-    await BLE.sleep(300);
-    await BLE.sendCmd(BLE.CMD.GET_STEPS);
-    await BLE.sleep(300);
-    await BLE.syncDayHistory();
-    await BLE.sleep(500);
-    await BLE.startAllMeasurements();
+    // LISTEN-ONLY MODE: no commands sent — just log everything the ring broadcasts
+    console.log('V80 listen-only mode: waiting for ring to self-report data...');
     BLE.startPeriodicRefresh();
 
     return BLE.device.name;
@@ -176,15 +169,11 @@ const BLE = {
   },
 
   startPeriodicRefresh() {
+    // LISTEN-ONLY MODE: just emit a heartbeat so the app knows we're still connected
     BLE._refreshTimer = setInterval(async () => {
       if (!BLE.connected) return;
-      await BLE.sendCmd(BLE.CMD.START_HR);
-      await BLE.sleep(200);
-      await BLE.sendCmd(BLE.CMD.START_SPO2);
-      await BLE.sleep(200);
-      await BLE.sendCmd(BLE.CMD.GET_BATTERY);
-      await BLE.sleep(200);
-      await BLE.sendCmd(BLE.CMD.GET_STEPS);
+      console.log('V80 still connected, listening...');
+      BLE.emit('readings', { ...BLE.readings });
     }, 120000); // every 2 minutes
   },
 
