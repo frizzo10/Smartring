@@ -147,7 +147,7 @@ const BLE = {
     // Also try FEA2 (bidirectional) if FEC7 fails to get response
     if (BLE.chars.bidir) {
       try {
-        await BLE.chars.bidir.writeValue(data);
+        await BLE.chars.bidir.writeValueWithoutResponse(data);
       } catch(e) {
         // FEA2 write failed — that's ok, FEC7 may have worked
       }
