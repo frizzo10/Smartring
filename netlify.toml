@@ -14,5 +14,10 @@
     X-Content-Type-Options = "nosniff"
     Content-Security-Policy = "default-src 'self' 'unsafe-inline' 'unsafe-eval' https://api.anthropic.com https://cdnjs.cloudflare.com https://api.groq.com; media-src 'self' blob: data:; connect-src 'self' https://api.anthropic.com https://api.groq.com https://api.elevenlabs.io https://eastus.tts.speech.microsoft.com https://eastus.api.cognitive.microsoft.com https://zuzgbxjahfqcnxygsquq.supabase.co; img-src 'self' data: blob: https://images.pexels.com; worker-src 'self' blob:"
 
+[[headers]]
+  for = "/js/*.js"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+
 [functions.keepalive]
   schedule = "0 12 */3 * *"
