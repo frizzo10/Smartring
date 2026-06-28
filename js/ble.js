@@ -99,9 +99,10 @@ const BLE = {
     BLE.emit('status', 'connected');
     BLE.emit('connected', BLE.device.name);
 
-    // LISTEN-ONLY MODE: no commands sent — just log everything the ring broadcasts
-    console.log('V80 listen-only mode: waiting for ring to self-report data...');
     BLE.startPeriodicRefresh();
+    // BRUTE FORCE PROBE: try common packet formats to find what the ring responds to
+    console.log('V80 brute force probe starting...');
+    BLE.bruteProbe();
 
     return BLE.device.name;
   },
@@ -446,6 +447,42 @@ const BLE = {
   off(event, fn) {
     if (!BLE.listeners[event]) return;
     BLE.listeners[event] = BLE.listeners[event].filter(f => f !== fn);
+  },
+
+  // ── BRUTE FORCE PROBE ────────────────────────────────────
+  // Try known Chinese smart ring packet formats one by one.
+  // Listen for any response after each — first response tells us the protocol.
+  async bruteProbe() {
+    const probes = [
+      // Format 1: SmartHealth / Yucheng — 0xAB header, 8 bytes
+      [0xAB, 0x00, 0x04, 0xFF, 0x51, 0x80, 0x01, 0x00],  // battery
+      [0xAB, 0x00, 0x04, 0xFF, 0x84, 0x80, 0x01, 0x00],  // HR
+      // Format 2: 0xCD header
+      [0xCD, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00],
+      [0xCD, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00],
+      // Format 3: 16-byte 0xFC header (R9/soumya style)
+      [0xFC,0x01,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00],
+      [0xFC,0x0F,0x05,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00],
+      [0xFC,0x0A,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00],
+      // Format 4: 0xAA header
+      [0xAA, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0xAA],
+      [0xAA, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0xAA],
+      // Format 5: 0xFF header
+      [0xFF, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00],
+      // Format 6: single byte probes
+      [0x01], [0x02], [0x10], [0x15], [0x20], [0x51], [0x84], [0xA0],
+    ];
+
+    for (const probe of probes) {
+      if (!BLE.connected) break;
+      const hex = probe.map(b => b.toString(16).padStart(2,'0')).join(' ');
+      BLE.emit('raw', '[PROBE→] ' + hex);
+      try {
+        await BLE.chars.write.writeValueWithoutResponse(new Uint8Array(probe));
+      } catch(e) { /* ignore */ }
+      await BLE.sleep(800); // wait 800ms for response
+    }
+    BLE.emit('raw', '[PROBE] Done. Check above for any ← responses.');
   },
 
   sleep: ms => new Promise(r => setTimeout(r, ms)),
