@@ -38,9 +38,20 @@ const BLE = {
         for (const char of chars) {
           const uuid = char.uuid.toLowerCase();
           if (char.properties.notify || char.properties.indicate) {
-            try { await char.startNotifications(); char.addEventListener('characteristicvaluechanged', BLE.onData); } catch(e) {}
+            try { 
+              await char.startNotifications(); 
+              char.addEventListener('characteristicvaluechanged', BLE.onData);
+              BLE.emit('raw', '[SUB] ' + uuid.slice(-4).toUpperCase());
+            } catch(e) { BLE.emit('raw', '[SUB ERR] ' + uuid.slice(-4).toUpperCase() + ' ' + e.message); }
           }
           if (uuid.includes('fec7')) BLE.chars.fec7 = char;
+          if (uuid.includes('fec8')) BLE.chars.fec8 = char;
+          if (uuid.includes('fea1')) BLE.chars.fea1 = char;
+          if (uuid.includes('fea2')) BLE.chars.fea2 = char;
+          if (uuid.includes('f0080002')) BLE.chars.f008rx = char;
+          if (uuid.includes('f0080003')) BLE.chars.f008tx = char;
+          if (uuid.includes('f0020002')) BLE.chars.f002rx = char;
+          if (uuid.includes('f0020003')) BLE.chars.f002tx = char;
           if (uuid.includes('da2e7828')) BLE.chars.smp = char;
         }
       }
