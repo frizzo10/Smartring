@@ -1,103 +1,48 @@
 /* ─────────────────────────────────────────────────────────
-   myDrSage — V80 Ring BLE (CRPSmartRing SDK Protocol)
+   myDrSage — V80 Ring BLE (Veepoo Protocol)
    Works in: Bluefy iOS, Chrome desktop/Android
 
-   V80 GATT Map (confirmed via nRF Connect + Android SDK decompile):
+   V80 REAL GATT Map (confirmed via Veepoo SDK decompile):
+   Service:  0000ae00-0000-1000-8000-00805f9b34fb
+   AE01    → Notify  (ring → phone)
+   AE02    → Write Without Response (phone → ring)
 
-   PRIMARY DATA SERVICE:
-   A6ED0401-D344-460A-8075-B9E8EC90D71B
-     A6ED0402  → Notify  (ring → phone data)
-     A6ED0403  → Write Without Response (phone → ring commands)
-
-   LEGACY SERVICE (FEE7) — kept for compatibility fallback
-
-   PROTOCOL: CRPSmartRing SDK (CRREPA)
-   Packet format: [0xAB, 0x00, len_hi, len_lo, cmd, sub, ...data]
+   Protocol: Veepoo VP Protocol
+   Password: 000000 (default)
+   Bind sequence: confirmDevicePwd → then measurements
    ───────────────────────────────────────────────────────── */
 
 const BLE = {
 
-  // ── CRP SERVICE UUIDs (confirmed from Android SDK) ──────
-  SVC:        'a6ed0401-d344-460a-8075-b9e8ec90d71b',
-  CHAR_RX:    'a6ed0402-d344-460a-8075-b9e8ec90d71b',  // ring → phone
-  CHAR_TX:    'a6ed0403-d344-460a-8075-b9e8ec90d71b',  // phone → ring
+  SVC:      '0000ae00-0000-1000-8000-00805f9b34fb',
+  CHAR_RX:  '0000ae01-0000-1000-8000-00805f9b34fb',
+  CHAR_TX:  '0000ae02-0000-1000-8000-00805f9b34fb',
 
-  // Legacy FEE7 fallback
-  SVC_LEGACY: 'fee7',
-
-  // ── CRP COMMAND DEFINITIONS ──────────────────────────────
-  // Format: [0xAB, 0x00, 0x00, dataLen, cmd, sub, ...data]
-  // Based on CRPSmartRing SDK protocol reverse engineering
-
-  CMD: {
-    // System
-    SYNC_TIME:      (ts) => {
-      const d = new Date(ts || Date.now());
-      return [0xAB, 0x00, 0x00, 0x08, 0x01, 0x00,
-              d.getFullYear() - 2000, d.getMonth() + 1, d.getDate(),
-              d.getHours(), d.getMinutes(), d.getSeconds(), 0x00, 0x00];
-    },
-    QUERY_BATTERY:  [0xAB, 0x00, 0x00, 0x01, 0x03, 0x00, 0x01],
-    FIRST_CONNECT:  [0xAB, 0x00, 0x00, 0x01, 0x63, 0x00, 0x01],
-    QUERY_FIRMWARE: [0xAB, 0x00, 0x00, 0x01, 0x01, 0x00, 0x01],
-
-    // Heart Rate
-    START_HR:       [0xAB, 0x00, 0x00, 0x02, 0x15, 0x01, 0x01, 0x01],
-    STOP_HR:        [0xAB, 0x00, 0x00, 0x02, 0x15, 0x01, 0x00, 0x01],
-
-    // SpO2
-    START_SPO2:     [0xAB, 0x00, 0x00, 0x02, 0x15, 0x02, 0x01, 0x01],
-    STOP_SPO2:      [0xAB, 0x00, 0x00, 0x02, 0x15, 0x02, 0x00, 0x01],
-
-    // Blood Pressure
-    START_BP:       [0xAB, 0x00, 0x00, 0x02, 0x15, 0x04, 0x01, 0x01],
-    STOP_BP:        [0xAB, 0x00, 0x00, 0x02, 0x15, 0x04, 0x00, 0x01],
-
-    // Temperature
-    START_TEMP:     [0xAB, 0x00, 0x00, 0x02, 0x15, 0x08, 0x01, 0x01],
-    STOP_TEMP:      [0xAB, 0x00, 0x00, 0x02, 0x15, 0x08, 0x00, 0x01],
-
-    // HRV
-    START_HRV:      [0xAB, 0x00, 0x00, 0x02, 0x15, 0x10, 0x01, 0x01],
-    STOP_HRV:       [0xAB, 0x00, 0x00, 0x02, 0x15, 0x10, 0x00, 0x01],
-
-    // Stress
-    START_STRESS:   [0xAB, 0x00, 0x00, 0x02, 0x15, 0x20, 0x01, 0x01],
-    STOP_STRESS:    [0xAB, 0x00, 0x00, 0x02, 0x15, 0x20, 0x00, 0x01],
-
-    // Steps
-    QUERY_STEPS:    [0xAB, 0x00, 0x00, 0x01, 0x07, 0x00, 0x01],
-
-    // Sleep
-    QUERY_SLEEP:    [0xAB, 0x00, 0x00, 0x01, 0x09, 0x00, 0x01],
-  },
+  // Veepoo default password
+  PASSWORD: '000000',
 
   // State
-  device: null,
-  server: null,
-  chars: {},
-  connected: false,
-  listeners: {},
-  rawBuffer: [],
+  device: null, server: null, chars: {}, connected: false,
+  listeners: {}, rawBuffer: [], bound: false,
 
-  // Live readings
   readings: {
     hr: null, spo2: null, bp_sys: null, bp_dia: null,
     temp_c: null, steps: null, battery: null,
-    hrv: null, glucose_mgdl: null, stress: null, stress_label: null,
-    timestamp: null
+    hrv: null, stress: null, stress_label: null,
+    glucose_mgdl: null, timestamp: null
   },
 
   // ── CONNECT ─────────────────────────────────────────────
   async connect() {
-    if (!navigator.bluetooth) throw new Error('Use Bluefy browser for Web Bluetooth.');
+    if (!navigator.bluetooth) throw new Error('Use Bluefy browser.');
 
     BLE.emit('status', 'scanning');
     BLE.device = await navigator.bluetooth.requestDevice({
       filters: [{ name: 'V80' }],
       optionalServices: [
+        '0000ae00-0000-1000-8000-00805f9b34fb',
         'a6ed0401-d344-460a-8075-b9e8ec90d71b',
-        'fee7'
+        'f0080001-0451-4000-b000-000000000000'
       ]
     });
 
@@ -105,31 +50,32 @@ const BLE = {
     BLE.emit('status', 'connecting');
     BLE.server = await BLE.device.gatt.connect();
 
-    // ── Primary A6ED service ──
+    // Try Veepoo AE service first
     let connected = false;
     try {
-      const svc = await BLE.server.getPrimaryService('a6ed0401-d344-460a-8075-b9e8ec90d71b');
-      BLE.chars.rx = await svc.getCharacteristic('a6ed0402-d344-460a-8075-b9e8ec90d71b');
-      BLE.chars.tx = await svc.getCharacteristic('a6ed0403-d344-460a-8075-b9e8ec90d71b');
+      const svc = await BLE.server.getPrimaryService('0000ae00-0000-1000-8000-00805f9b34fb');
+      BLE.chars.rx = await svc.getCharacteristic('0000ae01-0000-1000-8000-00805f9b34fb');
+      BLE.chars.tx = await svc.getCharacteristic('0000ae02-0000-1000-8000-00805f9b34fb');
       await BLE.chars.rx.startNotifications();
       BLE.chars.rx.addEventListener('characteristicvaluechanged', BLE.onData);
-      BLE.emit('raw', '[A6ED] Service connected ✓');
+      BLE.emit('raw', '[AE00] Veepoo service connected ✓');
       connected = true;
     } catch(e) {
-      BLE.emit('raw', '[A6ED] Failed: ' + e.message);
+      BLE.emit('raw', '[AE00] Failed: ' + e.message);
     }
 
-    // ── Legacy FEE7 fallback ──
+    // Fallback to A6ED service
     if (!connected) {
       try {
-        const svc = await BLE.server.getPrimaryService('fee7');
-        BLE.chars.rx = await svc.getCharacteristic('fea1');
-        BLE.chars.tx = await svc.getCharacteristic('fec7');
+        const svc = await BLE.server.getPrimaryService('a6ed0401-d344-460a-8075-b9e8ec90d71b');
+        BLE.chars.rx = await svc.getCharacteristic('a6ed0402-d344-460a-8075-b9e8ec90d71b');
+        BLE.chars.tx = await svc.getCharacteristic('a6ed0403-d344-460a-8075-b9e8ec90d71b');
         await BLE.chars.rx.startNotifications();
         BLE.chars.rx.addEventListener('characteristicvaluechanged', BLE.onData);
-        BLE.emit('raw', '[FEE7] Legacy service connected ✓');
+        BLE.emit('raw', '[A6ED] Fallback service connected ✓');
+        connected = true;
       } catch(e) {
-        BLE.emit('raw', '[FEE7] Failed: ' + e.message);
+        BLE.emit('raw', '[A6ED] Failed: ' + e.message);
       }
     }
 
@@ -137,65 +83,90 @@ const BLE = {
     BLE.emit('status', 'connected');
     BLE.emit('connected', BLE.device.name);
 
-    // Handshake sequence
+    // Veepoo bind sequence
     await BLE.sleep(300);
-    await BLE.sendCmd(BLE.CMD.FIRST_CONNECT);
-    await BLE.sleep(300);
-    await BLE.sendCmd(BLE.CMD.SYNC_TIME());
-    await BLE.sleep(300);
-    await BLE.sendCmd(BLE.CMD.QUERY_BATTERY);
-    await BLE.sleep(300);
-    await BLE.sendCmd(BLE.CMD.QUERY_STEPS);
-    await BLE.sleep(300);
-    await BLE.startMeasurements();
-
+    await BLE.bindDevice();
     BLE.startPeriodicRefresh();
     return BLE.device.name;
   },
 
-  // ── SEND COMMAND ─────────────────────────────────────────
-  async sendCmd(bytes) {
+  // ── BIND DEVICE (confirmDevicePwd) ───────────────────────
+  // Veepoo requires password confirmation before any data flows
+  // Password: 000000 → bytes [0x30,0x30,0x30,0x30,0x30,0x30]
+  // Packet format: [0x00, 0x00, cmd, is24H, pwd0, pwd1, pwd2, pwd3, pwd4, pwd5]
+  async bindDevice() {
+    const pwd = BLE.PASSWORD.split('').map(c => c.charCodeAt(0));
+    const is24H = 0x01; // 24-hour format
+
+    // Veepoo confirmDevicePwd packet
+    const bindPacket = [0x00, 0x00, 0x01, is24H, ...pwd];
+    BLE.emit('raw', '[BIND] Sending password bind...');
+    await BLE.write(bindPacket);
+    await BLE.sleep(500);
+
+    // Also try alternative packet format
+    const altPacket = [0x01, is24H, ...pwd];
+    await BLE.write(altPacket);
+    await BLE.sleep(500);
+
+    // Request battery and time sync after bind
+    await BLE.syncTime();
+    await BLE.sleep(300);
+    await BLE.readBattery();
+    await BLE.sleep(300);
+    await BLE.startMeasurements();
+  },
+
+  // ── TIME SYNC ────────────────────────────────────────────
+  async syncTime() {
+    const d = new Date();
+    const packet = [
+      0x00, 0x00, 0x03,
+      d.getFullYear() - 2000, d.getMonth() + 1, d.getDate(),
+      d.getHours(), d.getMinutes(), d.getSeconds()
+    ];
+    await BLE.write(packet);
+  },
+
+  // ── READ BATTERY ─────────────────────────────────────────
+  async readBattery() {
+    await BLE.write([0x00, 0x00, 0x04]);
+  },
+
+  // ── START MEASUREMENTS ───────────────────────────────────
+  async startMeasurements() {
+    await BLE.write([0x00, 0x00, 0x11, 0x01]); // HR start
+    await BLE.sleep(200);
+    await BLE.write([0x00, 0x00, 0x12, 0x01]); // SpO2 start
+    await BLE.sleep(200);
+    await BLE.write([0x00, 0x00, 0x13, 0x01]); // BP start
+    await BLE.sleep(200);
+    await BLE.write([0x00, 0x00, 0x14, 0x01]); // Temp start
+    await BLE.sleep(200);
+    await BLE.write([0x00, 0x00, 0x15, 0x01]); // HRV start
+    await BLE.sleep(200);
+    await BLE.write([0x00, 0x00, 0x16, 0x01]); // Stress start
+  },
+
+  // ── WRITE ────────────────────────────────────────────────
+  async write(bytes) {
     if (!BLE.chars.tx || !BLE.connected) return;
-    const data = new Uint8Array(Array.isArray(bytes) ? bytes : bytes);
+    const data = new Uint8Array(bytes);
     const hex = Array.from(data).map(b => b.toString(16).padStart(2,'0')).join(' ');
     BLE.emit('raw', '[→] ' + hex);
     try {
       await BLE.chars.tx.writeValueWithoutResponse(data);
     } catch(e) {
       try { await BLE.chars.tx.writeValue(data); } catch(e2) {
-        BLE.emit('raw', '[!] Write failed: ' + e2.message);
+        BLE.emit('raw', '[!] ' + e2.message);
       }
     }
-  },
-
-  async startMeasurements() {
-    await BLE.sendCmd(BLE.CMD.START_HR);
-    await BLE.sleep(200);
-    await BLE.sendCmd(BLE.CMD.START_SPO2);
-    await BLE.sleep(200);
-    await BLE.sendCmd(BLE.CMD.START_BP);
-    await BLE.sleep(200);
-    await BLE.sendCmd(BLE.CMD.START_TEMP);
-    await BLE.sleep(200);
-    await BLE.sendCmd(BLE.CMD.START_HRV);
-    await BLE.sleep(200);
-    await BLE.sendCmd(BLE.CMD.START_STRESS);
-  },
-
-  async stopMeasurements() {
-    await BLE.sendCmd(BLE.CMD.STOP_HR);
-    await BLE.sendCmd(BLE.CMD.STOP_SPO2);
-    await BLE.sendCmd(BLE.CMD.STOP_BP);
-    await BLE.sendCmd(BLE.CMD.STOP_TEMP);
-    await BLE.sendCmd(BLE.CMD.STOP_HRV);
-    await BLE.sendCmd(BLE.CMD.STOP_STRESS);
   },
 
   // ── DISCONNECT ───────────────────────────────────────────
   async disconnect() {
     BLE.stopPeriodicRefresh();
-    await BLE.stopMeasurements();
-    if (BLE.device && BLE.device.gatt.connected) BLE.device.gatt.disconnect();
+    if (BLE.device?.gatt.connected) BLE.device.gatt.disconnect();
     BLE.connected = false;
     BLE.emit('status', 'disconnected');
   },
@@ -209,9 +180,7 @@ const BLE = {
   startPeriodicRefresh() {
     BLE._refreshTimer = setInterval(async () => {
       if (!BLE.connected) return;
-      await BLE.sendCmd(BLE.CMD.QUERY_BATTERY);
-      await BLE.sleep(200);
-      await BLE.sendCmd(BLE.CMD.QUERY_STEPS);
+      await BLE.readBattery();
       BLE.emit('readings', { ...BLE.readings });
     }, 120000);
   },
@@ -220,37 +189,31 @@ const BLE = {
     if (BLE._refreshTimer) { clearInterval(BLE._refreshTimer); BLE._refreshTimer = null; }
   },
 
-  // ── PARSE INCOMING DATA ──────────────────────────────────
+  // ── PARSE DATA ───────────────────────────────────────────
   onData(event) {
     const bytes = new Uint8Array(event.target.value.buffer);
     BLE.rawBuffer.push(bytes);
     const hex = Array.from(bytes).map(b => b.toString(16).padStart(2,'0')).join(' ');
     BLE.emit('raw', '[←] ' + hex);
-    console.log('V80 data:', hex);
+    console.log('V80 Veepoo data:', hex);
     BLE.parsePacket(bytes);
   },
 
   parsePacket(bytes) {
-    if (bytes.length < 4) return;
+    if (bytes.length < 2) return;
+    BLE.emit('raw', '[PARSE] len=' + bytes.length + ' cmd=' + bytes[2]?.toString(16));
 
-    // CRP packet: AB 00 [len_hi] [len_lo] [cmd] [sub] [...data]
-    if (bytes[0] === 0xAB && bytes[1] === 0x00) {
-      const cmd = bytes[4];
-      const sub = bytes[5];
-      const data = bytes.slice(6);
-      BLE.parseCRP(cmd, sub, data, bytes);
-      return;
-    }
+    const cmd = bytes[2];
 
-    // Log unknown for debugging
-    BLE.emit('raw', '[?] Unknown format: hdr=' + bytes[0].toString(16));
-  },
-
-  parseCRP(cmd, sub, data, raw) {
     switch(cmd) {
-      case 0x03: // Battery
-        if (data.length >= 1) {
-          const batt = data[0];
+      case 0x01: // Bind/pwd response
+        BLE.emit('raw', '[BIND] Status: ' + bytes[3]);
+        BLE.bound = true;
+        break;
+
+      case 0x04: // Battery
+        if (bytes.length >= 4) {
+          const batt = bytes[3];
           if (batt >= 0 && batt <= 100) {
             BLE.readings.battery = batt;
             BLE.emit('battery', batt);
@@ -259,71 +222,71 @@ const BLE = {
         }
         break;
 
-      case 0x15: // Measurement result
-        switch(sub) {
-          case 0x01: // Heart Rate
-            if (data.length >= 1 && data[0] > 30 && data[0] < 220) {
-              BLE.readings.hr = data[0];
-              BLE.readings.timestamp = Date.now();
-              BLE.emit('hr', data[0]);
-              BLE.updateDashboard();
-            }
-            break;
-          case 0x02: // SpO2
-            if (data.length >= 1 && data[0] >= 70 && data[0] <= 100) {
-              BLE.readings.spo2 = data[0];
-              BLE.emit('spo2', data[0]);
-              BLE.updateDashboard();
-            }
-            break;
-          case 0x04: // Blood Pressure
-            if (data.length >= 2) {
-              const sys = data[0], dia = data[1];
-              if (sys > 60 && sys < 220 && dia > 40 && dia < 140) {
-                BLE.readings.bp_sys = sys;
-                BLE.readings.bp_dia = dia;
-                BLE.emit('bp', { sys, dia });
-                BLE.updateDashboard();
-              }
-            }
-            break;
-          case 0x08: // Temperature
-            if (data.length >= 2) {
-              const tempRaw = (data[0] << 8) | data[1];
-              const temp_c = tempRaw / 100;
-              if (temp_c > 30 && temp_c < 43) {
-                BLE.readings.temp_c = temp_c;
-                BLE.emit('temp', { c: temp_c, f: (temp_c * 9/5) + 32 });
-                BLE.updateDashboard();
-              }
-            }
-            break;
-          case 0x10: // HRV
-            if (data.length >= 2) {
-              const hrv = (data[0] << 8) | data[1];
-              if (hrv > 10 && hrv < 200) {
-                BLE.readings.hrv = hrv;
-                BLE.emit('hrv', hrv);
-                BLE.updateDashboard();
-              }
-            }
-            break;
-          case 0x20: // Stress
-            if (data.length >= 1) {
-              const stress = data[0];
-              const label = stress < 30 ? 'Relaxed' : stress < 60 ? 'Normal' : stress < 80 ? 'Elevated' : 'High';
-              BLE.readings.stress = stress;
-              BLE.readings.stress_label = label;
-              BLE.emit('stress', { value: stress, label });
-              BLE.updateDashboard();
-            }
-            break;
+      case 0x11: // Heart Rate
+        if (bytes.length >= 4 && bytes[3] > 30 && bytes[3] < 220) {
+          BLE.readings.hr = bytes[3];
+          BLE.readings.timestamp = Date.now();
+          BLE.emit('hr', bytes[3]);
+          BLE.updateDashboard();
         }
         break;
 
-      case 0x07: // Steps
-        if (data.length >= 4) {
-          const steps = (data[0] << 24) | (data[1] << 16) | (data[2] << 8) | data[3];
+      case 0x12: // SpO2
+        if (bytes.length >= 4 && bytes[3] >= 70 && bytes[3] <= 100) {
+          BLE.readings.spo2 = bytes[3];
+          BLE.emit('spo2', bytes[3]);
+          BLE.updateDashboard();
+        }
+        break;
+
+      case 0x13: // Blood Pressure
+        if (bytes.length >= 5) {
+          const sys = bytes[3], dia = bytes[4];
+          if (sys > 60 && sys < 220 && dia > 40 && dia < 140) {
+            BLE.readings.bp_sys = sys;
+            BLE.readings.bp_dia = dia;
+            BLE.emit('bp', { sys, dia });
+            BLE.updateDashboard();
+          }
+        }
+        break;
+
+      case 0x14: // Temperature
+        if (bytes.length >= 5) {
+          const temp_c = ((bytes[3] << 8) | bytes[4]) / 100;
+          if (temp_c > 30 && temp_c < 43) {
+            BLE.readings.temp_c = temp_c;
+            BLE.emit('temp', { c: temp_c, f: (temp_c * 9/5) + 32 });
+            BLE.updateDashboard();
+          }
+        }
+        break;
+
+      case 0x15: // HRV
+        if (bytes.length >= 5) {
+          const hrv = (bytes[3] << 8) | bytes[4];
+          if (hrv > 5 && hrv < 300) {
+            BLE.readings.hrv = hrv;
+            BLE.emit('hrv', hrv);
+            BLE.updateDashboard();
+          }
+        }
+        break;
+
+      case 0x16: // Stress
+        if (bytes.length >= 4) {
+          const stress = bytes[3];
+          const label = stress < 30 ? 'Relaxed' : stress < 60 ? 'Normal' : stress < 80 ? 'Elevated' : 'High';
+          BLE.readings.stress = stress;
+          BLE.readings.stress_label = label;
+          BLE.emit('stress', { value: stress, label });
+          BLE.updateDashboard();
+        }
+        break;
+
+      case 0x05: // Steps
+        if (bytes.length >= 6) {
+          const steps = (bytes[3] << 24) | (bytes[4] << 16) | (bytes[5] << 8) | (bytes[6] || 0);
           BLE.readings.steps = steps;
           BLE.emit('steps', steps);
           BLE.updateDashboard();
@@ -335,46 +298,44 @@ const BLE = {
   // ── UPDATE DASHBOARD ─────────────────────────────────────
   updateDashboard() {
     const r = BLE.readings;
+    const set = (id, val) => { const el = document.getElementById(id); if (el && val != null) el.textContent = val; };
+    const cls = (id, c) => { const el = document.getElementById(id); if (el) el.className = 'mt-status ' + c; };
+
     if (r.hr != null) {
-      const el = document.getElementById('tile-rhr'); if (el) el.textContent = r.hr;
-      const s = document.getElementById('tile-rhr-status');
-      if (s) { s.textContent = r.hr < 60 ? 'Athletic' : r.hr < 80 ? 'Normal' : 'Elevated'; s.className = 'mt-status ' + (r.hr < 80 ? 'normal' : 'watch'); }
+      set('tile-rhr', r.hr);
+      const s = r.hr < 60 ? 'Athletic' : r.hr < 80 ? 'Normal' : 'Elevated';
+      set('tile-rhr-status', s); cls('tile-rhr-status', r.hr < 80 ? 'normal' : 'watch');
     }
     if (r.spo2 != null) {
-      const el = document.getElementById('tile-spo2'); if (el) el.textContent = r.spo2;
-      const s = document.getElementById('tile-spo2-status');
-      if (s) { s.textContent = r.spo2 >= 95 ? 'Normal' : 'Watch'; s.className = 'mt-status ' + (r.spo2 >= 95 ? 'normal' : 'watch'); }
+      set('tile-spo2', r.spo2);
+      set('tile-spo2-status', r.spo2 >= 95 ? 'Normal' : 'Watch'); cls('tile-spo2-status', r.spo2 >= 95 ? 'normal' : 'watch');
     }
     if (r.bp_sys != null) {
-      const s = document.getElementById('tile-bp-s'); if (s) s.textContent = r.bp_sys;
-      const d = document.getElementById('tile-bp-d'); if (d) d.textContent = '/' + r.bp_dia;
-      const st = document.getElementById('tile-bp-status');
-      if (st) { st.textContent = r.bp_sys < 120 ? 'Optimal' : r.bp_sys < 130 ? 'Normal' : 'Elevated'; st.className = 'mt-status ' + (r.bp_sys < 130 ? 'normal' : 'watch'); }
+      set('tile-bp-s', r.bp_sys); set('tile-bp-d', '/' + r.bp_dia);
+      const s = r.bp_sys < 120 ? 'Optimal' : r.bp_sys < 130 ? 'Normal' : 'Elevated';
+      set('tile-bp-status', s); cls('tile-bp-status', r.bp_sys < 130 ? 'normal' : 'watch');
     }
     if (r.temp_c != null) {
-      const el = document.getElementById('tile-temp');
-      if (el) el.textContent = '+' + ((r.temp_c * 9/5 + 32) - 98.6).toFixed(1);
+      set('tile-temp', '+' + ((r.temp_c * 9/5 + 32) - 98.6).toFixed(1));
     }
     if (r.stress != null) {
-      const el = document.getElementById('tile-stress'); if (el) el.textContent = r.stress;
-      const st = document.getElementById('tile-stress-status');
-      if (st) { st.textContent = r.stress_label || 'Normal'; st.className = 'mt-status ' + (r.stress < 60 ? 'normal' : 'watch'); }
+      set('tile-stress', r.stress); set('tile-stress-status', r.stress_label);
+      cls('tile-stress-status', r.stress < 60 ? 'normal' : 'watch');
     }
     if (r.battery != null) {
-      const batt = document.getElementById('ring-batt-pct'); if (batt) batt.textContent = r.battery + '%';
-      const hoursLeft = Math.round((r.battery / 100) * 96);
-      const proj = Math.floor(hoursLeft/24) > 0 ? Math.floor(hoursLeft/24) + 'd ' + (hoursLeft%24) + 'h remaining' : hoursLeft + 'h remaining';
-      const battProj = document.getElementById('ring-batt-projection'); if (battProj) battProj.textContent = proj;
-      const bleText = document.getElementById('ble-status-text');
-      if (bleText && BLE.connected) bleText.textContent = 'V80 connected · ' + r.battery + '% · ' + proj;
+      set('ring-batt-pct', r.battery + '%');
+      const h = Math.round((r.battery / 100) * 96);
+      const proj = Math.floor(h/24) > 0 ? Math.floor(h/24) + 'd ' + (h%24) + 'h remaining' : h + 'h remaining';
+      set('ring-batt-projection', proj);
+      const bt = document.getElementById('ble-status-text');
+      if (bt && BLE.connected) bt.textContent = 'V80 connected · ' + r.battery + '% · ' + proj;
     }
     const dot = document.getElementById('ring-online-dot'); if (dot) dot.style.display = 'block';
-    const rs = document.getElementById('ring-status-text'); if (rs) rs.textContent = 'Connected · live data';
-    const model = document.getElementById('ring-model-name'); if (model) model.textContent = 'V80 Smart Ring';
+    set('ring-status-text', 'Connected · live data');
+    set('ring-model-name', 'V80 Smart Ring');
     BLE.emit('readings', { ...r });
   },
 
-  // ── EVENT EMITTER ────────────────────────────────────────
   on(event, fn)     { if (!BLE.listeners[event]) BLE.listeners[event] = []; BLE.listeners[event].push(fn); },
   emit(event, data) { (BLE.listeners[event] || []).forEach(fn => fn(data)); },
   off(event, fn)    { if (!BLE.listeners[event]) return; BLE.listeners[event] = BLE.listeners[event].filter(f => f !== fn); },
