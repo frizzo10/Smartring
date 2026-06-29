@@ -173,25 +173,26 @@ const BLE = {
     if (bytes.length < 2) return;
     const hex = Array.from(bytes).map(b => b.toString(16).padStart(2,'0')).join(' ');
 
-    // FEA1 auto-pushes: 01 1a 01 00
-    // bytes[0]=0x01 (status), bytes[1]=0x1a=26 (battery%), bytes[2]=0x01, bytes[3]=0x00
+    // FEA1 auto-push: 01 1a 01 00 — connection status
     if (src === 'FEA1' && bytes[0] === 0x01 && bytes.length === 4) {
-      const batt = bytes[1];
-      BLE.emit('raw', '[FEA1] battery=' + batt + '%');
-      if (batt > 0 && batt <= 100) {
-        BLE.readings.battery = batt;
-        BLE.emit('battery', batt);
-        BLE.updateDashboard();
-      }
+      BLE.emit('raw', '[FEA1] status packet: ' + bytes[1].toString(16));
     }
 
     // Activity packet confirmed: hdr=a0
-    if (bytes[0] === 0xa0 && bytes.length >= 15) {
-      const steps = (bytes[5] << 8) | bytes[4];
+    // a0 00 00 00 [batt] [steps_lo] [steps_hi] 01 [cal_lo] [cal_hi] ...
+    if (bytes[0] === 0xa0 && bytes.length >= 10) {
+      const batt = bytes[4];           // 0x4a = 74%
+      const steps = (bytes[6] << 8) | bytes[5];  // 0x014a = 330 steps -- wait check ordering
       const cal = ((bytes[9] << 8) | bytes[8]) / 10;
-      BLE.emit('raw', '[ACTIVITY] steps=' + steps + ' cal=' + cal);
-      BLE.readings.steps = steps;
-      BLE.emit('steps', steps);
+      BLE.emit('raw', '[ACTIVITY] batt=' + batt + '% steps=' + steps + ' cal=' + cal);
+      if (batt > 0 && batt <= 100) {
+        BLE.readings.battery = batt;
+        BLE.emit('battery', batt);
+      }
+      if (steps >= 0) {
+        BLE.readings.steps = steps;
+        BLE.emit('steps', steps);
+      }
       BLE.updateDashboard();
     }
 
