@@ -3,7 +3,7 @@
    Handles push notifications + offline caching
    ═══════════════════════════════════════════════════ */
 
-const CACHE_NAME = 'sagehealth-v1';
+const CACHE_NAME = 'sagehealth-v99';
 const CACHE_URLS = ['/', '/js/app.js', '/js/signals.js', '/js/voice-consult.js', '/js/commitments.js'];
 
 /* ── INSTALL ─────────────────────────────────────── */
