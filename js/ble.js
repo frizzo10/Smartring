@@ -1,4 +1,4 @@
-/* myDrSage — V80 Ring BLE — SMP wake + systematic FEC7 probe */
+/* myDrSage — V80 — Listen mode: subscribe then wait for ring to push data */
 
 const BLE = {
   device: null, server: null, chars: {}, connected: false,
@@ -30,95 +30,56 @@ const BLE = {
     BLE.server = await BLE.device.gatt.connect();
     BLE.emit('raw', '[CONNECTED] ' + BLE.device.name);
 
-    // Get characteristics
-    try {
-      const services = await BLE.server.getPrimaryServices();
-      for (const svc of services) {
-        const chars = await svc.getCharacteristics();
-        for (const char of chars) {
-          const uuid = char.uuid.toLowerCase();
-          if (char.properties.notify || char.properties.indicate) {
-            try { 
-              await char.startNotifications(); 
-              char.addEventListener('characteristicvaluechanged', BLE.onData);
-              BLE.emit('raw', '[SUB] ' + uuid.slice(-4).toUpperCase());
-            } catch(e) { BLE.emit('raw', '[SUB ERR] ' + uuid.slice(-4).toUpperCase() + ' ' + e.message); }
-          }
-          if (uuid.includes('fec7')) BLE.chars.fec7 = char;
-          if (uuid.includes('fec8')) BLE.chars.fec8 = char;
-          if (uuid.includes('fea1')) BLE.chars.fea1 = char;
-          if (uuid.includes('fea2')) BLE.chars.fea2 = char;
-          if (uuid.includes('f0080002')) BLE.chars.f008rx = char;
-          if (uuid.includes('f0080003')) BLE.chars.f008tx = char;
-          if (uuid.includes('f0020002')) BLE.chars.f002rx = char;
-          if (uuid.includes('f0020003')) BLE.chars.f002tx = char;
-          if (uuid.includes('da2e7828')) BLE.chars.smp = char;
+    // Subscribe to everything
+    const services = await BLE.server.getPrimaryServices();
+    for (const svc of services) {
+      const chars = await svc.getCharacteristics();
+      for (const char of chars) {
+        const uuid = char.uuid.toLowerCase();
+        if (char.properties.notify || char.properties.indicate) {
+          try {
+            await char.startNotifications();
+            char.addEventListener('characteristicvaluechanged', BLE.onData);
+            BLE.emit('raw', '[SUB] ' + char.uuid.slice(-4).toUpperCase());
+          } catch(e) {}
         }
+        if (uuid.includes('fec7')) BLE.chars.fec7 = char;
+        if (uuid.includes('da2e7828')) BLE.chars.smp = char;
+        if (uuid.includes('f0080003')) BLE.chars.f008tx = char;
       }
-      BLE.emit('raw', '[CHARS] fec7=' + !!BLE.chars.fec7 + ' smp=' + !!BLE.chars.smp);
-    } catch(e) {
-      BLE.emit('raw', '[ERR] ' + e.message);
     }
 
     BLE.connected = true;
     BLE.emit('status', 'connected');
     BLE.emit('connected', BLE.device.name);
 
-    // STEP 1: SMP wake - CRITICAL
-    await BLE.sleep(500);
-    if (BLE.chars.smp) {
-      BLE.emit('raw', '[SMP] Sending wake...');
-      try {
-        await BLE.chars.smp.writeValueWithoutResponse(new Uint8Array([0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0xbf, 0xff]));
-        BLE.emit('raw', '[SMP] Wake sent ✓');
-      } catch(e) { BLE.emit('raw', '[SMP ERR] ' + e.message); }
-    } else {
-      BLE.emit('raw', '[SMP] Not found!');
-    }
+    // Just wait 3 seconds — does ring push anything automatically?
+    BLE.emit('raw', '[WAIT] Listening for auto-push data...');
+    await BLE.sleep(3000);
+    BLE.emit('raw', '[WAIT] 3s done');
 
-    await BLE.sleep(1500);
-
-    // STEP 2: Confirmed working command
-    // The confirmed working sequence from the one successful session:
-    // SMP wake → SMP ping → HBand on F0080003 → got activity data on F0080002
-    
-    // SMP ping (triggers 7C48 response which may unlock F008)
-    BLE.emit('raw', '[SMP] Sending ping...');
+    // Now try SMP wake only — no other commands
+    BLE.emit('raw', '[SMP] Wake...');
     if (BLE.chars.smp) {
       try {
-        await BLE.chars.smp.writeValueWithoutResponse(new Uint8Array([0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0xbf, 0xff]));
-        BLE.emit('raw', '[SMP] Ping sent ✓');
+        await BLE.chars.smp.writeValueWithoutResponse(new Uint8Array([0x00,0x00,0x00,0x01,0x00,0x00,0x00,0x00,0xbf,0xff]));
+        BLE.emit('raw', '[SMP] ✓');
       } catch(e) { BLE.emit('raw', '[SMP ERR] ' + e.message); }
     }
-    await BLE.sleep(1200);
+    await BLE.sleep(2000);
+    BLE.emit('raw', '[WAIT] Post-SMP 2s done');
 
-    // Send HBand commands on F0080003 — this is what triggered the a0 activity response
-    BLE.emit('raw', '[F008] Sending HBand commands...');
-    const hbandCmds = [
-      { b: [0xAB, 0x00, 0x04, 0xFF, 0x51, 0x80, 0x01, 0x00], name: 'battery' },
-      { b: [0xAB, 0x00, 0x04, 0xFF, 0x84, 0x80, 0x01, 0x00], name: 'hr-start' },
-      { b: [0xAB, 0x00, 0x04, 0xFF, 0x85, 0x80, 0x01, 0x00], name: 'spo2-start' },
-      { b: [0xAB, 0x00, 0x04, 0xFF, 0x86, 0x80, 0x01, 0x00], name: 'bp-start' },
-      { b: [0xAB, 0x00, 0x04, 0xFF, 0x51, 0x80, 0x03, 0x00], name: 'steps' },
-    ];
-
-    for (const cmd of hbandCmds) {
-      if (!BLE.chars.f008tx) {
-        BLE.emit('raw', '[!] No F0080003');
-        break;
-      }
-      const hex = cmd.b.map(b => b.toString(16).padStart(2,'0')).join(' ');
-      BLE.emit('raw', '[→F008/' + cmd.name + '] ' + hex);
+    // Now try just ONE thing on FEC7 — the status request
+    BLE.emit('raw', '[FEC7] status request...');
+    if (BLE.chars.fec7) {
       try {
-        await BLE.chars.f008tx.writeValueWithoutResponse(new Uint8Array(cmd.b));
-      } catch(e) {
-        try { await BLE.chars.f008tx.writeValue(new Uint8Array(cmd.b)); }
-        catch(e2) { BLE.emit('raw', '[!F008] ' + e2.message); }
-      }
-      await BLE.sleep(1000);
+        await BLE.chars.fec7.writeValue(new Uint8Array([0x01, 0x00, 0x00, 0x00]));
+        BLE.emit('raw', '[FEC7] ✓');
+      } catch(e) { BLE.emit('raw', '[FEC7 ERR] ' + e.message); }
     }
+    await BLE.sleep(2000);
+    BLE.emit('raw', '[DONE] All done — watching...');
 
-    BLE.emit('raw', '[DONE] Watching all channels...');
     BLE.startPeriodicRefresh();
     return BLE.device.name;
   },
@@ -126,6 +87,7 @@ const BLE = {
   startPeriodicRefresh() {
     BLE._refreshTimer = setInterval(async () => {
       if (!BLE.connected) return;
+      BLE.emit('raw', '[POLL] polling...');
       if (BLE.chars.smp) {
         try { await BLE.chars.smp.writeValueWithoutResponse(new Uint8Array([0x00,0x00,0x00,0x01,0x00,0x00,0x00,0x00,0xbf,0xff])); } catch(e) {}
       }
@@ -168,36 +130,27 @@ const BLE = {
     if (bytes.length < 2) return;
     const hex = Array.from(bytes).map(b => b.toString(16).padStart(2,'0')).join(' ');
 
-    // FEA1 auto-push: 01 1a 01 00 — connection status
-    if (src === 'FEA1' && bytes[0] === 0x01 && bytes.length === 4) {
-      BLE.emit('raw', '[FEA1] status packet: ' + bytes[1].toString(16));
+    // FEA1 connection status
+    if (src === 'FEA1') {
+      BLE.emit('raw', '[FEA1] ' + hex);
     }
 
-    // Activity packet confirmed: hdr=a0
-    // a0 00 00 00 [batt] [steps_lo] [steps_hi] 01 [cal_lo] [cal_hi] ...
+    // Activity packet: hdr=a0
     if (bytes[0] === 0xa0 && bytes.length >= 10) {
-      const batt = bytes[4];           // 0x4a = 74%
-      const steps = (bytes[6] << 8) | bytes[5];  // 0x014a = 330 steps -- wait check ordering
-      const cal = ((bytes[9] << 8) | bytes[8]) / 10;
+      const batt  = bytes[4];
+      const steps = (bytes[6] << 8) | bytes[5];
+      const cal   = ((bytes[9] << 8) | bytes[8]) / 10;
       BLE.emit('raw', '[ACTIVITY] batt=' + batt + '% steps=' + steps + ' cal=' + cal);
-      if (batt > 0 && batt <= 100) {
-        BLE.readings.battery = batt;
-        BLE.emit('battery', batt);
-      }
-      if (steps >= 0) {
-        BLE.readings.steps = steps;
-        BLE.emit('steps', steps);
-      }
+      BLE.readings.battery = batt;
+      BLE.readings.steps   = steps;
+      BLE.emit('battery', batt);
+      BLE.emit('steps', steps);
       BLE.updateDashboard();
     }
 
-    // Log all non-zero non-FEA1 responses
-    if (src !== 'FEA1' && bytes.some(b => b !== 0)) {
+    // Non-zero non-all-zeros response — log everything
+    if (bytes.some(b => b !== 0) && bytes[0] !== 0x01) {
       BLE.emit('raw', '[DATA ' + src + '] ' + hex);
-      for (let i = 1; i < bytes.length; i++) {
-        const v = bytes[i];
-        if (v >= 40 && v <= 220) BLE.emit('raw', '  b[' + i + ']=' + v);
-      }
     }
   },
 
@@ -209,8 +162,11 @@ const BLE = {
     if (r.steps != null) { const el = document.getElementById('tile-steps'); if (el) el.textContent = r.steps; }
     if (r.battery != null) {
       set('ring-batt-pct', r.battery + '%');
+      const h = Math.round((r.battery / 100) * 96);
+      const proj = Math.floor(h/24) > 0 ? Math.floor(h/24) + 'd ' + (h%24) + 'h remaining' : h + 'h remaining';
+      set('ring-batt-projection', proj);
       const bt = document.getElementById('ble-status-text');
-      if (bt) bt.textContent = 'V80 connected · ' + r.battery + '%';
+      if (bt) bt.textContent = 'V80 connected · ' + r.battery + '% · ' + proj;
     }
     const dot = document.getElementById('ring-online-dot'); if (dot) dot.style.display = 'block';
     set('ring-status-text', 'Connected · live data');
