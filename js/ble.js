@@ -1,4 +1,4 @@
-/* myDrSage — V80 Ring BLE — SMP Protocol */
+/* myDrSage — V80 Ring BLE — FEC7 command probing after SMP wake */
 
 const BLE = {
   device: null, server: null, chars: {}, connected: false,
@@ -51,64 +51,71 @@ const BLE = {
     BLE.connected = true;
     BLE.emit('status', 'connected');
     BLE.emit('connected', BLE.device.name);
-
     await BLE.sleep(300);
 
-    // ── SMP Protocol probing ─────────────────────────────
-    // SMP frame: [op(1), flags(1), len_hi(1), len_lo(1), group_hi(1), group_lo(1), seq(1), id(1), payload...]
-    // op=0 read, op=2 write
-    // group=0 OS mgmt, group=1 image, group=8 custom/health
-
-    BLE.emit('raw', '[SMP] Probing device info...');
-
-    // OS mgmt echo (group=0, id=0) — confirms comms
-    await BLE.writeSMP([0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0xbf, 0xff], 'echo');
+    // Step 1: SMP echo to wake ring
+    BLE.emit('raw', '[STEP1] SMP wake...');
+    await BLE.writeSMP([0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0xbf, 0xff]);
     await BLE.sleep(1000);
 
-    // OS mgmt taskstat (group=0, id=2)
-    await BLE.writeSMP([0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x02, 0xbf, 0xff], 'taskstat');
-    await BLE.sleep(1000);
+    // Step 2: Send commands on FEC7 — the real Veepoo write channel
+    BLE.emit('raw', '[STEP2] FEC7 commands...');
+    const cmds = [
+      // Veepoo-style: try different byte 1 values
+      { bytes: [0x01, 0x1a, 0x01, 0x00], name: 'echo-back' },   // mirrors what FEA1 sends us
+      { bytes: [0x01, 0x01, 0x00, 0x00], name: 'cmd-01' },
+      { bytes: [0x01, 0x02, 0x00, 0x00], name: 'cmd-02' },
+      { bytes: [0x01, 0x03, 0x00, 0x00], name: 'battery' },
+      { bytes: [0x01, 0x04, 0x00, 0x00], name: 'cmd-04' },
+      { bytes: [0x01, 0x10, 0x00, 0x00], name: 'hr-start' },
+      { bytes: [0x01, 0x11, 0x00, 0x00], name: 'hr-start2' },
+      { bytes: [0x01, 0x20, 0x00, 0x00], name: 'cmd-20' },
+      { bytes: [0x02, 0x00, 0x00, 0x00], name: 'cmd-02-00' },
+      { bytes: [0x03, 0x00, 0x00, 0x00], name: 'cmd-03-00' },
+      // Try sending same 4 bytes as FEA1 response
+      { bytes: [0x01, 0x00, 0x00, 0x00], name: 'status-req' },
+    ];
 
-    // Custom health group (group=8, id=0) — try reading health data
-    await BLE.writeSMP([0x00, 0x00, 0x00, 0x01, 0x00, 0x08, 0x00, 0x00, 0xbf, 0xff], 'health-read');
-    await BLE.sleep(1000);
-
-    // Custom group=1 id=0 — try image/firmware info
-    await BLE.writeSMP([0x00, 0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0xbf, 0xff], 'img-info');
-    await BLE.sleep(1000);
-
-    // Try FEC9 read for device info
-    if (BLE.chars.fec9) {
-      try {
-        const val = await BLE.chars.fec9.readValue();
-        const hex = Array.from(new Uint8Array(val.buffer)).map(b => b.toString(16).padStart(2,'0')).join(' ');
-        const ascii = Array.from(new Uint8Array(val.buffer)).map(b => b >= 32 && b < 127 ? String.fromCharCode(b) : '.').join('');
-        BLE.emit('raw', '[FEC9] ' + hex);
-        BLE.emit('raw', '[FEC9 ASCII] ' + ascii);
-      } catch(e) { BLE.emit('raw', '[FEC9 ERR] ' + e.message); }
+    for (const cmd of cmds) {
+      if (BLE.chars.fec7) {
+        const hex = cmd.bytes.map(b => b.toString(16).padStart(2,'0')).join(' ');
+        BLE.emit('raw', '[→FEC7/' + cmd.name + '] ' + hex);
+        try {
+          await BLE.chars.fec7.writeValue(new Uint8Array(cmd.bytes));
+        } catch(e) { BLE.emit('raw', '[!FEC7] ' + e.message); }
+        await BLE.sleep(800);
+      }
     }
 
-    // Try FEA1 read
-    if (BLE.chars.fea1) {
-      try {
-        const val = await BLE.chars.fea1.readValue();
-        const hex = Array.from(new Uint8Array(val.buffer)).map(b => b.toString(16).padStart(2,'0')).join(' ');
-        BLE.emit('raw', '[FEA1 READ] ' + hex);
-      } catch(e) { BLE.emit('raw', '[FEA1 ERR] ' + e.message); }
+    // Step 3: Try FEA2 write with similar patterns
+    BLE.emit('raw', '[STEP3] FEA2 commands...');
+    const fea2cmds = [
+      [0x01, 0x1a, 0x01, 0x00],
+      [0x01, 0x01, 0x00, 0x00],
+      [0x01, 0x03, 0x00, 0x00],
+      [0x01, 0x10, 0x00, 0x00],
+    ];
+    for (const b of fea2cmds) {
+      if (BLE.chars.fea2) {
+        const hex = b.map(x => x.toString(16).padStart(2,'0')).join(' ');
+        BLE.emit('raw', '[→FEA2] ' + hex);
+        try {
+          await BLE.chars.fea2.writeValue(new Uint8Array(b));
+        } catch(e) { BLE.emit('raw', '[!FEA2] ' + e.message); }
+        await BLE.sleep(800);
+      }
     }
 
-    BLE.emit('raw', '[DONE] Watching for responses...');
+    BLE.emit('raw', '[DONE] Watching FEA1 for responses...');
     BLE.startPeriodicRefresh();
     return BLE.device.name;
   },
 
-  async writeSMP(bytes, label) {
+  async writeSMP(bytes) {
     if (!BLE.chars.smp) return;
     const hex = bytes.map(b => b.toString(16).padStart(2,'0')).join(' ');
-    BLE.emit('raw', '[→SMP/' + label + '] ' + hex);
-    try {
-      await BLE.chars.smp.writeValueWithoutResponse(new Uint8Array(bytes));
-    } catch(e) { BLE.emit('raw', '[!SMP] ' + e.message); }
+    BLE.emit('raw', '[→SMP] ' + hex);
+    try { await BLE.chars.smp.writeValueWithoutResponse(new Uint8Array(bytes)); } catch(e) {}
   },
 
   async disconnect() {
@@ -141,8 +148,7 @@ const BLE = {
     const hex = Array.from(bytes).map(b => b.toString(16).padStart(2,'0')).join(' ');
     const ascii = Array.from(bytes).map(b => b >= 32 && b < 127 ? String.fromCharCode(b) : '.').join('');
     const src = event.target.uuid?.slice(-4).toUpperCase() || 'UNK';
-    BLE.emit('raw', '[← ' + src + '] ' + hex);
-    BLE.emit('raw', '[← ' + src + ' ASCII] ' + ascii);
+    BLE.emit('raw', '[← ' + src + '] ' + hex + ' | ' + ascii);
     console.log('V80 [' + src + ']:', hex);
     BLE.parsePacket(bytes, src);
   },
@@ -151,34 +157,38 @@ const BLE = {
     if (bytes.length < 2) return;
     const hex = Array.from(bytes).map(b => b.toString(16).padStart(2,'0')).join(' ');
 
-    // SMP response on 7C48
-    if (src === '7C48') {
-      BLE.emit('raw', '[SMP RESP] op=' + bytes[0] + ' group=' + ((bytes[4]<<8)|bytes[5]) + ' id=' + bytes[7]);
-      // Try to decode CBOR payload
-      if (bytes.length > 8) {
-        const payload = bytes.slice(8);
-        const payloadHex = Array.from(payload).map(b => b.toString(16).padStart(2,'0')).join(' ');
-        BLE.emit('raw', '[SMP CBOR] ' + payloadHex);
+    // FEA1 is the data channel - parse everything from it
+    if (src === 'FEA1') {
+      BLE.emit('raw', '[FEA1 PARSE] b0=' + bytes[0].toString(16) + ' b1=' + bytes[1].toString(16) + ' b2=' + bytes[2].toString(16) + ' b3=' + bytes[3].toString(16));
+
+      // 0x01 0x1a = may be HR notification: b1=0x1a=26bpm? unlikely
+      // Check if b1 is a valid HR
+      if (bytes[0] === 0x01 && bytes[2] === 0x01) {
+        const val = bytes[1];
+        BLE.emit('raw', '[FEA1 VAL] 0x' + val.toString(16) + ' (' + val + ')');
+        if (val > 40 && val < 200) {
+          BLE.emit('raw', '[HR CANDIDATE] ' + val + ' bpm');
+          BLE.readings.hr = val;
+          BLE.emit('hr', val);
+          BLE.updateDashboard();
+        }
+        if (val >= 70 && val <= 100) {
+          BLE.emit('raw', '[SPO2 CANDIDATE] ' + val + '%');
+        }
       }
     }
 
-    // F008/F002 responses
-    if (bytes[0] !== 0x00 || bytes.some(b => b !== 0)) {
-      // Non-zero response — interesting
-      BLE.emit('raw', '[DATA] ' + src + ': ' + hex);
-      // Scan for plausible health values
-      for (let i = 0; i < bytes.length; i++) {
-        const v = bytes[i];
-        if (v >= 50 && v <= 180) BLE.emit('raw', '[VAL] [' + i + ']=' + v + ' (HR/SpO2 range)');
-        if (v >= 90 && v <= 170 && i > 0) BLE.emit('raw', '[BP?] [' + i + ']=' + v);
-      }
+    // SMP responses
+    if (src === '7C48') {
+      const group = (bytes[4] << 8) | bytes[5];
+      const rc = bytes.length > 9 ? bytes[9] : '?';
+      BLE.emit('raw', '[SMP] group=' + group + ' rc=' + rc);
     }
 
     // HBand
     if (bytes[0] === 0xAB && bytes.length >= 8) {
       const cmd = (bytes[4] << 8) | bytes[5];
       if (cmd === 0x8480 && bytes[7] > 30) { BLE.readings.hr = bytes[7]; BLE.emit('hr', bytes[7]); BLE.updateDashboard(); }
-      if (cmd === 0x8580 && bytes[7] >= 70) { BLE.readings.spo2 = bytes[7]; BLE.emit('spo2', bytes[7]); BLE.updateDashboard(); }
       if (cmd === 0x5180) { BLE.readings.battery = bytes[7]; BLE.emit('battery', bytes[7]); BLE.updateDashboard(); }
     }
   },
