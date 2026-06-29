@@ -79,51 +79,46 @@ const BLE = {
     await BLE.sleep(1500);
 
     // STEP 2: Confirmed working command
-    BLE.emit('raw', '[PROBE] Starting FEC7 probe...');
-    const probes = [
-      [0x01, 0x00, 0x00, 0x00],
-      [0x01, 0x01, 0x00, 0x00],
-      [0x01, 0x02, 0x00, 0x00],
-      [0x01, 0x03, 0x00, 0x00],
-      [0x01, 0x04, 0x00, 0x00],
-      [0x01, 0x05, 0x00, 0x00],
-      [0x01, 0x06, 0x00, 0x00],
-      [0x01, 0x07, 0x00, 0x00],
-      [0x01, 0x08, 0x00, 0x00],
-      [0x01, 0x09, 0x00, 0x00],
-      [0x01, 0x0a, 0x00, 0x00],
-      [0x01, 0x0b, 0x00, 0x00],
-      [0x01, 0x0c, 0x00, 0x00],
-      [0x01, 0x0d, 0x00, 0x00],
-      [0x01, 0x0e, 0x00, 0x00],
-      [0x01, 0x0f, 0x00, 0x00],
-      [0x01, 0x10, 0x00, 0x00],
-      [0x01, 0x11, 0x00, 0x00],
-      [0x01, 0x12, 0x00, 0x00],
-      [0x01, 0x13, 0x00, 0x00],
-      [0x01, 0x14, 0x00, 0x00],
-      [0x01, 0x15, 0x00, 0x00],
-      [0x01, 0x1a, 0x00, 0x00],
-      [0x02, 0x00, 0x00, 0x00],
-      [0x03, 0x00, 0x00, 0x00],
-      [0x04, 0x00, 0x00, 0x00],
-      [0x05, 0x00, 0x00, 0x00],
+    // The confirmed working sequence from the one successful session:
+    // SMP wake → SMP ping → HBand on F0080003 → got activity data on F0080002
+    
+    // SMP ping (triggers 7C48 response which may unlock F008)
+    BLE.emit('raw', '[SMP] Sending ping...');
+    if (BLE.chars.smp) {
+      try {
+        await BLE.chars.smp.writeValueWithoutResponse(new Uint8Array([0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0xbf, 0xff]));
+        BLE.emit('raw', '[SMP] Ping sent ✓');
+      } catch(e) { BLE.emit('raw', '[SMP ERR] ' + e.message); }
+    }
+    await BLE.sleep(1200);
+
+    // Send HBand commands on F0080003 — this is what triggered the a0 activity response
+    BLE.emit('raw', '[F008] Sending HBand commands...');
+    const hbandCmds = [
+      { b: [0xAB, 0x00, 0x04, 0xFF, 0x51, 0x80, 0x01, 0x00], name: 'battery' },
+      { b: [0xAB, 0x00, 0x04, 0xFF, 0x84, 0x80, 0x01, 0x00], name: 'hr-start' },
+      { b: [0xAB, 0x00, 0x04, 0xFF, 0x85, 0x80, 0x01, 0x00], name: 'spo2-start' },
+      { b: [0xAB, 0x00, 0x04, 0xFF, 0x86, 0x80, 0x01, 0x00], name: 'bp-start' },
+      { b: [0xAB, 0x00, 0x04, 0xFF, 0x51, 0x80, 0x03, 0x00], name: 'steps' },
     ];
 
-    for (const b of probes) {
-      if (!BLE.chars.fec7) { BLE.emit('raw', '[!] No FEC7'); break; }
-      const hex = b.map(x => x.toString(16).padStart(2,'0')).join(' ');
-      BLE.emit('raw', '[→FEC7] ' + hex);
-      try {
-        await BLE.chars.fec7.writeValue(new Uint8Array(b));
-      } catch(e) {
-        try { await BLE.chars.fec7.writeValueWithoutResponse(new Uint8Array(b)); }
-        catch(e2) { BLE.emit('raw', '[!] ' + e2.message); }
+    for (const cmd of hbandCmds) {
+      if (!BLE.chars.f008tx) {
+        BLE.emit('raw', '[!] No F0080003');
+        break;
       }
-      await BLE.sleep(700);
+      const hex = cmd.b.map(b => b.toString(16).padStart(2,'0')).join(' ');
+      BLE.emit('raw', '[→F008/' + cmd.name + '] ' + hex);
+      try {
+        await BLE.chars.f008tx.writeValueWithoutResponse(new Uint8Array(cmd.b));
+      } catch(e) {
+        try { await BLE.chars.f008tx.writeValue(new Uint8Array(cmd.b)); }
+        catch(e2) { BLE.emit('raw', '[!F008] ' + e2.message); }
+      }
+      await BLE.sleep(1000);
     }
 
-    BLE.emit('raw', '[PROBE] Complete');
+    BLE.emit('raw', '[DONE] Watching all channels...');
     BLE.startPeriodicRefresh();
     return BLE.device.name;
   },
