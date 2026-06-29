@@ -2009,40 +2009,28 @@ async function connectRing(btn) {
   // Wire up BLE events to dashboard
   BLE.on('status', setBleStatus);
   BLE.on('readings', onRingReadings);
-  BLE.on('raw', hex => console.log('V80 raw:', hex));
+
+  // Wire debug panel BEFORE connect so discovery logs appear
+  const _dbgPanel = document.getElementById('ble-debug');
+  if (_dbgPanel) _dbgPanel.style.display = 'block';
+  BLE.off('raw', window._bleDebugRaw);
+  BLE.off('response', window._bleDebugResp);
+  window._bleDebugRaw = (hex) => {
+    const log = document.getElementById('ble-raw-log');
+    if (!log) return;
+    const line = document.createElement('div');
+    line.textContent = hex;
+    line.style.color = '#7FBBCC';
+    log.appendChild(line);
+    log.scrollTop = log.scrollHeight;
+    while (log.children.length > 100) log.removeChild(log.firstChild);
+  };
+  BLE.on('raw', window._bleDebugRaw);
+  BLE.on('response', window._bleDebugResp);
 
   try {
     const name = await BLE.connect();
     showToast('✓ V80 connected', 'Real ring data is now live.');
-    // Auto-open debug panel and wire up raw packet listeners
-    const _dbgPanel = document.getElementById('ble-debug');
-    if (_dbgPanel) _dbgPanel.style.display = 'block';
-    if (window.BLE) {
-      BLE.off('raw', window._bleDebugRaw);
-      BLE.off('response', window._bleDebugResp);
-      window._bleDebugRaw = (hex) => {
-        const log = document.getElementById('ble-raw-log');
-        if (!log) return;
-        const line = document.createElement('div');
-        line.textContent = '← ' + hex;
-        line.style.color = '#7FBBCC';
-        log.appendChild(line);
-        log.scrollTop = log.scrollHeight;
-        while (log.children.length > 50) log.removeChild(log.firstChild);
-      };
-      window._bleDebugResp = (hex) => {
-        const log = document.getElementById('ble-raw-log');
-        if (!log) return;
-        const line = document.createElement('div');
-        line.textContent = '↩ ' + hex;
-        line.style.color = '#4AB87A';
-        log.appendChild(line);
-        log.scrollTop = log.scrollHeight;
-        while (log.children.length > 50) log.removeChild(log.firstChild);
-      };
-      BLE.on('raw', window._bleDebugRaw);
-      BLE.on('response', window._bleDebugResp);
-    }
     if (btn) { btn.textContent = 'Disconnect'; btn.style.background = 'var(--normal)'; btn.disabled = false; }
   } catch(e) {
     if (btn) { btn.disabled = false; btn.textContent = 'Connect'; }
