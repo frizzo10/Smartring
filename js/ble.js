@@ -173,25 +173,34 @@ const BLE = {
     if (bytes.length < 2) return;
     const hex = Array.from(bytes).map(b => b.toString(16).padStart(2,'0')).join(' ');
 
-    // Activity packet (confirmed): hdr=a0
+    // FEA1 auto-pushes: 01 1a 01 00
+    // bytes[0]=0x01 (status), bytes[1]=0x1a=26 (battery%), bytes[2]=0x01, bytes[3]=0x00
+    if (src === 'FEA1' && bytes[0] === 0x01 && bytes.length === 4) {
+      const batt = bytes[1];
+      BLE.emit('raw', '[FEA1] battery=' + batt + '%');
+      if (batt > 0 && batt <= 100) {
+        BLE.readings.battery = batt;
+        BLE.emit('battery', batt);
+        BLE.updateDashboard();
+      }
+    }
+
+    // Activity packet confirmed: hdr=a0
     if (bytes[0] === 0xa0 && bytes.length >= 15) {
       const steps = (bytes[5] << 8) | bytes[4];
       const cal = ((bytes[9] << 8) | bytes[8]) / 10;
-      const batt = bytes[14];
-      BLE.emit('raw', '[ACTIVITY] steps=' + steps + ' cal=' + cal + ' b14=' + batt);
+      BLE.emit('raw', '[ACTIVITY] steps=' + steps + ' cal=' + cal);
       BLE.readings.steps = steps;
-      if (batt > 0 && batt <= 100) { BLE.readings.battery = batt; BLE.emit('battery', batt); }
       BLE.emit('steps', steps);
       BLE.updateDashboard();
     }
 
-    // Log ALL non-zero responses for analysis
-    if (bytes.some(b => b !== 0)) {
-      BLE.emit('raw', '[DATA ' + src + '] hdr=0x' + bytes[0].toString(16));
-      // Look for health values
+    // Log all non-zero non-FEA1 responses
+    if (src !== 'FEA1' && bytes.some(b => b !== 0)) {
+      BLE.emit('raw', '[DATA ' + src + '] ' + hex);
       for (let i = 1; i < bytes.length; i++) {
         const v = bytes[i];
-        if (v >= 40 && v <= 220) BLE.emit('raw', '  [' + i + ']=0x' + v.toString(16) + '(' + v + ')');
+        if (v >= 40 && v <= 220) BLE.emit('raw', '  b[' + i + ']=' + v);
       }
     }
   },
