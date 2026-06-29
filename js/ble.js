@@ -1,4 +1,4 @@
-/* myDrSage — V80 Ring BLE — Service Discovery Mode */
+/* myDrSage — V80 Ring BLE — Full Discovery + Multi-channel Bind */
 
 const BLE = {
   device: null, server: null, chars: {}, connected: false,
@@ -23,8 +23,6 @@ const BLE = {
         'f0080001-0451-4000-b000-000000000000',
         'f0020001-0451-4000-b000-000000000000',
         'fee7',
-        '0000f003-0000-1000-8000-00805f9b34fb',
-        '0000f031-0000-1000-8000-00805f9b34fb',
         '8d53dc1d-1db7-4cd3-868b-8a527a2ada5c'
       ]
     });
@@ -32,86 +30,99 @@ const BLE = {
     BLE.device.addEventListener('gattserverdisconnected', BLE.onDisconnected);
     BLE.emit('status', 'connecting');
     BLE.server = await BLE.device.gatt.connect();
-    BLE.emit('raw', '[CONNECTED] Device: ' + BLE.device.name);
+    BLE.emit('raw', '[CONNECTED] ' + BLE.device.name);
 
-    // Discover ALL services
-    try {
-      const services = await BLE.server.getPrimaryServices();
-      BLE.emit('raw', '[SERVICES] Found ' + services.length + ' services:');
-      
-      for (const svc of services) {
-        BLE.emit('raw', '[SVC] ' + svc.uuid);
-        
-        try {
-          const chars = await svc.getCharacteristics();
-          for (const char of chars) {
-            const props = [];
-            if (char.properties.read) props.push('R');
-            if (char.properties.write) props.push('W');
-            if (char.properties.writeWithoutResponse) props.push('WoR');
-            if (char.properties.notify) props.push('N');
-            if (char.properties.indicate) props.push('I');
-            BLE.emit('raw', '  [CHAR] ' + char.uuid + ' [' + props.join(',') + ']');
+    // Discover ALL services and subscribe to everything
+    const services = await BLE.server.getPrimaryServices();
+    BLE.emit('raw', '[SERVICES] ' + services.length + ' found');
 
-            // Subscribe to all notify/indicate characteristics
-            if (char.properties.notify || char.properties.indicate) {
-              try {
-                await char.startNotifications();
-                char.addEventListener('characteristicvaluechanged', BLE.onData);
-                BLE.emit('raw', '  → Subscribed');
-                // Save first writable notify char as tx
-                if (!BLE.chars.rx) BLE.chars.rx = char;
-              } catch(e) {
-                BLE.emit('raw', '  → Subscribe failed: ' + e.message);
-              }
-            }
+    for (const svc of services) {
+      BLE.emit('raw', '[SVC] ' + svc.uuid);
+      try {
+        const chars = await svc.getCharacteristics();
+        for (const char of chars) {
+          const props = [];
+          if (char.properties.read) props.push('R');
+          if (char.properties.write) props.push('W');
+          if (char.properties.writeWithoutResponse) props.push('WoR');
+          if (char.properties.notify) props.push('N');
+          if (char.properties.indicate) props.push('I');
+          BLE.emit('raw', '  [CHAR] ' + char.uuid.slice(-4).toUpperCase() + ' [' + props.join(',') + ']');
 
-            // Save first writable char as tx
-            if ((char.properties.write || char.properties.writeWithoutResponse) && !BLE.chars.tx) {
-              BLE.chars.tx = char;
-              BLE.emit('raw', '  → Saved as TX');
-            }
+          // Subscribe to all notifiable chars
+          if (char.properties.notify || char.properties.indicate) {
+            try {
+              await char.startNotifications();
+              char.addEventListener('characteristicvaluechanged', BLE.onData);
+              BLE.emit('raw', '  → Subscribed ✓');
+            } catch(e) { BLE.emit('raw', '  → Sub fail: ' + e.message); }
           }
-        } catch(e) {
-          BLE.emit('raw', '  [CHARS] Error: ' + e.message);
+
+          // Save writable chars by UUID
+          const uuid = char.uuid.toLowerCase();
+          if (uuid.includes('fea2')) BLE.chars.fea2 = char;
+          if (uuid.includes('fec7')) BLE.chars.fec7 = char;
+          if (uuid.includes('f0080003')) BLE.chars.f008tx = char;
+          if (uuid.includes('f0020003')) BLE.chars.f002tx = char;
+          if (uuid.includes('da2e7828')) BLE.chars.smp = char;
         }
-      }
-    } catch(e) {
-      BLE.emit('raw', '[SERVICES] Discovery failed: ' + e.message);
+      } catch(e) { BLE.emit('raw', '  [ERR] ' + e.message); }
     }
 
     BLE.connected = true;
     BLE.emit('status', 'connected');
     BLE.emit('connected', BLE.device.name);
 
-    // Try sending bind with default password on whatever TX we found
+    // Try bind on ALL write channels
     await BLE.sleep(500);
-    if (BLE.chars.tx) {
-      BLE.emit('raw', '[BIND] Trying password 000000...');
-      const pwd = '000000'.split('').map(c => c.charCodeAt(0));
-      await BLE.write([0x00, 0x00, 0x01, 0x01, ...pwd]);
-      await BLE.sleep(300);
-      await BLE.write([0x01, 0x01, ...pwd]);
-    } else {
-      BLE.emit('raw', '[BIND] No TX characteristic found');
-    }
-
+    await BLE.tryAllBinds();
     BLE.startPeriodicRefresh();
     return BLE.device.name;
   },
 
-  async write(bytes) {
-    if (!BLE.chars.tx || !BLE.connected) return;
-    const data = new Uint8Array(bytes);
-    const hex = Array.from(data).map(b => b.toString(16).padStart(2,'0')).join(' ');
-    BLE.emit('raw', '[→] ' + hex);
-    try {
-      await BLE.chars.tx.writeValueWithoutResponse(data);
-    } catch(e) {
-      try { await BLE.chars.tx.writeValue(data); } catch(e2) {
-        BLE.emit('raw', '[!] ' + e2.message);
+  async tryAllBinds() {
+    // Veepoo password = 000000 in ASCII = 30 30 30 30 30 30
+    const pwd = [0x30,0x30,0x30,0x30,0x30,0x30];
+
+    const formats = [
+      // Format 1: Veepoo standard
+      [0x00, 0x00, 0x01, 0x01, ...pwd],
+      // Format 2: Short Veepoo
+      [0x01, 0x01, ...pwd],
+      // Format 3: HBand style
+      [0xAB, 0x00, 0x04, 0xFF, 0x51, 0x80, 0x01, 0x00],
+      // Format 4: Just password
+      [...pwd],
+      // Format 5: Single byte ping
+      [0x01],
+      [0x00],
+    ];
+
+    const channels = [
+      { char: BLE.chars.fea2,  name: 'FEA2' },
+      { char: BLE.chars.fec7,  name: 'FEC7' },
+      { char: BLE.chars.f008tx, name: 'F0080003' },
+      { char: BLE.chars.f002tx, name: 'F0020003' },
+      { char: BLE.chars.smp,   name: 'SMP' },
+    ];
+
+    for (const ch of channels) {
+      if (!ch.char) continue;
+      BLE.emit('raw', '[BIND] Trying ' + ch.name + '...');
+      for (const fmt of formats) {
+        const hex = fmt.map(b => b.toString(16).padStart(2,'0')).join(' ');
+        BLE.emit('raw', '[→' + ch.name + '] ' + hex);
+        try {
+          if (ch.char.properties.writeWithoutResponse) {
+            await ch.char.writeValueWithoutResponse(new Uint8Array(fmt));
+          } else {
+            await ch.char.writeValue(new Uint8Array(fmt));
+          }
+        } catch(e) { BLE.emit('raw', '[!] ' + e.message); }
+        await BLE.sleep(800);
       }
     }
+    BLE.emit('raw', '[BIND] All formats tried — watching for responses...');
   },
 
   async disconnect() {
@@ -143,32 +154,38 @@ const BLE = {
     const hex = Array.from(bytes).map(b => b.toString(16).padStart(2,'0')).join(' ');
     const src = event.target.uuid?.slice(-4).toUpperCase() || 'UNK';
     BLE.emit('raw', '[← ' + src + '] ' + hex);
-    console.log('V80 data:', hex);
-    BLE.parsePacket(bytes);
+    console.log('V80:', hex);
+    BLE.parsePacket(bytes, src);
   },
 
-  parsePacket(bytes) {
-    if (bytes.length < 2) return;
+  parsePacket(bytes, src) {
+    if (bytes.length < 1) return;
     const hex = Array.from(bytes).map(b => b.toString(16).padStart(2,'0')).join(' ');
-    BLE.emit('raw', '[PARSE] ' + hex);
+    BLE.emit('raw', '[PARSE ' + src + '] len=' + bytes.length + ' | ' + hex);
 
-    // Try all known patterns
-    const b = bytes;
-    // Check for HR-like values
-    for (let i = 0; i < b.length; i++) {
-      if (b[i] > 40 && b[i] < 200) {
-        BLE.emit('raw', '[HR?] byte[' + i + ']=' + b[i]);
+    // Look for any plausible HR value
+    for (let i = 0; i < bytes.length; i++) {
+      if (bytes[i] > 40 && bytes[i] < 200) {
+        BLE.emit('raw', '[HR?] byte[' + i + ']=' + bytes[i] + ' in: ' + hex);
       }
     }
 
-    // Standard patterns
-    if (b[0] === 0x00 && b[1] === 0x00 && b.length >= 4) {
-      const cmd = b[2];
-      BLE.emit('raw', '[CMD] 0x' + cmd.toString(16));
-      if (cmd === 0x04 && b[3] <= 100) { BLE.readings.battery = b[3]; BLE.emit('battery', b[3]); BLE.updateDashboard(); }
-      if (cmd === 0x11 && b[3] > 30 && b[3] < 220) { BLE.readings.hr = b[3]; BLE.emit('hr', b[3]); BLE.updateDashboard(); }
-      if (cmd === 0x12 && b[3] >= 70) { BLE.readings.spo2 = b[3]; BLE.emit('spo2', b[3]); BLE.updateDashboard(); }
-      if (cmd === 0x13 && b.length >= 5) { BLE.readings.bp_sys = b[3]; BLE.readings.bp_dia = b[4]; BLE.emit('bp', {sys:b[3],dia:b[4]}); BLE.updateDashboard(); }
+    // Try Veepoo format
+    if (bytes[0] === 0x00 && bytes[1] === 0x00 && bytes.length >= 4) {
+      const cmd = bytes[2];
+      if (cmd === 0x01) BLE.emit('raw', '[PWD] Status=' + bytes[3]);
+      if (cmd === 0x04 && bytes[3] <= 100) { BLE.readings.battery = bytes[3]; BLE.emit('battery', bytes[3]); BLE.updateDashboard(); }
+      if (cmd === 0x11 && bytes[3] > 30) { BLE.readings.hr = bytes[3]; BLE.emit('hr', bytes[3]); BLE.updateDashboard(); }
+      if (cmd === 0x12 && bytes[3] >= 70) { BLE.readings.spo2 = bytes[3]; BLE.emit('spo2', bytes[3]); BLE.updateDashboard(); }
+      if (cmd === 0x13 && bytes.length >= 5) { BLE.readings.bp_sys = bytes[3]; BLE.readings.bp_dia = bytes[4]; BLE.updateDashboard(); }
+    }
+
+    // Try HBand format
+    if (bytes[0] === 0xAB && bytes.length >= 8) {
+      const cmd = (bytes[4] << 8) | bytes[5];
+      BLE.emit('raw', '[HBAND] cmd=0x' + cmd.toString(16));
+      if (cmd === 0x8480 && bytes[7] > 30) { BLE.readings.hr = bytes[7]; BLE.emit('hr', bytes[7]); BLE.updateDashboard(); }
+      if (cmd === 0x8580 && bytes[7] >= 70) { BLE.readings.spo2 = bytes[7]; BLE.emit('spo2', bytes[7]); BLE.updateDashboard(); }
     }
   },
 
