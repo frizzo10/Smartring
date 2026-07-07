@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<title>myDrSage</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#14213D">
+<style>
+  :root {
+    --navy: #14213D;
+    --navy-card: #1A2A4D;
+    --navy-card-2: #241B1B;
+    --parchment: #F2EFE9;
+    --muted-blue: #8A93A8;
+    --green: #5FA97A;
+    --green-text: #C7DDCF;
+    --amber: #D99A4E;
+    --amber-text: #E8C79A;
+    --red: #C0392B;
+    --red-text: #E8B4AC;
+    --line: #2A3B5E;
+    --line-warm: #3A2B2B;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--navy);
+    color: var(--parchment);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .voice {
+    font-family: Georgia, 'Source Serif 4', serif;
+  }
+
+  #app {
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 0 0 100px;
+    min-height: 100vh;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    padding: max(20px, env(safe-area-inset-top)) 22px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+  .header .date {
+    color: var(--muted-blue);
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-bottom: 2px;
+  }
+  .header .greeting {
+    font-size: 20px;
+    font-weight: 600;
+  }
+  .avatar {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: var(--navy-card);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 600;
+    flex-shrink: 0;
+  }
+
+  /* ── PENDING QUESTION BANNER ── */
+  .question-banner {
+    margin: 16px 22px 0;
+    background: #2E2416;
+    border: 1px solid #4A3A1E;
+    border-radius: 16px;
+    padding: 16px 18px;
+  }
+  .question-banner .label {
+    color: #D9B577;
+    font-size: 11px;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .question-banner .prompt {
+    font-family: Georgia, 'Source Serif 4', serif;
+    font-size: 16px;
+    line-height: 1.5;
+    margin-bottom: 14px;
+  }
+  .answer-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .answer-btn {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.15);
+    color: var(--parchment);
+    border-radius: 10px;
+    padding: 9px 14px;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .answer-btn:active { transform: scale(0.97); }
+
+  /* ── VERDICT CARDS ── */
+  .card {
+    margin: 14px 22px 0;
+    border-radius: 20px;
+    padding: 22px 20px;
+  }
+  .card.green-tone { background: var(--navy-card); }
+  .card.amber-tone { background: var(--navy-card-2); }
+
+  .card-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .dot.green { background: var(--green); }
+  .dot.amber { background: var(--amber); }
+  .card-label span {
+    font-size: 12px;
+    letter-spacing: 0.03em;
+  }
+  .green-tone .card-label span { color: var(--green-text); }
+  .amber-tone .card-label span { color: var(--amber-text); }
+
+  .card-text {
+    font-family: Georgia, 'Source Serif 4', serif;
+    font-size: 17px;
+    line-height: 1.55;
+  }
+
+  .metric-row {
+    display: flex;
+    gap: 22px;
+    margin-top: 16px;
+  }
+  .metric-row .m-label { color: var(--muted-blue); font-size: 11px; margin-bottom: 2px; }
+  .metric-row .m-value { font-size: 18px; font-weight: 600; }
+  .metric-row .m-unit { font-size: 12px; font-weight: 400; color: var(--muted-blue); }
+
+  .checkup-badge {
+    margin-top: 16px;
+    display: inline-block;
+    background: rgba(217,154,78,0.15);
+    color: var(--amber-text);
+    font-size: 12px;
+    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 8px;
+  }
+
+  .sparkline { width: 100%; height: 50px; margin-top: 16px; display: block; }
+
+  /* ── ACTIONS ── */
+  .actions {
+    margin: 18px 22px 0;
+    display: flex;
+    gap: 10px;
+  }
+  .btn-primary, .btn-secondary {
+    flex: 1;
+    border: none;
+    border-radius: 14px;
+    padding: 14px 0;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .btn-primary { background: var(--parchment); color: var(--navy); }
+  .btn-secondary { background: transparent; color: var(--parchment); border: 1px solid var(--line); font-weight: 500; }
+  .btn-primary:active, .btn-secondary:active { transform: scale(0.98); }
+
+  /* ── SECTION: HISTORY ── */
+  .section-title {
+    margin: 32px 22px 12px;
+    font-size: 13px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--muted-blue);
+  }
+  .history-row {
+    margin: 0 22px 8px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 12px;
+    padding: 12px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+  }
+  .history-row .h-date { color: var(--muted-blue); width: 70px; flex-shrink: 0; }
+  .history-row .h-desc { flex: 1; }
+  .history-row .h-tag {
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    flex-shrink: 0;
+    margin-left: 8px;
+  }
+  .h-tag.explained { background: rgba(95,169,122,0.15); color: var(--green-text); }
+  .h-tag.watch { background: rgba(217,154,78,0.15); color: var(--amber-text); }
+  .h-tag.normal { color: var(--muted-blue); }
+
+  /* ── EMPTY / DEBUG BAR ── */
+  .debug-bar {
+    margin: 32px 22px 0;
+    text-align: center;
+  }
+  .debug-bar button {
+    background: none;
+    border: none;
+    color: var(--muted-blue);
+    font-size: 12px;
+    text-decoration: underline;
+    cursor: pointer;
+  }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <div class="header">
+    <div>
+      <div class="date" id="today-date"></div>
+      <div class="greeting" id="greeting"></div>
+    </div>
+    <div class="avatar">F</div>
+  </div>
+
+  <div id="question-container"></div>
+
+  <div id="breathing-card"></div>
+  <div id="heart-card"></div>
+
+  <div class="actions">
+    <button class="btn-primary" id="ask-sage-btn">Ask Dr. Sage</button>
+    <button class="btn-secondary" id="history-btn">Full history</button>
+  </div>
+
+  <div class="section-title">Recent nights</div>
+  <div id="history-list"></div>
+
+  <div class="debug-bar">
+    <button id="reset-demo-btn">Reset demo data</button>
+  </div>
+</div>
+
+<script src="/js/sage/hrv.js"></script>
+<script src="/js/sage/calibration.js"></script>
+<script src="/js/sage/simring.js"></script>
+<script src="/js/sage/app-state.js"></script>
+<script src="/js/sage/render.js"></script>
+</body>
+</html>
