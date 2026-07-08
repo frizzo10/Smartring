@@ -159,6 +159,24 @@
     border-radius: 8px;
   }
 
+  /* ── RING CONNECT / DEBUG ── */
+  .ring-connect-bar { margin: 16px 22px 0; }
+  .ring-debug {
+    margin: 12px 22px 0;
+    background: #0A1226;
+    border-radius: 12px;
+    padding: 12px 14px;
+    font-family: 'SF Mono', Menlo, monospace;
+    font-size: 11px;
+    color: #7FBBCC;
+    max-height: 180px;
+    overflow-y: auto;
+    display: none;
+  }
+  .ring-debug.visible { display: block; }
+  .ring-debug div { margin-bottom: 3px; word-break: break-all; }
+  .ring-debug .live-value { color: #5FA97A; font-weight: 600; }
+
   .sparkline { width: 100%; height: 50px; margin-top: 16px; display: block; }
 
   /* ── ACTIONS ── */
@@ -239,6 +257,11 @@
 
   <div id="question-container"></div>
 
+  <div class="ring-connect-bar" id="ring-connect-bar">
+    <button id="connect-ring-btn" class="btn-primary" style="width:100%;">Connect Colmi R02</button>
+  </div>
+  <div id="ring-debug" class="ring-debug"></div>
+
   <div id="breathing-card"></div>
   <div id="heart-card"></div>
 
@@ -255,6 +278,7 @@
   </div>
 </div>
 
+<script src="/js/sage/colmi-ble.js"></script>
 <script src="/js/sage/hrv.js"></script>
 <script src="/js/sage/calibration.js"></script>
 <script src="/js/sage/simring.js"></script>

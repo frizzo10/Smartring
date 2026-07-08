@@ -189,6 +189,53 @@ const SageRender = {
     document.getElementById('history-btn').addEventListener('click', () => {
       document.querySelector('.section-title').scrollIntoView({ behavior: 'smooth' });
     });
+
+    document.getElementById('connect-ring-btn').addEventListener('click', SageRender.connectRing);
+  },
+
+  // ── REAL RING CONNECTION ───────────────────────────────────
+  debugLog(msg, isLive = false) {
+    const panel = document.getElementById('ring-debug');
+    panel.classList.add('visible');
+    const line = document.createElement('div');
+    if (isLive) line.className = 'live-value';
+    line.textContent = msg;
+    panel.appendChild(line);
+    panel.scrollTop = panel.scrollHeight;
+    while (panel.children.length > 60) panel.removeChild(panel.firstChild);
+  },
+
+  async connectRing() {
+    const btn = document.getElementById('connect-ring-btn');
+    btn.disabled = true;
+    btn.textContent = 'Connecting...';
+
+    const BLE = window.ColmiBLE;
+    BLE.on('status', s => SageRender.debugLog('[status] ' + s));
+    BLE.on('battery', b => SageRender.debugLog(`[battery] ${b.level}% ${b.charging ? '(charging)' : ''}`, true));
+    BLE.on('reading', r => {
+      const label = r.kind === BLE.READING_HEART_RATE ? 'HR' : r.kind === BLE.READING_SPO2 ? 'SpO2' : 'kind ' + r.kind;
+      SageRender.debugLog(`[${label}] ${r.value}`, true);
+    });
+    BLE.on('readingError', e => SageRender.debugLog(`[reading error] kind=${e.kind} code=${e.code}`));
+    BLE.on('raw', hex => SageRender.debugLog('[raw] ' + hex));
+
+    try {
+      const name = await BLE.connect();
+      SageRender.debugLog('[connected] ' + name);
+      btn.textContent = 'Connected — reading HR...';
+
+      // Stream real heart rate for 20 seconds so we can see live values
+      await BLE.streamReading(BLE.READING_HEART_RATE, 20, () => {});
+      btn.textContent = 'HR read done — reading SpO2...';
+
+      await BLE.streamReading(BLE.READING_SPO2, 15, () => {});
+      btn.textContent = 'Done — see readings above';
+    } catch (e) {
+      SageRender.debugLog('[error] ' + e.message);
+      btn.textContent = 'Connect failed — tap to retry';
+      btn.disabled = false;
+    }
   },
 };
 
