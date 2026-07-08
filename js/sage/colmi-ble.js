@@ -79,10 +79,24 @@ const ColmiBLE = {
     if (!navigator.bluetooth) throw new Error('Use Bluefy browser for Web Bluetooth.');
 
     ColmiBLE.emit('status', 'scanning');
-    ColmiBLE.device = await navigator.bluetooth.requestDevice({
-      filters: [{ services: [ColmiBLE.SERVICE_UUID] }],
-      optionalServices: [ColmiBLE.SERVICE_UUID],
-    });
+
+    // First attempt: strict service filter (fastest, cleanest picker
+    // if it works). Some rings don't advertise the service UUID in
+    // their scan response though, which makes iOS show zero devices
+    // and reject with an unhelpful error — fall back to showing all
+    // devices so the person can pick the ring by name instead.
+    try {
+      ColmiBLE.device = await navigator.bluetooth.requestDevice({
+        filters: [{ services: [ColmiBLE.SERVICE_UUID] }],
+        optionalServices: [ColmiBLE.SERVICE_UUID],
+      });
+    } catch (filterErr) {
+      ColmiBLE.emit('status', 'scanning (broad — pick your ring by name)');
+      ColmiBLE.device = await navigator.bluetooth.requestDevice({
+        acceptAllDevices: true,
+        optionalServices: [ColmiBLE.SERVICE_UUID],
+      });
+    }
 
     ColmiBLE.device.addEventListener('gattserverdisconnected', ColmiBLE.onDisconnected);
     ColmiBLE.emit('status', 'connecting');

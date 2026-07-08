@@ -232,7 +232,7 @@ const SageRender = {
       await BLE.streamReading(BLE.READING_SPO2, 15, () => {});
       btn.textContent = 'Done — see readings above';
     } catch (e) {
-      SageRender.debugLog('[error] ' + e.message);
+      SageRender.debugLog(`[error] ${e.name || 'Error'}: ${e.message || '(no message)'}`);
       btn.textContent = 'Connect failed — tap to retry';
       btn.disabled = false;
     }
