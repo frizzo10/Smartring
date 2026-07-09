@@ -38,6 +38,19 @@ const ColmiBLE = {
   CMD_BATTERY: 3,
   CMD_START_REAL_TIME: 105,
   CMD_STOP_REAL_TIME: 106,
+  // Confirmed from tahnok/colmi_r02_client source directly: the
+  // "continue" keepalive uses a DIFFERENT command byte than start/stop —
+  // this was the actual bug behind every reading coming back 0 tonight.
+  // Our continueRealTime() was sending CMD_START_REAL_TIME (105) with
+  // action=CONTINUE, which the docs also show as valid via
+  // get_continue_packet() — but the reference client's own
+  // CONTINUE_HEART_RATE_PACKET constant, the one actually exercised in
+  // their working CLI tool, uses CMD_REAL_TIME_HEART_RATE (30) with
+  // payload just [0x33] ('3' ascii). Using the documented-but-apparently-
+  // less-tested get_continue_packet() path was silently accepted by the
+  // ring (no error) but never kept the stream alive, so it fell back to 0
+  // after the first poke interval.
+  CMD_REAL_TIME_HEART_RATE: 30,
 
   READING_HEART_RATE: 1,
   READING_SPO2: 3,
@@ -157,10 +170,13 @@ const ColmiBLE = {
   },
 
   async continueRealTime(readingType) {
-    // The ring's real-time stream needs periodic "continue" pokes
-    // to keep flowing — confirmed pattern from the reference client
-    // (CONTINUE_HEART_RATE_PACKET is sent repeatedly, not once)
-    const packet = ColmiBLE.makePacket(ColmiBLE.CMD_START_REAL_TIME, [readingType, ColmiBLE.ACTION_CONTINUE]);
+    // Matches CONTINUE_HEART_RATE_PACKET from the reference client
+    // exactly: cmd=30 (0x1e), payload=[0x33] ('3' ascii), verified
+    // checksum 0x51 (81) against the documented literal bytes.
+    // This single-byte payload is used for continuing ANY real-time
+    // reading type in the reference implementation, not just heart
+    // rate — the ring's firmware treats it as a generic "keep going" poke.
+    const packet = ColmiBLE.makePacket(ColmiBLE.CMD_REAL_TIME_HEART_RATE, [0x33]);
     await ColmiBLE.write(packet);
   },
 
