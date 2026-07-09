@@ -80,23 +80,21 @@ const ColmiBLE = {
 
     ColmiBLE.emit('status', 'scanning');
 
-    // First attempt: strict service filter (fastest, cleanest picker
-    // if it works). Some rings don't advertise the service UUID in
-    // their scan response though, which makes iOS show zero devices
-    // and reject with an unhelpful error — fall back to showing all
-    // devices so the person can pick the ring by name instead.
-    try {
-      ColmiBLE.device = await navigator.bluetooth.requestDevice({
-        filters: [{ services: [ColmiBLE.SERVICE_UUID] }],
-        optionalServices: [ColmiBLE.SERVICE_UUID],
-      });
-    } catch (filterErr) {
-      ColmiBLE.emit('status', 'scanning (broad — pick your ring by name)');
-      ColmiBLE.device = await navigator.bluetooth.requestDevice({
-        acceptAllDevices: true,
-        optionalServices: [ColmiBLE.SERVICE_UUID],
-      });
-    }
+    // IMPORTANT: requestDevice() must be called synchronously within
+    // the user-gesture (the click handler) or the browser throws
+    // SecurityError. A try/catch that awaits a failed strict-filter
+    // call before retrying with acceptAllDevices breaks that chain —
+    // found the hard way tonight: the fallback call was being
+    // silently blocked with no picker ever appearing, on BOTH
+    // Bluefy iOS and desktop Chrome, because by the time the catch
+    // block ran, the gesture context had already expired.
+    // acceptAllDevices going first, single call, avoids this entirely
+    // and also sidesteps rings (like this one) whose advertisement
+    // doesn't expose the service UUID list needed for a filtered scan.
+    ColmiBLE.device = await navigator.bluetooth.requestDevice({
+      acceptAllDevices: true,
+      optionalServices: [ColmiBLE.SERVICE_UUID],
+    });
 
     ColmiBLE.device.addEventListener('gattserverdisconnected', ColmiBLE.onDisconnected);
     ColmiBLE.emit('status', 'connecting');
