@@ -100,7 +100,13 @@ const ColmiBLE = {
     ColmiBLE.emit('status', 'connecting');
     ColmiBLE.server = await ColmiBLE.device.gatt.connect();
 
-    const service = await ColmiBLE.server.getPrimaryService(ColmiBLE.SERVICE_UUID);
+    let service;
+    try {
+      service = await ColmiBLE.server.getPrimaryService(ColmiBLE.SERVICE_UUID);
+    } catch (e) {
+      ColmiBLE.device.gatt.disconnect();
+      throw new Error(`That device doesn't have the ring's service — probably picked the wrong one from the list. Try again and pick a different device.`);
+    }
     ColmiBLE.writeChar = await service.getCharacteristic(ColmiBLE.WRITE_UUID);
     ColmiBLE.notifyChar = await service.getCharacteristic(ColmiBLE.NOTIFY_UUID);
 
