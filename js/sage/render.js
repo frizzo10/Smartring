@@ -191,10 +191,16 @@ const SageRender = {
     });
 
     document.getElementById('connect-ring-btn').addEventListener('click', SageRender.connectRing);
+    SageRender.setupCopyLogButton();
   },
 
   // ── REAL RING CONNECTION ───────────────────────────────────
+  debugBuffer: [],
+
   debugLog(msg, isLive = false) {
+    const stamped = `[${new Date().toLocaleTimeString()}] ${msg}`;
+    SageRender.debugBuffer.push(stamped);
+
     const panel = document.getElementById('ring-debug');
     panel.classList.add('visible');
     const line = document.createElement('div');
@@ -202,7 +208,32 @@ const SageRender = {
     line.textContent = msg;
     panel.appendChild(line);
     panel.scrollTop = panel.scrollHeight;
+    // DOM stays capped for performance; debugBuffer (used by the copy
+    // button below) keeps everything so a rare packet — like the one-off
+    // 0x9e capture from the July 10 session — doesn't scroll out of
+    // existence before it can be reviewed.
     while (panel.children.length > 60) panel.removeChild(panel.firstChild);
+
+    const copyBtn = document.getElementById('copy-ring-log-btn');
+    if (copyBtn) copyBtn.style.display = 'block';
+  },
+
+  setupCopyLogButton() {
+    const copyBtn = document.getElementById('copy-ring-log-btn');
+    if (!copyBtn) return;
+    copyBtn.addEventListener('click', async () => {
+      const text = SageRender.debugBuffer.join('\n');
+      try {
+        await navigator.clipboard.writeText(text);
+        const original = copyBtn.textContent;
+        copyBtn.textContent = `Copied ${SageRender.debugBuffer.length} lines`;
+        setTimeout(() => { copyBtn.textContent = original; }, 2000);
+      } catch (e) {
+        // Clipboard API can fail in some in-app browsers (e.g. Bluefy) —
+        // fall back to a selectable text prompt so the log isn't lost.
+        window.prompt('Copy the full debug log below:', text);
+      }
+    });
   },
 
   async connectRing() {
