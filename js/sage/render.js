@@ -280,7 +280,8 @@ const SageRender = {
     BLE.on('battery', b => SageRender.debugLog(`[battery] ${b.level}% ${b.charging ? '(charging)' : ''}`, true));
     BLE.on('reading', r => {
       const label = r.kind === BLE.READING_HEART_RATE ? 'HR' : r.kind === BLE.READING_SPO2 ? 'SpO2' : 'kind ' + r.kind;
-      SageRender.debugLog(`[${label}] ${r.value}`, true);
+      const rawNote = r.rawSample ? ` (raw@6-7: ${r.rawSampleHex})` : '';
+      SageRender.debugLog(`[${label}] ${r.value}${rawNote}`, true);
     });
     BLE.on('readingError', e => SageRender.debugLog(`[reading error] kind=${e.kind} code=${e.code}`));
     BLE.on('raw', hex => SageRender.debugLog('[raw] ' + hex));
@@ -290,11 +291,13 @@ const SageRender = {
       SageRender.debugLog('[connected] ' + name);
       btn.textContent = 'Connected — reading HR...';
 
-      // Stream real heart rate for 20 seconds so we can see live values
-      await BLE.streamReading(BLE.READING_HEART_RATE, 20, () => {});
+      // Extended from 20s: bytes[6:8] of the raw HR packet were still
+      // actively changing at the 20s cutoff during the July 10 session,
+      // suggesting the ring hadn't finished its warm-up/settling window.
+      await BLE.streamReading(BLE.READING_HEART_RATE, 60, () => {});
       btn.textContent = 'HR read done — reading SpO2...';
 
-      await BLE.streamReading(BLE.READING_SPO2, 15, () => {});
+      await BLE.streamReading(BLE.READING_SPO2, 30, () => {});
       btn.textContent = 'Done — see readings above';
     } catch (e) {
       SageRender.debugLog(`[error] ${e.name || 'Error'}: ${e.message || '(no message)'}`);
