@@ -177,6 +177,31 @@
   .ring-debug div { margin-bottom: 3px; word-break: break-all; }
   .ring-debug .live-value { color: #5FA97A; font-weight: 600; }
 
+  /* ── RING WARM-UP SPINNER ── */
+  .ring-warmup {
+    margin: 12px 22px 0;
+    background: var(--navy-card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 16px 18px;
+    display: none;
+    align-items: center;
+    gap: 12px;
+  }
+  .ring-warmup.visible { display: flex; }
+  .ring-warmup .spinner {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 2.5px solid rgba(242, 239, 233, 0.2);
+    border-top-color: var(--green);
+    flex-shrink: 0;
+    animation: ring-spin 0.9s linear infinite;
+  }
+  @keyframes ring-spin { to { transform: rotate(360deg); } }
+  .ring-warmup .warmup-text { font-size: 14px; color: var(--parchment); }
+  .ring-warmup .warmup-text .sub { display: block; font-size: 12px; color: var(--muted-blue); margin-top: 2px; }
+
   .sparkline { width: 100%; height: 50px; margin-top: 16px; display: block; }
 
   /* ── ACTIONS ── */
@@ -260,6 +285,13 @@
   <div class="ring-connect-bar" id="ring-connect-bar">
     <button id="connect-ring-btn" class="btn-primary" style="width:100%;">Connect Colmi R02</button>
     <button id="disconnect-ring-btn" class="btn-secondary" style="width:100%; display:none; margin-top:6px;">Disconnect Ring</button>
+  </div>
+  <div id="ring-warmup" class="ring-warmup">
+    <div class="spinner"></div>
+    <div class="warmup-text">
+      <span id="ring-warmup-label">Reading your ring...</span>
+      <span class="sub" id="ring-warmup-sub">Keep it snug against your skin and stay still</span>
+    </div>
   </div>
   <div id="ring-debug" class="ring-debug"></div>
   <button id="copy-ring-log-btn" class="btn-secondary" style="width:100%; display:none; margin-top:6px;">Copy full debug log</button>
