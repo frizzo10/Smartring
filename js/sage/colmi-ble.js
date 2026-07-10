@@ -208,6 +208,17 @@ const ColmiBLE = {
     const bytes = new Uint8Array(event.target.value.buffer);
     const cmd = bytes[0];
 
+    // Universal debug trace — every incoming packet, not just unrecognized
+    // ones. Added so we can tell a genuine reading response apart from a
+    // stale/echoed battery packet during real-time streaming debugging
+    // (see myDrSage_Colmi_R02_Handoff.docx, July 10 session).
+    ColmiBLE.emit('debugPacket', {
+      cmd,
+      cmdHex: '0x' + cmd.toString(16).padStart(2, '0'),
+      hex: Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join(' '),
+      timestamp: new Date().toISOString(),
+    });
+
     if (cmd === ColmiBLE.CMD_BATTERY) {
       const level = bytes[1];
       const charging = !!bytes[2];
