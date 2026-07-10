@@ -192,6 +192,7 @@ const SageRender = {
 
     document.getElementById('connect-ring-btn').addEventListener('click', SageRender.connectRing);
     SageRender.setupCopyLogButton();
+    SageRender.setupDisconnectButton();
   },
 
   // ── REAL RING CONNECTION ───────────────────────────────────
@@ -236,8 +237,30 @@ const SageRender = {
     });
   },
 
+  setupDisconnectButton() {
+    const disconnectBtn = document.getElementById('disconnect-ring-btn');
+    if (!disconnectBtn) return;
+    disconnectBtn.addEventListener('click', async () => {
+      disconnectBtn.disabled = true;
+      disconnectBtn.textContent = 'Disconnecting...';
+      try {
+        // Release the GATT connection cleanly from our side first —
+        // doing this before forgetting the device in iOS Bluetooth
+        // settings tends to leave the ring in a cleaner state for the
+        // next reconnect, rather than just walking away from an open
+        // connection.
+        await window.ColmiBLE.disconnect();
+      } catch (e) {
+        SageRender.debugLog(`[disconnect error] ${e.message || e}`);
+      }
+      disconnectBtn.disabled = false;
+      disconnectBtn.textContent = 'Disconnect Ring';
+    });
+  },
+
   async connectRing() {
     const btn = document.getElementById('connect-ring-btn');
+    const disconnectBtn = document.getElementById('disconnect-ring-btn');
     btn.disabled = true;
     btn.textContent = 'Connecting...';
 
@@ -246,7 +269,14 @@ const SageRender = {
     // notification, so a genuine 0x69 reading response can be told apart
     // from a stale/echoed 0x03 battery packet during real-time debugging.
     BLE.on('debugPacket', p => SageRender.debugLog(`[pkt ${p.cmdHex}] ${p.hex}`));
-    BLE.on('status', s => SageRender.debugLog('[status] ' + s));
+    BLE.on('status', s => {
+      SageRender.debugLog('[status] ' + s);
+      if (disconnectBtn) disconnectBtn.style.display = s === 'connected' ? 'block' : 'none';
+      if (s === 'disconnected') {
+        btn.disabled = false;
+        btn.textContent = 'Connect Colmi R02';
+      }
+    });
     BLE.on('battery', b => SageRender.debugLog(`[battery] ${b.level}% ${b.charging ? '(charging)' : ''}`, true));
     BLE.on('reading', r => {
       const label = r.kind === BLE.READING_HEART_RATE ? 'HR' : r.kind === BLE.READING_SPO2 ? 'SpO2' : 'kind ' + r.kind;
