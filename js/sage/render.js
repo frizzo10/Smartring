@@ -258,6 +258,19 @@ const SageRender = {
     });
   },
 
+  showWarmup(label, sub) {
+    const card = document.getElementById('ring-warmup');
+    if (!card) return;
+    document.getElementById('ring-warmup-label').textContent = label;
+    document.getElementById('ring-warmup-sub').textContent = sub;
+    card.classList.add('visible');
+  },
+
+  hideWarmup() {
+    const card = document.getElementById('ring-warmup');
+    if (card) card.classList.remove('visible');
+  },
+
   async connectRing() {
     const btn = document.getElementById('connect-ring-btn');
     const disconnectBtn = document.getElementById('disconnect-ring-btn');
@@ -282,6 +295,9 @@ const SageRender = {
       const label = r.kind === BLE.READING_HEART_RATE ? 'HR' : r.kind === BLE.READING_SPO2 ? 'SpO2' : 'kind ' + r.kind;
       const rawNote = r.rawSample ? ` (raw@6-7: ${r.rawSampleHex})` : '';
       SageRender.debugLog(`[${label}] ${r.value}${rawNote}`, true);
+      // A nonzero value means the ring has finished warming up and settled
+      // on a real reading — stop showing the spinner for this phase.
+      if (r.value > 0) SageRender.hideWarmup();
     });
     BLE.on('readingError', e => SageRender.debugLog(`[reading error] kind=${e.kind} code=${e.code}`));
     BLE.on('raw', hex => SageRender.debugLog('[raw] ' + hex));
@@ -290,17 +306,21 @@ const SageRender = {
       const name = await BLE.connect();
       SageRender.debugLog('[connected] ' + name);
       btn.textContent = 'Connected — reading HR...';
+      SageRender.showWarmup('Reading your heart rate...', 'Keep it snug against your skin and stay still');
 
       // Extended from 20s: bytes[6:8] of the raw HR packet were still
       // actively changing at the 20s cutoff during the July 10 session,
       // suggesting the ring hadn't finished its warm-up/settling window.
       await BLE.streamReading(BLE.READING_HEART_RATE, 60, () => {});
       btn.textContent = 'HR read done — reading SpO2...';
+      SageRender.showWarmup('Reading your SpO2...', 'Keep it snug against your skin and stay still');
 
       await BLE.streamReading(BLE.READING_SPO2, 30, () => {});
       btn.textContent = 'Done — see readings above';
+      SageRender.hideWarmup();
     } catch (e) {
       SageRender.debugLog(`[error] ${e.name || 'Error'}: ${e.message || '(no message)'}`);
+      SageRender.hideWarmup();
       btn.textContent = 'Connect failed — tap to retry';
       btn.disabled = false;
     }
