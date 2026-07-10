@@ -211,6 +211,10 @@ const SageRender = {
     btn.textContent = 'Connecting...';
 
     const BLE = window.ColmiBLE;
+    // Universal packet trace — shows cmd byte + full hex for every
+    // notification, so a genuine 0x69 reading response can be told apart
+    // from a stale/echoed 0x03 battery packet during real-time debugging.
+    BLE.on('debugPacket', p => SageRender.debugLog(`[pkt ${p.cmdHex}] ${p.hex}`));
     BLE.on('status', s => SageRender.debugLog('[status] ' + s));
     BLE.on('battery', b => SageRender.debugLog(`[battery] ${b.level}% ${b.charging ? '(charging)' : ''}`, true));
     BLE.on('reading', r => {
