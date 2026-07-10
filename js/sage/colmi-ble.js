@@ -234,7 +234,14 @@ const ColmiBLE = {
         return;
       }
       const value = bytes[3];
-      ColmiBLE.emit('reading', { kind, value });
+      // bytes[6:8] observed moving sample-to-sample during the July 10
+      // session (e.g. af02, 8802, 8102...) while bytes[3] (the value
+      // position per the reference client's parse_real_time_reading)
+      // stayed 0 the whole time. Looks like a live raw sample separate
+      // from wherever the final settled reading lands — surfacing it
+      // here so it's visible without decoding hex by hand.
+      const rawSample = bytes[6] | (bytes[7] << 8);
+      ColmiBLE.emit('reading', { kind, value, rawSample, rawSampleHex: rawSample.toString(16).padStart(4, '0') });
       return;
     }
 
