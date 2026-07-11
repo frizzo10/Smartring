@@ -160,9 +160,17 @@
 
   <div id="card-hrv" class="card">
     <div class="card-top">
-      <div><div class="card-title">HRV</div><div class="card-desc">Heart rate variability reading</div></div>
+      <div><div class="card-title">HRV</div><div class="card-desc">Heart rate variability reading (ring's own black-box value)</div></div>
     </div>
     <button class="read-btn" data-cmd="hrv" disabled>Read</button>
+    <pre class="result"></pre>
+  </div>
+
+  <div id="card-hrvcomputed" class="card">
+    <div class="card-top">
+      <div><div class="card-title">HRV — Computed (RMSSD)</div><div class="card-desc">Real math on raw PPG: bandpass filter → peak detection → RR intervals → RMSSD. Not the ring's number — ours, from raw samples. 60s capture, hold still.</div></div>
+    </div>
+    <button class="read-btn" data-cmd="hrvcomputed" disabled>Compute (60s)</button>
     <pre class="result"></pre>
   </div>
 
@@ -199,6 +207,7 @@
   </div>
 
   <script src="js/sage/colmi-ble.js"></script>
+  <script src="js/sage/hrv.js"></script>
   <script src="js/sage/ring-data.js"></script>
 </body>
 </html>
