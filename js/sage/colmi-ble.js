@@ -67,8 +67,30 @@ const ColmiBLE = {
   // out the log.
   CMD_READ_HEART_RATE: 21,
 
+  // Confirmed from steps.py (CMD_GET_STEP_SOMEDAY = 67 / 0x43). Same
+  // story as the HR log: this packet type was already showing up
+  // unprompted in every session tonight, right after connecting —
+  // verified our parser against a real captured packet and got back
+  // today's actual date and a plausible step count.
+  CMD_GET_STEP_SOMEDAY: 67,
+
+  // Full RealTimeReading enum from real_time.py / colmi.puxtril.com.
+  // HEART_RATE and SPO2 are the two the community (and our own testing
+  // tonight) confirms as trustworthy. The rest are real protocol slots —
+  // the ring will respond to a request — but that's a claim about the
+  // PROTOCOL, not the sensor. The reference client's own author flags
+  // HRV/ECG/blood pressure/blood sugar as not something you can trust
+  // from this class of hardware. Including them here so we can actually
+  // see what comes back rather than guess.
   READING_HEART_RATE: 1,
+  READING_BLOOD_PRESSURE: 2,
   READING_SPO2: 3,
+  READING_FATIGUE: 4,
+  READING_HEALTH_CHECK: 5,
+  READING_ECG: 7,
+  READING_PRESSURE: 8,
+  READING_BLOOD_SUGAR: 9,
+  READING_HRV: 10,
 
   ACTION_START: 1,
   ACTION_PAUSE: 2,
@@ -169,6 +191,63 @@ const ColmiBLE = {
         }
       }
       return hr;
+    },
+  },
+
+  // State machine for the multi-packet step/activity log response —
+  // mirrors steps.py's SportDetailParser exactly. Verified against a
+  // real captured packet from tonight: decoded to today's actual date
+  // (2026-07-10) at a plausible time slot, steps=13, calories=35,
+  // distance=7m.
+  stepsLog: {
+    newCalorieProtocol: false,
+    index: 0,
+    details: [],
+
+    reset() {
+      ColmiBLE.stepsLog.newCalorieProtocol = false;
+      ColmiBLE.stepsLog.index = 0;
+      ColmiBLE.stepsLog.details = [];
+    },
+
+    bcdToDecimal(b) {
+      return ((b >> 4) & 15) * 10 + (b & 15);
+    },
+
+    parse(bytes) {
+      const log = ColmiBLE.stepsLog;
+
+      if (log.index === 0 && bytes[1] === 255) {
+        log.reset();
+        return { noData: true };
+      }
+
+      if (log.index === 0 && bytes[1] === 240) {
+        log.newCalorieProtocol = bytes[3] === 1;
+        log.index += 1;
+        return null;
+      }
+
+      const year = log.bcdToDecimal(bytes[1]) + 2000;
+      const month = log.bcdToDecimal(bytes[2]);
+      const day = log.bcdToDecimal(bytes[3]);
+      const timeIndex = bytes[4];
+      const hour = Math.floor(timeIndex / 4);
+      const minute = (timeIndex % 4) * 15;
+      let calories = bytes[7] | (bytes[8] << 8);
+      if (log.newCalorieProtocol) calories *= 10;
+      const steps = bytes[9] | (bytes[10] << 8);
+      const distance = bytes[11] | (bytes[12] << 8);
+
+      log.details.push({ year, month, day, hour, minute, calories, steps, distance });
+
+      if (bytes[5] === bytes[6] - 1) {
+        const result = { entries: log.details.slice() };
+        log.reset();
+        return result;
+      }
+      log.index += 1;
+      return null;
     },
   },
 
@@ -297,7 +376,15 @@ const ColmiBLE = {
     await ColmiBLE.write(packet);
   },
 
-  // Requests the ring's own logged HR history for a given date.
+  // Requests the ring's own logged step/activity data for a given day
+  // offset from today (0 = today, 1 = yesterday, etc). The trailing
+  // bytes are constants copied directly from steps.py — the reference
+  // author notes they don't fully understand what they do either, but
+  // they're required for the ring to respond correctly.
+  async readSteps(dayOffset = 0) {
+    const packet = ColmiBLE.makePacket(ColmiBLE.CMD_GET_STEP_SOMEDAY, [dayOffset, 0x0f, 0x00, 0x5f, 0x01]);
+    await ColmiBLE.write(packet);
+  },
   // Defaults to today. Per date_utils.py, the reference client always
   // uses midnight UTC (the ring's clock is set in UTC via set_time.js),
   // not local midnight.
@@ -378,6 +465,15 @@ const ColmiBLE = {
       if (result) {
         if (result.error) ColmiBLE.emit('heartRateLogError', {});
         else ColmiBLE.emit('heartRateLog', result);
+      }
+      return;
+    }
+
+    if (cmd === ColmiBLE.CMD_GET_STEP_SOMEDAY) {
+      const result = ColmiBLE.stepsLog.parse(bytes);
+      if (result) {
+        if (result.noData) ColmiBLE.emit('stepsNoData', {});
+        else ColmiBLE.emit('steps', result.entries);
       }
       return;
     }
