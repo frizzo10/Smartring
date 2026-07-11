@@ -192,7 +192,20 @@
     <div class="empty-note" id="oxygen-empty">No data yet — connect the ring to load today's SpO2 log.</div>
   </div>
 
+  <!-- HRV -->
+  <div id="card-hrv" class="qcard" style="background:#1A2A4D;border:1px solid #2A3B5E;">
+    <div class="qcard-title">HRV</div>
+    <div class="qcard-date" id="hrv-date"></div>
+    <div class="metric-row" id="hrv-metric-row" style="display:none;">
+      <div class="metric-main"><span id="hrv-value">--</span> ms RMSSD</div>
+      <div class="metric-range" id="hrv-detail">--</div>
+    </div>
+    <div class="empty-note" id="hrv-empty">Not the ring's own HRV number — this is real math (bandpass filter → peak detection → RMSSD) run on raw PPG. Needs a dedicated 60s still capture, separate from the regular connect pull.</div>
+    <button id="hrv-compute-btn" style="width:100%;padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.2);background:transparent;color:#fff;font-size:14px;font-weight:600;margin-top:12px;" disabled>Compute HRV (60s, hold still)</button>
+  </div>
+
   <script src="js/sage/colmi-ble.js"></script>
+  <script src="js/sage/hrv.js"></script>
   <script src="js/sage/dashboard.js"></script>
 </body>
 </html>
