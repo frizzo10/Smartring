@@ -446,6 +446,10 @@ const Dashboard = {
         // Additive — full phase list so this page can redraw the
         // timeline bar on a future page load without reconnecting.
         sleepDetail: { phases: period.phases, startMins: period.startMins, endMins: period.endMins, date: dateStr },
+        // Additive — every period the ring actually returned in this
+        // read (confirmed 2 nights in one response tonight), for the
+        // multi-night trend on the sleep detail page.
+        sleepPeriods: log.periods,
       });
     });
 
