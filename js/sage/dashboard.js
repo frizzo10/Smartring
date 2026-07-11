@@ -407,12 +407,14 @@ const Dashboard = {
         disconnectBtn.style.display = 'block';
         connectBtn.textContent = 'Connected';
         document.getElementById('hrv-compute-btn').disabled = false;
+        document.getElementById('force-stop-btn').disabled = false;
       }
       if (s === 'disconnected') {
         disconnectBtn.style.display = 'none';
         connectBtn.disabled = false;
         connectBtn.textContent = 'Connect Colmi R02';
         document.getElementById('hrv-compute-btn').disabled = true;
+        document.getElementById('force-stop-btn').disabled = true;
       }
     });
 
@@ -568,4 +570,17 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('connect-btn').addEventListener('click', Dashboard.connect);
   document.getElementById('disconnect-btn').addEventListener('click', () => window.ColmiBLE.disconnect());
   document.getElementById('hrv-compute-btn').addEventListener('click', Dashboard.computeHrv);
+  document.getElementById('force-stop-btn').addEventListener('click', async () => {
+    const btn = document.getElementById('force-stop-btn');
+    const status = document.getElementById('force-stop-status');
+    btn.disabled = true;
+    status.textContent = 'Sending stop command...';
+    try {
+      await window.ColmiBLE.stopRawSensor();
+      status.textContent = 'Stop sent — check the ring now.';
+    } catch (e) {
+      status.textContent = 'Failed: ' + e.message;
+    }
+    btn.disabled = false;
+  });
 });
