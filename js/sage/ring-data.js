@@ -19,6 +19,23 @@ const RingData = {
     } catch (e) { /* localStorage unavailable — fail silently, this is a bonus, not critical path */ }
   },
 
+  // Same central repository dashboard.js writes to — every collection
+  // point on this page now lands in the same place, not just the ones
+  // that happen to feed the dashboard's daily cards.
+  async syncToCloud() {
+    try {
+      const snapshot = JSON.parse(localStorage.getItem('sh_ring_latest') || 'null');
+      if (!snapshot) return;
+      await fetch('/.netlify/functions/ring-sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(snapshot),
+      });
+    } catch (e) {
+      console.error('cloud sync failed (non-fatal)', e);
+    }
+  },
+
   // Maps each card's data-cmd to a real-time READING_* kind, for the
   // cards that go through the generic streamReading() path.
   REALTIME_KINDS: {
@@ -88,7 +105,8 @@ const RingData = {
     BLE.on('battery', b => {
       RingData.showResult('card-battery', `${b.level}%${b.charging ? ' (charging)' : ''}`);
       RingData.setButtonBusy('card-battery', false);
-      RingData.saveSnapshot({ battery: b.level });
+      RingData.saveSnapshot({ battery: { level: b.level, charging: b.charging } });
+      RingData.syncToCloud();
     });
 
     BLE.on('reading', r => {
@@ -96,10 +114,21 @@ const RingData = {
       if (!cardId) return;
       const rawNote = r.rawSample ? `\nraw@6-7: ${r.rawSampleHex}` : '';
       RingData.showResult(cardId, `value: ${r.value}${rawNote}`);
-      // Live spot-check readings are NOT saved into the Dr. Sage snapshot
-      // — a single point-in-time value isn't representative history.
-      // Only the ring's own logged data (heartRateLog, steps) feeds the
-      // AI interpretation; this page is diagnostics-only for the rest.
+      // Not fed to the AI layer (single spot-check, and most of these
+      // are undecoded) — but this is collection phase, not analysis
+      // phase, so it still gets stored in the central repository under
+      // its own kind. Keyed by cmd name so repeated reads of the same
+      // type overwrite rather than pile up under a single snapshot key.
+      const cmd = Object.keys(RingData.REALTIME_KINDS).find(k => BLE[RingData.REALTIME_KINDS[k]] === r.kind);
+      if (cmd) {
+        RingData.saveSnapshot({
+          diagnosticReadings: {
+            ...(JSON.parse(localStorage.getItem('sh_ring_latest') || '{}').diagnosticReadings || {}),
+            [cmd]: { value: r.value, rawSample: r.rawSample ?? null, rawSampleHex: r.rawSampleHex ?? null, recordedAt: new Date().toISOString() },
+          },
+        });
+        RingData.syncToCloud();
+      }
     });
 
     BLE.on('readingError', e => {
@@ -107,6 +136,16 @@ const RingData = {
       if (!cardId) return;
       RingData.showResult(cardId, `error code: ${e.code}`);
       RingData.setButtonBusy(cardId, false);
+      const cmd = Object.keys(RingData.REALTIME_KINDS).find(k => BLE[RingData.REALTIME_KINDS[k]] === e.kind);
+      if (cmd) {
+        RingData.saveSnapshot({
+          diagnosticReadings: {
+            ...(JSON.parse(localStorage.getItem('sh_ring_latest') || '{}').diagnosticReadings || {}),
+            [cmd]: { errorCode: e.code, recordedAt: new Date().toISOString() },
+          },
+        });
+        RingData.syncToCloud();
+      }
     });
 
     BLE.on('heartRateLog', log => {
@@ -117,6 +156,7 @@ const RingData = {
       RingData.showResult('card-hrlog', summary);
       RingData.setButtonBusy('card-hrlog', false);
       if (nonZero.length) {
+        const dateStr = log.timestamp ? log.timestamp.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : null;
         RingData.saveSnapshot({
           hrLog: {
             count: nonZero.length,
@@ -125,7 +165,10 @@ const RingData = {
             avg: Math.round(nonZero.reduce((a, b) => a + b, 0) / nonZero.length),
             date: log.timestamp ? log.timestamp.toISOString() : null,
           },
+          heartSeries: log.heartRates,
+          heartDate: dateStr,
         });
+        RingData.syncToCloud();
       }
     });
     BLE.on('heartRateLogError', () => {
@@ -144,7 +187,13 @@ const RingData = {
         RingData.showResult('card-steps',
           `${entries.length} time-slot entries for ${last.year}-${String(last.month).padStart(2, '0')}-${String(last.day).padStart(2, '0')}\n`
           + `total steps: ${totalSteps}\ntotal calories: ${totalCal}\ntotal distance: ${totalDist}m`);
-        RingData.saveSnapshot({ steps: { total: totalSteps, calories: totalCal, distance: totalDist, date: `${last.year}-${String(last.month).padStart(2, '0')}-${String(last.day).padStart(2, '0')}` } });
+        const dateStr = new Date(last.year, last.month - 1, last.day).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        RingData.saveSnapshot({
+          steps: { total: totalSteps, calories: totalCal, distance: totalDist, date: `${last.year}-${String(last.month).padStart(2, '0')}-${String(last.day).padStart(2, '0')}` },
+          activity: { totalSteps, totalCal, totalDistM: totalDist, date: dateStr },
+          activityEntries: entries,
+        });
+        RingData.syncToCloud();
       }
       RingData.setButtonBusy('card-steps', false);
     });
@@ -164,6 +213,24 @@ const RingData = {
           return `${d.daysPrevious === 0 ? 'today' : d.daysPrevious + 'd ago'}: ${readings.length} hourly slots, range ${Math.min(...vals)}-${Math.max(...vals)}%`;
         });
         RingData.showResult('card-spo2log', lines.join('\n'));
+
+        const today = log.days.find(d => d.daysPrevious === 0) || log.days[0];
+        const hourly = today.hourly.map(h => h.max);
+        if (hourly.some(v => v > 0)) {
+          const dateStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+          RingData.saveSnapshot({
+            spo2Log: {
+              avg: Math.round(hourly.filter(v => v > 0).reduce((a, b) => a + b, 0) / hourly.filter(v => v > 0).length),
+              min: Math.min(...hourly.filter(v => v > 0)),
+              max: Math.max(...hourly.filter(v => v > 0)),
+              date: new Date().toISOString().slice(0, 10),
+            },
+            oxygenHourly: hourly,
+            oxygenHourlyDetail: today.hourly,
+            oxygenDate: dateStr,
+          });
+          RingData.syncToCloud();
+        }
       }
       RingData.setButtonBusy('card-spo2log', false);
     });
@@ -185,6 +252,17 @@ const RingData = {
           return `${p.daysPrevious === 0 ? 'last night' : p.daysPrevious + 'd ago'}: ${String(startH).padStart(2, '0')}:${String(startM).padStart(2, '0')}-${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')} (${totalMin}min)\n${phaseStr}`;
         });
         RingData.showResult('card-sleep', lines.join('\n\n'));
+
+        const period = log.periods.find(p => p.daysPrevious === 0) || log.periods[0];
+        const totalMin = period.phases.reduce((s, ph) => s + ph.durationMin, 0);
+        const asleepMin = period.phases.filter(ph => ph.type === 2 || ph.type === 3 || ph.type === 4).reduce((s, ph) => s + ph.durationMin, 0);
+        const dateStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        RingData.saveSnapshot({
+          sleep: { totalMin, asleepMin, startMins: period.startMins, endMins: period.endMins, date: new Date().toISOString().slice(0, 10) },
+          sleepDetail: { phases: period.phases, startMins: period.startMins, endMins: period.endMins, date: dateStr },
+          sleepPeriods: log.periods,
+        });
+        RingData.syncToCloud();
       }
       RingData.setButtonBusy('card-sleep', false);
     });
@@ -291,6 +369,11 @@ const RingData = {
           lines.push(`RMSSD: ${result.rmssd} ms`);
           lines.push(`beats detected: ${result.beatsDetected}, clean: ${result.cleanBeats}, rejected: ${(result.rejectionRate * 100).toFixed(1)}%`);
           lines.push(`mean RR interval: ${result.meanRR} ms`);
+          const dateStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+          RingData.saveSnapshot({
+            hrvComputed: { rmssd: result.rmssd, beatsDetected: result.beatsDetected, cleanBeats: result.cleanBeats, rejectionRate: result.rejectionRate, meanRR: result.meanRR, date: dateStr },
+          });
+          RingData.syncToCloud();
         } else {
           lines.push(`No result — reason: ${result.reason}`);
           if (result.beatsDetected !== undefined) lines.push(`beats detected: ${result.beatsDetected}`);
@@ -318,6 +401,12 @@ const RingData = {
         if (ppg + spo2 + accel === 0) lines.push('no raw sensor packets received — command may not be supported on this firmware');
         RingData.showResult(cardId, lines.join('\n'));
         RingData.setButtonBusy(cardId, false);
+        if (ppg + spo2 + accel > 0) {
+          RingData.saveSnapshot({
+            rawSensorTest: { ppgCount: ppg, spo2Count: spo2, accelCount: accel, latest: l, recordedAt: new Date().toISOString() },
+          });
+          RingData.syncToCloud();
+        }
       }, 10000);
       return;
     }
@@ -331,6 +420,7 @@ const RingData = {
       RingData.setButtonBusy(cardId, true, 'Reading (15s)...');
       await BLE.streamReading(BLE[kindConst], 15, () => {});
       RingData.setButtonBusy(cardId, false);
+      RingData.syncToCloud();
     }
   },
 };
