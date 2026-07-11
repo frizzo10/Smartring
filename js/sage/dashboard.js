@@ -421,6 +421,7 @@ const Dashboard = {
         connectBtn.textContent = 'Connected';
         document.getElementById('hrv-compute-btn').disabled = false;
         document.getElementById('force-stop-btn').disabled = false;
+        document.getElementById('disable-auto-hr-btn').disabled = false;
       }
       if (s === 'disconnected') {
         disconnectBtn.style.display = 'none';
@@ -428,6 +429,7 @@ const Dashboard = {
         connectBtn.textContent = 'Connect Colmi R02';
         document.getElementById('hrv-compute-btn').disabled = true;
         document.getElementById('force-stop-btn').disabled = true;
+        document.getElementById('disable-auto-hr-btn').disabled = true;
       }
     });
 
@@ -605,6 +607,24 @@ document.addEventListener('DOMContentLoaded', () => {
       status.textContent = 'Reconnecting (this is what actually clears it)...';
       await window.ColmiBLE.forceReconnect();
       status.textContent = 'Reconnected — check the ring now.';
+    } catch (e) {
+      status.textContent = 'Failed: ' + e.message;
+    }
+    btn.disabled = false;
+  });
+
+  document.getElementById('disable-auto-hr-btn').addEventListener('click', async () => {
+    const btn = document.getElementById('disable-auto-hr-btn');
+    const status = document.getElementById('disable-auto-hr-status');
+    if (!window.ColmiBLE.device?.gatt?.connected) {
+      status.textContent = 'Not connected — nothing to send this to.';
+      return;
+    }
+    btn.disabled = true;
+    status.textContent = 'Sending (experimental, unconfirmed command)...';
+    try {
+      await window.ColmiBLE.disableAutoHrMonitor();
+      status.textContent = 'Sent — check the ring. Report back either way, this tells us if the theory is right.';
     } catch (e) {
       status.textContent = 'Failed: ' + e.message;
     }
