@@ -355,10 +355,16 @@ const Dashboard = {
     const handler = s => { ppgSamples.push(s.ppg); timestamps.push(performance.now()); };
     BLE.on('rawPpgSample', handler);
 
-    await BLE.startRawSensor();
-    await BLE.sleep(60000);
-    await BLE.stopRawSensor();
-    BLE.off('rawPpgSample', handler);
+    try {
+      await BLE.startRawSensor();
+      await BLE.sleep(60000);
+    } finally {
+      // ALWAYS stop the raw stream, even if something above threw —
+      // this is what turns the ring's green/red LEDs back off. Leaving
+      // this unpaired with a guaranteed stop is what leaves them stuck on.
+      await BLE.stopRawSensor();
+      BLE.off('rawPpgSample', handler);
+    }
 
     btn.disabled = false;
     btn.textContent = 'Compute HRV (60s, hold still)';
