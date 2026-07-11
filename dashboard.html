@@ -4,70 +4,98 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
 <title>Dashboard — myDrSage</title>
-<meta name="theme-color" content="#14213D">
+<meta name="theme-color" content="#0B1220">
 <style>
-  :root {
-    --navy: #14213D;
-    --navy-card: #1A2A4D;
-    --parchment: #F2EFE9;
-    --muted-blue: #8A93A8;
-    --green: #5FA97A;
-    --green-text: #C7DDCF;
-    --amber: #D99A4E;
-    --line: #2A3B5E;
-  }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    background: var(--navy);
-    color: var(--parchment);
-    padding: 20px 18px 60px;
+    background: #0B1220;
+    color: #fff;
+    padding: 16px 14px 60px;
     -webkit-tap-highlight-color: transparent;
   }
-  h1 { font-size: 20px; margin-bottom: 4px; }
-  .subhead { font-size: 13px; color: var(--muted-blue); margin-bottom: 18px; }
 
-  #connect-bar { margin-bottom: 18px; }
+  #connect-bar { margin-bottom: 14px; }
   #connect-btn, #disconnect-btn {
-    width: 100%; padding: 14px; border-radius: 12px; border: none;
+    width: 100%; padding: 14px; border-radius: 14px; border: none;
     font-size: 15px; font-weight: 600; font-family: inherit;
   }
-  #connect-btn { background: var(--parchment); color: var(--navy); }
-  #disconnect-btn { background: transparent; color: var(--parchment); border: 1px solid var(--line); margin-top: 8px; display: none; }
+  #connect-btn { background: #F2EFE9; color: #14213D; }
+  #disconnect-btn { background: transparent; color: #fff; border: 1px solid #2A3B5E; margin-top: 8px; display: none; }
   #connect-btn:active, #disconnect-btn:active { transform: scale(0.98); }
+  #status-line { font-size: 12px; color: #8A93A8; margin: 8px 0 14px; min-height: 14px; }
 
-  #status-line { font-size: 13px; color: var(--muted-blue); margin: 10px 0 20px; min-height: 16px; }
-
-  .stat-card {
-    background: var(--navy-card);
-    border: 1px solid var(--line);
-    border-radius: 16px;
-    padding: 18px 18px 16px;
+  /* battery banner */
+  #battery-banner {
+    display: none;
+    align-items: center; justify-content: space-between;
+    background: #14181f; border-radius: 20px; padding: 16px 18px;
     margin-bottom: 14px;
   }
-  .stat-top { display: flex; justify-content: space-between; align-items: baseline; }
-  .stat-title { font-size: 13px; font-weight: 600; color: var(--muted-blue); text-transform: uppercase; letter-spacing: 0.05em; }
-  .stat-updated { font-size: 11px; color: var(--muted-blue); }
+  #battery-banner .b-title { font-size: 17px; font-weight: 700; }
+  #battery-banner .b-sub { font-size: 12px; color: #8A93A8; margin-top: 2px; }
+  #battery-pill {
+    width: 50px; height: 26px; border-radius: 13px; background: rgba(255,255,255,0.08);
+    position: relative; flex-shrink: 0;
+  }
+  #battery-pill::after {
+    content: ''; position: absolute; right: -4px; top: 8px; width: 4px; height: 10px;
+    background: rgba(255,255,255,0.15); border-radius: 0 2px 2px 0;
+  }
+  #battery-fill { height: 100%; border-radius: 13px; background: #E86A5C; }
 
-  .stat-main { display: flex; align-items: baseline; gap: 8px; margin-top: 10px; }
-  .stat-value { font-size: 40px; font-weight: 700; line-height: 1; }
-  .stat-unit { font-size: 15px; color: var(--muted-blue); }
+  /* generic card shell */
+  .qcard {
+    border-radius: 22px; padding: 20px 20px 22px; margin-bottom: 14px;
+    position: relative; overflow: hidden;
+  }
+  .qcard-title { font-size: 19px; font-weight: 700; }
+  .qcard-date { font-size: 12px; opacity: 0.75; margin-top: 2px; }
 
-  .stat-subrow { display: flex; gap: 22px; margin-top: 12px; }
-  .stat-sub-label { font-size: 11px; color: var(--muted-blue); text-transform: uppercase; letter-spacing: 0.04em; }
-  .stat-sub-value { font-size: 17px; font-weight: 600; margin-top: 2px; }
+  #card-activity { background: linear-gradient(180deg, #6D93B8 0%, #8FA9C4 45%, #B7C4CE 100%); }
+  #card-sleep { background: linear-gradient(180deg, #2B2A5C 0%, #38356E 55%, #14213D 100%); }
+  #card-heart { background: #1A2A4D; border: 1px solid #2A3B5E; }
+  #card-oxygen { background: linear-gradient(180deg, #2E5B86 0%, #274A72 100%); }
 
-  .chart-wrap { margin-top: 16px; }
-  .chart-wrap svg { width: 100%; height: 64px; display: block; }
-  .range-label { font-size: 12px; color: var(--muted-blue); margin-top: 6px; }
+  /* arc gauge */
+  .arc-wrap { display: flex; flex-direction: column; align-items: center; margin: 14px 0 6px; }
+  .arc-wrap svg { width: 220px; height: 130px; }
+  .arc-center { text-align: center; margin-top: -70px; }
+  .arc-value { font-size: 44px; font-weight: 800; line-height: 1; }
+  .arc-label { font-size: 14px; opacity: 0.85; margin-top: 6px; }
 
-  .empty-note { font-size: 13px; color: var(--muted-blue); margin-top: 10px; }
+  .sub-row { display: flex; justify-content: space-around; margin-top: 18px; }
+  .sub-item { text-align: center; }
+  .sub-item .icon { font-size: 18px; }
+  .sub-item .val { font-size: 20px; font-weight: 700; margin-top: 4px; }
+  .sub-item .lbl { font-size: 11px; opacity: 0.8; margin-top: 1px; }
+
+  /* sleep timeline */
+  .sleep-timeline { display: flex; height: 8px; border-radius: 4px; overflow: hidden; margin: 18px 0 6px; background: rgba(255,255,255,0.12); }
+  .sleep-timeline .seg-light { background: #7FA6D9; }
+  .sleep-timeline .seg-deep { background: #3E4E9A; }
+  .sleep-timeline .seg-rem { background: #A78BD9; }
+  .sleep-timeline .seg-awake { background: #E8A85C; }
+  .sleep-times { display: flex; justify-content: space-between; font-size: 12px; opacity: 0.85; }
+  .sleep-total { text-align: center; font-size: 15px; font-weight: 600; margin-top: 10px; }
+  .sleep-legend { display: flex; gap: 14px; justify-content: center; margin-top: 10px; flex-wrap: wrap; }
+  .sleep-legend .item { font-size: 11px; opacity: 0.85; display: flex; align-items: center; gap: 5px; }
+  .sleep-legend .dot { width: 8px; height: 8px; border-radius: 50%; }
+
+  /* line / bar chart cards */
+  .chart-box { background: rgba(255,255,255,0.06); border-radius: 12px; padding: 12px 10px 6px; margin-top: 14px; }
+  .chart-box svg { width: 100%; height: 130px; display: block; }
+  .chart-grid-line { stroke: rgba(255,255,255,0.15); stroke-width: 1; stroke-dasharray: 3 3; }
+  .chart-grid-label { fill: rgba(255,255,255,0.5); font-size: 9px; }
+
+  .metric-row { display: flex; justify-content: space-between; align-items: center; margin-top: 14px; }
+  .metric-main { display: flex; align-items: center; gap: 8px; font-size: 20px; font-weight: 700; }
+  .metric-range { font-size: 14px; opacity: 0.85; }
+
+  .empty-note { font-size: 13px; opacity: 0.8; margin-top: 14px; }
 </style>
 </head>
 <body>
-
-  <h1>Dashboard</h1>
-  <div class="subhead">Today's activity, heart rate, and blood oxygen from your Colmi R02.</div>
 
   <div id="connect-bar">
     <button id="connect-btn">Connect Colmi R02</button>
@@ -75,56 +103,81 @@
   </div>
   <div id="status-line"></div>
 
-  <div id="card-activity" class="stat-card">
-    <div class="stat-top">
-      <div class="stat-title">Activity</div>
-      <div class="stat-updated" id="activity-updated"></div>
+  <div id="battery-banner">
+    <div>
+      <div class="b-title" id="battery-pct">--% Battery</div>
+      <div class="b-sub" id="battery-sub">Colmi R02</div>
     </div>
-    <div class="stat-main">
-      <div class="stat-value" id="activity-steps">--</div>
-      <div class="stat-unit">steps</div>
+    <div id="battery-pill"><div id="battery-fill" style="width:0%"></div></div>
+  </div>
+
+  <!-- ACTIVITY -->
+  <div id="card-activity" class="qcard">
+    <div class="qcard-title">Activity</div>
+    <div class="qcard-date" id="activity-date"></div>
+    <div class="arc-wrap">
+      <svg viewBox="0 0 220 130"><path id="activity-arc-bg" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="14" stroke-linecap="round"/><path id="activity-arc-fg" fill="none" stroke="#ffffff" stroke-width="14" stroke-linecap="round"/></svg>
+      <div class="arc-center">
+        <div class="arc-value" id="activity-steps">--</div>
+        <div class="arc-label">of 10,000 step goal</div>
+      </div>
     </div>
-    <div class="stat-subrow">
-      <div>
-        <div class="stat-sub-label">Calories</div>
-        <div class="stat-sub-value" id="activity-cal">--</div>
-      </div>
-      <div>
-        <div class="stat-sub-label">Distance</div>
-        <div class="stat-sub-value" id="activity-dist">--</div>
-      </div>
+    <div class="sub-row">
+      <div class="sub-item"><div class="icon">🔥</div><div class="val" id="activity-cal">--</div><div class="lbl">Kcal</div></div>
+      <div class="sub-item"><div class="icon">👣</div><div class="val" id="activity-steps-sub">--</div><div class="lbl">Steps</div></div>
+      <div class="sub-item"><div class="icon">📍</div><div class="val" id="activity-dist">--</div><div class="lbl">Km</div></div>
     </div>
     <div class="empty-note" id="activity-empty">No data yet — connect the ring to load today's activity.</div>
   </div>
 
-  <div id="card-heart" class="stat-card">
-    <div class="stat-top">
-      <div class="stat-title">Heart Rate</div>
-      <div class="stat-updated" id="heart-updated"></div>
+  <!-- SLEEP -->
+  <div id="card-sleep" class="qcard">
+    <div class="qcard-title">Sleep</div>
+    <div class="qcard-date" id="sleep-date"></div>
+    <div id="sleep-body" style="display:none;">
+      <div class="arc-wrap">
+        <svg viewBox="0 0 220 130"><path id="sleep-arc-bg" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="14" stroke-linecap="round"/><path id="sleep-arc-fg" fill="none" stroke="#ffffff" stroke-width="14" stroke-linecap="round"/></svg>
+        <div class="arc-center">
+          <div class="arc-value" id="sleep-hours">--</div>
+          <div class="arc-label">total sleep</div>
+        </div>
+      </div>
+      <div class="sleep-timeline" id="sleep-timeline"></div>
+      <div class="sleep-times"><span id="sleep-start">--</span><span id="sleep-end">--</span></div>
+      <div class="sleep-legend">
+        <div class="item"><div class="dot seg-light"></div>Light</div>
+        <div class="item"><div class="dot seg-deep"></div>Deep</div>
+        <div class="item"><div class="dot seg-rem"></div>REM</div>
+        <div class="item"><div class="dot seg-awake"></div>Awake</div>
+      </div>
     </div>
-    <div class="stat-main">
-      <div class="stat-value" id="heart-avg">--</div>
-      <div class="stat-unit">bpm avg</div>
+    <div class="empty-note" id="sleep-empty">No data yet — connect the ring to load last night's sleep log.</div>
+  </div>
+
+  <!-- HEART RATE -->
+  <div id="card-heart" class="qcard">
+    <div class="qcard-title">Heart Rate</div>
+    <div class="qcard-date" id="heart-date"></div>
+    <div class="chart-box" id="heart-chart-wrap" style="display:none;">
+      <svg id="heart-chart" viewBox="0 0 300 130" preserveAspectRatio="none"></svg>
     </div>
-    <div class="chart-wrap" id="heart-chart-wrap" style="display:none;">
-      <svg id="heart-chart" viewBox="0 0 240 64" preserveAspectRatio="none"></svg>
-      <div class="range-label" id="heart-range"></div>
+    <div class="metric-row" id="heart-metric-row" style="display:none;">
+      <div class="metric-main">♥ <span id="heart-current">--</span> bpm</div>
+      <div class="metric-range" id="heart-range">Range --</div>
     </div>
     <div class="empty-note" id="heart-empty">No data yet — connect the ring to load today's heart rate log.</div>
   </div>
 
-  <div id="card-oxygen" class="stat-card">
-    <div class="stat-top">
-      <div class="stat-title">Blood Oxygen</div>
-      <div class="stat-updated" id="oxygen-updated"></div>
+  <!-- BLOOD OXYGEN -->
+  <div id="card-oxygen" class="qcard">
+    <div class="qcard-title">Blood Oxygen</div>
+    <div class="qcard-date" id="oxygen-date"></div>
+    <div class="chart-box" id="oxygen-chart-wrap" style="display:none;">
+      <svg id="oxygen-chart" viewBox="0 0 300 130" preserveAspectRatio="none"></svg>
     </div>
-    <div class="stat-main">
-      <div class="stat-value" id="oxygen-avg">--</div>
-      <div class="stat-unit">% avg</div>
-    </div>
-    <div class="chart-wrap" id="oxygen-chart-wrap" style="display:none;">
-      <svg id="oxygen-chart" viewBox="0 0 240 64" preserveAspectRatio="none"></svg>
-      <div class="range-label" id="oxygen-range"></div>
+    <div class="metric-row" id="oxygen-metric-row" style="display:none;">
+      <div class="metric-main" id="oxygen-current">--%</div>
+      <div class="metric-range" id="oxygen-range">Range --</div>
     </div>
     <div class="empty-note" id="oxygen-empty">No data yet — connect the ring to load today's SpO2 log.</div>
   </div>
