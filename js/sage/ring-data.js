@@ -153,6 +153,42 @@ const RingData = {
       RingData.setButtonBusy('card-steps', false);
     });
 
+    BLE.on('spo2Log', log => {
+      if (!log.days.length) {
+        RingData.showResult('card-spo2log', 'no days returned');
+      } else {
+        const lines = log.days.map(d => {
+          const readings = d.hourly.filter(h => h.max > 0);
+          if (!readings.length) return `${d.daysPrevious === 0 ? 'today' : d.daysPrevious + 'd ago'}: no readings`;
+          const vals = readings.flatMap(h => [h.max, h.min]);
+          return `${d.daysPrevious === 0 ? 'today' : d.daysPrevious + 'd ago'}: ${readings.length} hourly slots, range ${Math.min(...vals)}-${Math.max(...vals)}%`;
+        });
+        RingData.showResult('card-spo2log', lines.join('\n'));
+      }
+      RingData.setButtonBusy('card-spo2log', false);
+    });
+
+    BLE.on('sleepLog', log => {
+      if (!log.periods.length) {
+        RingData.showResult('card-sleep', 'no sleep periods returned');
+      } else {
+        const lines = log.periods.map(p => {
+          const startH = Math.floor(p.startMins / 60), startM = p.startMins % 60;
+          const endH = Math.floor(p.endMins / 60), endM = p.endMins % 60;
+          const totalMin = p.phases.reduce((sum, ph) => sum + ph.durationMin, 0);
+          const phaseCounts = {};
+          p.phases.forEach(ph => {
+            const name = BLE.SLEEP_TYPE_NAMES[ph.type] || 'type' + ph.type;
+            phaseCounts[name] = (phaseCounts[name] || 0) + ph.durationMin;
+          });
+          const phaseStr = Object.entries(phaseCounts).map(([k, v]) => `${k}: ${v}min`).join(', ');
+          return `${p.daysPrevious === 0 ? 'last night' : p.daysPrevious + 'd ago'}: ${String(startH).padStart(2, '0')}:${String(startM).padStart(2, '0')}-${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')} (${totalMin}min)\n${phaseStr}`;
+        });
+        RingData.showResult('card-sleep', lines.join('\n\n'));
+      }
+      RingData.setButtonBusy('card-sleep', false);
+    });
+
     try {
       const name = await BLE.connect();
       RingData.setStatus('[connected] ' + name);
@@ -184,6 +220,28 @@ const RingData = {
     if (cmd === 'hrlog') {
       RingData.setButtonBusy(cardId, true);
       await BLE.readHeartRateLog();
+      return;
+    }
+
+    if (cmd === 'spo2log') {
+      RingData.setButtonBusy(cardId, true);
+      try {
+        await BLE.readSpO2Log();
+      } catch (e) {
+        RingData.showResult(cardId, e.message);
+        RingData.setButtonBusy(cardId, false);
+      }
+      return;
+    }
+
+    if (cmd === 'sleep') {
+      RingData.setButtonBusy(cardId, true);
+      try {
+        await BLE.readSleepLog();
+      } catch (e) {
+        RingData.showResult(cardId, e.message);
+        RingData.setButtonBusy(cardId, false);
+      }
       return;
     }
 
