@@ -577,7 +577,9 @@ document.addEventListener('DOMContentLoaded', () => {
     status.textContent = 'Sending stop command...';
     try {
       await window.ColmiBLE.stopRawSensor();
-      status.textContent = 'Stop sent — check the ring now.';
+      status.textContent = 'Reconnecting (this is what actually clears it)...';
+      await window.ColmiBLE.forceReconnect();
+      status.textContent = 'Reconnected — check the ring now.';
     } catch (e) {
       status.textContent = 'Failed: ' + e.message;
     }
