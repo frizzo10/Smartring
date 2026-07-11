@@ -510,6 +510,11 @@ const Dashboard = {
       } catch (e) {
         document.getElementById('sleep-empty').textContent = e.message;
       }
+      // HRV — automatic now, same tier as the other logged data above.
+      // Adds ~60s to the connect (needs a still capture to have enough
+      // beats to work with), which is a real, visible tradeoff — but no
+      // separate tap required anymore.
+      await Dashboard.computeHrv();
       Dashboard.syncToCloud();
     } catch (e) {
       Dashboard.setStatus(`[error] ${e.name || 'Error'}: ${e.message || '(no message)'}`);
