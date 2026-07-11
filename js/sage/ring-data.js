@@ -96,13 +96,10 @@ const RingData = {
       if (!cardId) return;
       const rawNote = r.rawSample ? `\nraw@6-7: ${r.rawSampleHex}` : '';
       RingData.showResult(cardId, `value: ${r.value}${rawNote}`);
-      // Only save the two validated readings into the shared snapshot —
-      // no point handing the AI a "confident" HRV/ECG/blood-pressure
-      // number when we already know this hardware can't back it up.
-      if (r.value > 0) {
-        if (r.kind === BLE.READING_HEART_RATE) RingData.saveSnapshot({ hr: r.value });
-        if (r.kind === BLE.READING_SPO2) RingData.saveSnapshot({ spo2: r.value });
-      }
+      // Live spot-check readings are NOT saved into the Dr. Sage snapshot
+      // — a single point-in-time value isn't representative history.
+      // Only the ring's own logged data (heartRateLog, steps) feeds the
+      // AI interpretation; this page is diagnostics-only for the rest.
     });
 
     BLE.on('readingError', e => {
