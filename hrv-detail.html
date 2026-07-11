@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<title>HRV Detail — myDrSage</title>
+<meta name="theme-color" content="#0B1220">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0B1220; color: #fff; padding: 16px 14px 60px; }
+  a.back { color: #8A93A8; text-decoration: none; font-size: 14px; display: inline-block; margin-bottom: 14px; }
+  h1 { font-size: 22px; margin-bottom: 2px; }
+  .date { font-size: 13px; color: #8A93A8; margin-bottom: 18px; }
+  .card { background: #1A2A4D; border: 1px solid #2A3B5E; border-radius: 18px; padding: 18px 18px 20px; margin-bottom: 14px; }
+  .card-title { font-size: 15px; font-weight: 700; color: #C8D0E0; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .card-sub { font-size: 12px; color: #8A93A8; margin-bottom: 12px; }
+  .big-value { font-size: 44px; font-weight: 800; }
+  .big-unit { font-size: 15px; color: #8A93A8; margin-left: 4px; }
+  .stat-grid { display: flex; gap: 14px; margin-top: 14px; }
+  .stat-box { flex: 1; background: rgba(255,255,255,0.06); border-radius: 12px; padding: 14px; text-align: center; }
+  .stat-box .val { font-size: 20px; font-weight: 800; }
+  .stat-box .lbl { font-size: 11px; color: #8A93A8; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .method { font-size: 13px; color: #C8D0E0; line-height: 1.5; }
+  .method b { color: #fff; }
+  svg.chart { width: 100%; height: 130px; display: block; }
+  .grid-line { stroke: rgba(255,255,255,0.15); stroke-width: 1; stroke-dasharray: 3 3; }
+  .grid-label { fill: rgba(255,255,255,0.5); font-size: 9px; }
+  .empty-note { font-size: 13px; color: #8A93A8; }
+</style>
+</head>
+<body>
+
+  <a class="back" href="dashboard.html">‹ Back to Dashboard</a>
+  <h1>HRV Detail</h1>
+  <div class="date" id="detail-date">--</div>
+
+  <div id="content" style="display:none;">
+
+    <div class="card">
+      <div class="card-title">Latest Capture</div>
+      <div class="card-sub" id="capture-time">--</div>
+      <div><span class="big-value" id="rmssd-value">--</span><span class="big-unit">ms RMSSD</span></div>
+      <div class="stat-grid">
+        <div class="stat-box"><div class="val" id="stat-beats">--</div><div class="lbl">Beats Detected</div></div>
+        <div class="stat-box"><div class="val" id="stat-clean">--</div><div class="lbl">Clean Beats</div></div>
+        <div class="stat-box"><div class="val" id="stat-rejected">--</div><div class="lbl">Rejected</div></div>
+        <div class="stat-box"><div class="val" id="stat-meanrr">--</div><div class="lbl">Mean RR (ms)</div></div>
+      </div>
+    </div>
+
+    <div class="card" id="trend-card" style="display:none;">
+      <div class="card-title">Capture History</div>
+      <div class="card-sub">RMSSD across every successful capture so far — real trend, builds over time.</div>
+      <svg id="trend-chart" class="chart" viewBox="0 0 300 130" preserveAspectRatio="none"></svg>
+    </div>
+
+    <div class="card">
+      <div class="card-title">How This Is Computed</div>
+      <div class="method">
+        This is <b>not</b> the ring's own HRV reading — that one comes back undecoded every time. This number is computed independently: raw PPG samples from the ring's raw sensor stream → bandpass filter (0.5–4 Hz) to isolate the pulse → peak detection with sub-sample interpolation → beat-to-beat (RR) intervals → artifact rejection (drops any interval that deviates more than 20% from its local neighborhood) → <b>RMSSD</b>, the root mean square of successive RR-interval differences. It's the same standard time-domain HRV metric clinical devices use, just run on our own raw data instead of trusting a black-box output.
+      </div>
+    </div>
+
+  </div>
+
+  <div class="empty-note" id="no-data-note">No HRV capture yet — go back, connect the ring, and tap "Compute HRV" on the HRV card.</div>
+
+  <script>
+    function loadSnapshot() {
+      try { return JSON.parse(localStorage.getItem('sh_ring_latest') || 'null'); }
+      catch (e) { return null; }
+    }
+
+    function renderTrend(history) {
+      if (!history || history.length < 2) return; // need at least 2 captures for a trend to mean anything
+      document.getElementById('trend-card').style.display = 'block';
+
+      const w = 300, h = 130, padL = 28, padR = 6, padT = 10, padB = 20;
+      const plotW = w - padL - padR, plotH = h - padT - padB;
+      const vals = history.map(e => e.rmssd);
+      const minV = Math.min(...vals), maxV = Math.max(...vals);
+      const range = Math.max(1, maxV - minV);
+      const gap = plotW / history.length;
+
+      let grid = '';
+      [minV, Math.round((minV + maxV) / 2), maxV].forEach(v => {
+        const y = padT + plotH - ((v - minV) / range) * plotH;
+        grid += `<line x1="${padL}" y1="${y}" x2="${w-padR}" y2="${y}" class="grid-line"/>`;
+        grid += `<text x="${w-padR}" y="${y-2}" text-anchor="end" class="grid-label">${v}</text>`;
+      });
+
+      const points = history.map((e, i) => {
+        const x = padL + i * gap + gap / 2;
+        const y = padT + plotH - ((e.rmssd - minV) / range) * plotH;
+        return `${x.toFixed(1)},${y.toFixed(1)}`;
+      }).join(' ');
+      const line = `<polyline points="${points}" fill="none" stroke="#7FA6D9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`;
+      const dots = history.map((e, i) => {
+        const x = padL + i * gap + gap / 2;
+        const y = padT + plotH - ((e.rmssd - minV) / range) * plotH;
+        return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3" fill="#7FA6D9"/>`;
+      }).join('');
+
+      const svg = document.getElementById('trend-chart');
+      svg.innerHTML = grid + line + dots;
+      svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const snap = loadSnapshot();
+      const latest = snap && snap.hrvComputed;
+      if (!latest) return; // no-data-note stays visible
+
+      document.getElementById('no-data-note').style.display = 'none';
+      document.getElementById('content').style.display = 'block';
+      document.getElementById('detail-date').textContent = latest.date || '';
+      document.getElementById('capture-time').textContent = latest.recordedAt ? new Date(latest.recordedAt).toLocaleString() : '';
+
+      document.getElementById('rmssd-value').textContent = latest.rmssd;
+      document.getElementById('stat-beats').textContent = latest.beatsDetected;
+      document.getElementById('stat-clean').textContent = latest.cleanBeats;
+      document.getElementById('stat-rejected').textContent = Math.round((latest.rejectionRate || 0) * 100) + '%';
+      document.getElementById('stat-meanrr').textContent = latest.meanRR;
+
+      renderTrend(snap.hrvHistory);
+    });
+  </script>
+</body>
+</html>
