@@ -40,6 +40,20 @@ const ColmiBLE = {
   WRITE_UUID:   '6e400002-b5a3-f393-e0a9-e50e24dcca9e',
   NOTIFY_UUID:  '6e400003-b5a3-f393-e0a9-e50e24dcca9e',
 
+  // A SECOND, entirely separate BLE service — confirmed from
+  // smittytone/RingCLI (a third independent open-source client, Go-
+  // based). This is where SpO2 history and sleep data actually live —
+  // neither ever showed up in any capture tonight because we'd never
+  // connected to this service at all. Different packet framing too:
+  // 6-byte request [0xBC magic, requestId, 0,0, 0xFF,0xFF] instead of
+  // the 16-byte command packets used on the main service.
+  DATA_SERVICE_UUID: 'de5bf728-d711-4e47-af26-65e3012a5dc7',
+  DATA_WRITE_UUID:   'de5bf72a-d711-4e47-af26-65e3012a5dc7',
+  DATA_NOTIFY_UUID:  'de5bf729-d711-4e47-af26-65e3012a5dc7',
+  DATA_REQUEST_MAGIC: 0xBC,
+  DATA_REQUEST_SLEEP: 0x27,
+  DATA_REQUEST_OXYGEN: 0x2A,
+
   CMD_BATTERY: 3,
   CMD_START_REAL_TIME: 105,
   CMD_STOP_REAL_TIME: 106,
@@ -101,8 +115,27 @@ const ColmiBLE = {
   server: null,
   writeChar: null,
   notifyChar: null,
+  dataWriteChar: null,
+  dataNotifyChar: null,
+  dataServiceAvailable: false,
   connected: false,
   listeners: {},
+
+  // Reassembly buffer for the data-service responses. Unlike the main
+  // 16-byte command protocol (one complete packet per notification),
+  // this service's responses can be longer than a single BLE
+  // notification's MTU, so we accumulate raw bytes across notifications
+  // until we've received the full length declared in the packet header.
+  dataBuffer: {
+    bytes: [],
+    expectedTotal: null,
+    requestId: null,
+    reset() {
+      ColmiBLE.dataBuffer.bytes = [];
+      ColmiBLE.dataBuffer.expectedTotal = null;
+      ColmiBLE.dataBuffer.requestId = null;
+    },
+  },
 
   // State machine for the multi-packet heart rate log response —
   // mirrors hr.py's HeartRateLogParser class exactly.
@@ -297,7 +330,10 @@ const ColmiBLE = {
     // doesn't expose the service UUID list needed for a filtered scan.
     ColmiBLE.device = await navigator.bluetooth.requestDevice({
       acceptAllDevices: true,
-      optionalServices: [ColmiBLE.SERVICE_UUID],
+      // DATA_SERVICE_UUID must be listed here too — Web Bluetooth
+      // blocks getPrimaryService() for any UUID not declared at
+      // requestDevice() time, even on an already-connected device.
+      optionalServices: [ColmiBLE.SERVICE_UUID, ColmiBLE.DATA_SERVICE_UUID],
     });
 
     ColmiBLE.device.addEventListener('gattserverdisconnected', ColmiBLE.onDisconnected);
@@ -316,6 +352,23 @@ const ColmiBLE = {
 
     await ColmiBLE.notifyChar.startNotifications();
     ColmiBLE.notifyChar.addEventListener('characteristicvaluechanged', ColmiBLE.onData);
+
+    // Second service — SpO2 history and sleep data live here, not on
+    // the main command service. Non-fatal if unavailable: the ring's
+    // core features (battery, HR, SpO2 spot-check, HR log, steps) all
+    // work fine without it.
+    try {
+      const dataService = await ColmiBLE.server.getPrimaryService(ColmiBLE.DATA_SERVICE_UUID);
+      ColmiBLE.dataWriteChar = await dataService.getCharacteristic(ColmiBLE.DATA_WRITE_UUID);
+      ColmiBLE.dataNotifyChar = await dataService.getCharacteristic(ColmiBLE.DATA_NOTIFY_UUID);
+      await ColmiBLE.dataNotifyChar.startNotifications();
+      ColmiBLE.dataNotifyChar.addEventListener('characteristicvaluechanged', ColmiBLE.onDataServicePacket);
+      ColmiBLE.dataServiceAvailable = true;
+      ColmiBLE.emit('status', 'data service connected');
+    } catch (e) {
+      ColmiBLE.dataServiceAvailable = false;
+      ColmiBLE.emit('status', 'data service unavailable: ' + (e.message || e));
+    }
 
     ColmiBLE.connected = true;
     ColmiBLE.emit('status', 'connected');
@@ -399,6 +452,102 @@ const ColmiBLE = {
     const packet = ColmiBLE.makePacket(ColmiBLE.CMD_READ_HEART_RATE, payload);
     await ColmiBLE.write(packet);
   },
+
+  // ── DATA SERVICE (SpO2 history, sleep) ───────────────────────
+  // Different framing from the command service: 6-byte request, no
+  // per-packet checksum byte. Confirmed against smittytone/RingCLI.
+  makeDataPacket(requestId) {
+    return new Uint8Array([ColmiBLE.DATA_REQUEST_MAGIC, requestId, 0x00, 0x00, 0xFF, 0xFF]);
+  },
+
+  async readSpO2Log() {
+    if (!ColmiBLE.dataServiceAvailable) throw new Error('Data service not connected — SpO2 log unavailable this session.');
+    ColmiBLE.dataBuffer.reset();
+    await ColmiBLE.dataWriteChar.writeValue(ColmiBLE.makeDataPacket(ColmiBLE.DATA_REQUEST_OXYGEN));
+  },
+
+  async readSleepLog() {
+    if (!ColmiBLE.dataServiceAvailable) throw new Error('Data service not connected — sleep log unavailable this session.');
+    ColmiBLE.dataBuffer.reset();
+    await ColmiBLE.dataWriteChar.writeValue(ColmiBLE.makeDataPacket(ColmiBLE.DATA_REQUEST_SLEEP));
+  },
+
+  onDataServicePacket(event) {
+    const bytes = Array.from(new Uint8Array(event.target.value.buffer));
+    const buf = ColmiBLE.dataBuffer;
+
+    ColmiBLE.emit('debugPacket', {
+      cmd: 'data-' + bytes[0]?.toString(16),
+      cmdHex: '0x' + (bytes[0] || 0).toString(16).padStart(2, '0'),
+      hex: bytes.map(b => b.toString(16).padStart(2, '0')).join(' '),
+      timestamp: new Date().toISOString(),
+    });
+
+    if (buf.bytes.length === 0) {
+      // First chunk carries the header: [magic, requestId, lenLSB, lenMSB, crcLSB, crcMSB, ...payload]
+      if (bytes[0] !== ColmiBLE.DATA_REQUEST_MAGIC) return; // not a data-service header, ignore
+      buf.requestId = bytes[1];
+      const dataLength = bytes[2] | (bytes[3] << 8);
+      buf.expectedTotal = 6 + dataLength;
+    }
+
+    buf.bytes.push(...bytes);
+
+    if (buf.expectedTotal !== null && buf.bytes.length >= buf.expectedTotal) {
+      const complete = buf.bytes.slice(0, buf.expectedTotal);
+      const requestId = buf.requestId;
+      buf.reset();
+
+      if (requestId === ColmiBLE.DATA_REQUEST_OXYGEN) {
+        ColmiBLE.emit('spo2Log', ColmiBLE.parseSpO2Log(complete));
+      } else if (requestId === ColmiBLE.DATA_REQUEST_SLEEP) {
+        ColmiBLE.emit('sleepLog', ColmiBLE.parseSleepLog(complete));
+      }
+    }
+  },
+
+  // Mirrors oxygen.go's ParseBloodOxygenDataResponse exactly. Each day's
+  // block: 1 byte "days previous" + 48 bytes (24 hourly slots x 2 bytes
+  // max/min).
+  parseSpO2Log(bytes) {
+    const days = [];
+    let index = 6;
+    while (index < bytes.length) {
+      const daysPrevious = bytes[index];
+      index += 1;
+      const hourly = [];
+      for (let h = 0; h < 24; h++) {
+        hourly.push({ hour: h, max: bytes[index + h * 2], min: bytes[index + 1 + h * 2] });
+      }
+      days.push({ daysPrevious, hourly });
+      index += 48;
+    }
+    return { days };
+  },
+
+  // Mirrors sleep.go's ParseSleepDataResponse exactly. Sleep types:
+  // 0=no data, 1=error, 2=light, 3=deep, 4=REM, 5=awake.
+  parseSleepLog(bytes) {
+    const periods = [];
+    let index = 7;
+    while (index < bytes.length) {
+      const daysPrevious = bytes[index];
+      const dataCount = (bytes[index + 1] - 4) >> 1;
+      const startMins = bytes[index + 2] | (bytes[index + 3] << 8);
+      const endMins = bytes[index + 4] | (bytes[index + 5] << 8);
+      index += 6;
+
+      const phases = [];
+      for (let i = 0; i < dataCount; i++) {
+        phases.push({ type: bytes[index], durationMin: bytes[index + 1] });
+        index += 2;
+      }
+      periods.push({ daysPrevious, startMins, endMins, phases });
+    }
+    return { periods };
+  },
+
+  SLEEP_TYPE_NAMES: { 0: 'no data', 1: 'error', 2: 'light', 3: 'deep', 4: 'REM', 5: 'awake' },
 
   // Start a real-time HR or SpO2 stream and auto-poke it with
   // "continue" every 2s to keep it flowing, for the given duration.
