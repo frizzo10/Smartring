@@ -68,6 +68,13 @@
     </div>
 
     <div class="card">
+      <div class="card-title">Ask Dr. Sage</div>
+      <div class="card-sub">Plain-language explanation of what's above — what your numbers show, or exactly why there isn't enough data yet, plus one clear next step. Never a diagnosis.</div>
+      <button id="ask-sage-btn" style="width:100%;padding:12px;border-radius:10px;border:1px solid rgba(127,166,217,0.4);background:transparent;color:#7FA6D9;font-size:14px;font-weight:600;">Ask Dr. Sage</button>
+      <div id="sage-response" style="margin-top:14px;font-size:14px;line-height:1.6;color:#fff;display:none;"></div>
+    </div>
+
+    <div class="card">
       <div class="card-title">How This Is Computed</div>
       <div class="method">
         This is <b>not</b> the ring's own HRV reading — that one comes back undecoded every time. This number is computed independently: raw PPG samples from the ring's raw sensor stream → bandpass filter (0.5–4 Hz) to isolate the pulse → peak detection with sub-sample interpolation → beat-to-beat (RR) intervals → artifact rejection (drops any interval that deviates more than 20% from its local neighborhood) → <b>RMSSD</b>, the root mean square of successive RR-interval differences. It's the same standard time-domain HRV metric clinical devices use, just run on our own raw data instead of trusting a black-box output.
@@ -219,6 +226,47 @@
       `).join('');
     }
 
+    async function askDrSage(snap) {
+      const btn = document.getElementById('ask-sage-btn');
+      const responseEl = document.getElementById('sage-response');
+      btn.disabled = true;
+      btn.textContent = 'Thinking...';
+
+      const insightsText = document.getElementById('insights-list').innerText;
+      const latest = snap.hrvComputed;
+
+      const userMessage = `Here is this person's current HRV data and related combinations, exactly as shown on their dashboard:
+
+Latest HRV capture: RMSSD ${latest.rmssd}ms, ${latest.cleanBeats}/${latest.beatsDetected} clean beats detected, captured ${latest.recordedAt || latest.date}.
+
+${insightsText}
+
+Explain what these numbers show in plain language. If a section says data is missing, explain clearly why that combination matters and what's missing — don't skip it. End with exactly one recommendation, and only one, chosen from these three (state which tier plainly): (1) no change needed, keep doing what you're doing, (2) consider adjusting a specific behavior based on what the data shows, or (3) consider seeing a doctor. Keep it under 180 words. Do not add any recommendation beyond one of those three tiers.`;
+
+      try {
+        const res = await fetch('/.netlify/functions/claude', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            system: 'You are Dr. Sage, a personal health data explainer. You explain what a person\'s own wearable-ring data shows in plain, direct language. You NEVER diagnose any condition, NEVER claim certainty about a health status, and NEVER name a specific disease. You are confident about describing what the numbers literally show and what real patterns (established, mainstream ones — HRV-guided training, sleep-recovery pairing, etc.) they may relate to, but you always frame recommendations as one of exactly three tiers: no change needed, adjust a behavior, or see a doctor. If data is missing, you explain plainly what is missing and why that specific combination matters, never inventing a number.',
+            messages: [{ role: 'user', content: userMessage }],
+            max_tokens: 400,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Request failed');
+        const text = data.content?.[0]?.text || '(no response)';
+        responseEl.textContent = text;
+        responseEl.style.display = 'block';
+      } catch (e) {
+        responseEl.textContent = 'Dr. Sage is unavailable right now: ' + e.message;
+        responseEl.style.display = 'block';
+      }
+
+      btn.disabled = false;
+      btn.textContent = 'Ask Dr. Sage';
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
       const snap = loadSnapshot();
       const latest = snap && snap.hrvComputed;
@@ -237,6 +285,8 @@
 
       renderTrend(snap.hrvHistory);
       renderInsights(snap);
+
+      document.getElementById('ask-sage-btn').addEventListener('click', () => askDrSage(snap));
     });
   </script>
 </body>
