@@ -4,9 +4,15 @@
    timeline, Heart Rate line chart, Blood Oxygen bar chart, plus
    a battery banner.
 
+   Renders from the ring's own logged history stored locally
+   (sh_ring_latest) on page load, with no active BLE connection
+   required — this is data the ring served up over time, not a
+   live spot-check. Connecting refreshes that stored data; it
+   isn't required just to see the last-synced numbers.
+
    Not built: Sport Record, Body Temperature, HRV — none have a
-   working read command in any reference client tonight; HRV
-   itself reports "please wear device" in QRing's own app.
+   working read command in any reference client; HRV itself
+   reports "please wear device" in QRing's own app.
 
    QRing's Activity/Sleep "score" numbers (e.g. "36 Moderate
    exercise", "76 Good") come from an internal algorithm we don't
@@ -15,18 +21,29 @@
    total time asleep (light+deep+REM), both real numbers from the
    ring's own log.
 
+   Photo backgrounds in the reference screenshots aren't reproduced
+   — those are QRing's own licensed images. Card colors/gradients
+   approximate the look without copying the source photos.
+
    Reuses ColmiBLE as-is. Snapshot writes reuse sh_ring_latest;
-   app.js sendChat() only reads .hrLog and .steps, so the extra
-   fields written here (spo2Log, sleep, battery) don't change what
-   feeds the AI chat.
+   app.js sendChat() only reads .hrLog and .steps — those two keys
+   keep their exact existing shape below, everything else here is
+   additive.
    ───────────────────────────────────────────────────────── */
 
 const Dashboard = {
+  SNAPSHOT_KEY: 'sh_ring_latest',
+
+  loadSnapshot() {
+    try { return JSON.parse(localStorage.getItem(Dashboard.SNAPSHOT_KEY) || 'null'); }
+    catch (e) { return null; }
+  },
+
   saveSnapshot(partial) {
     try {
-      const existing = JSON.parse(localStorage.getItem('sh_ring_latest') || '{}');
+      const existing = JSON.parse(localStorage.getItem(Dashboard.SNAPSHOT_KEY) || '{}');
       const merged = { ...existing, ...partial, updatedAt: new Date().toISOString() };
-      localStorage.setItem('sh_ring_latest', JSON.stringify(merged));
+      localStorage.setItem(Dashboard.SNAPSHOT_KEY, JSON.stringify(merged));
     } catch (e) { /* localStorage unavailable — fail silently, this is a bonus, not critical path */ }
   },
 
@@ -39,9 +56,6 @@ const Dashboard = {
   },
 
   // ── ARC GAUGE (semicircle, top half) ───────────────────────
-  // viewBox 220x130. Arc spans from (10,120) to (210,120) over the
-  // top, radius 100. Full arc length = pi*r. Progress is expressed
-  // as fraction 0..1 of that length via stroke-dasharray.
   drawArc(bgPathEl, fgPathEl, fraction) {
     const r = 100, cx = 110, cy = 120;
     const d = `M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`;
@@ -111,12 +125,10 @@ const Dashboard = {
   },
 
   // ── ACTIVITY ─────────────────────────────────────────────────
-  renderActivity(entries) {
-    const totalSteps = entries.reduce((sum, e) => sum + e.steps, 0);
-    const totalCal = entries.reduce((sum, e) => sum + e.calories, 0);
-    const totalDistM = entries.reduce((sum, e) => sum + e.distance, 0);
-
-    document.getElementById('activity-date').textContent = Dashboard.todayLabel();
+  // Takes plain totals so both the live BLE path and the cached-
+  // snapshot path on page load can call the exact same renderer.
+  renderActivity({ totalSteps, totalCal, totalDistM, date }) {
+    document.getElementById('activity-date').textContent = date || Dashboard.todayLabel();
     document.getElementById('activity-steps').textContent = totalSteps.toLocaleString();
     document.getElementById('activity-cal').textContent = totalCal.toLocaleString();
     document.getElementById('activity-steps-sub').textContent = totalSteps.toLocaleString();
@@ -131,15 +143,9 @@ const Dashboard = {
   },
 
   // ── SLEEP ────────────────────────────────────────────────────
-  renderSleep(sleepLog) {
-    const period = sleepLog.periods.find(p => p.daysPrevious === 0) || sleepLog.periods[0];
-    if (!period) {
-      document.getElementById('sleep-empty').textContent = 'No sleep periods returned.';
-      return;
-    }
-    const BLE = window.ColmiBLE;
-    const totalMin = period.phases.reduce((sum, ph) => sum + ph.durationMin, 0);
-    const asleepMin = period.phases
+  renderSleep({ phases, startMins, endMins, date }) {
+    const totalMin = phases.reduce((sum, ph) => sum + ph.durationMin, 0);
+    const asleepMin = phases
       .filter(ph => ph.type === 2 || ph.type === 3 || ph.type === 4) // light, deep, REM
       .reduce((sum, ph) => sum + ph.durationMin, 0);
 
@@ -148,14 +154,14 @@ const Dashboard = {
       return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
     };
 
-    document.getElementById('sleep-date').textContent = Dashboard.todayLabel();
+    document.getElementById('sleep-date').textContent = date || Dashboard.todayLabel();
     document.getElementById('sleep-hours').textContent = `${Math.floor(asleepMin / 60)}h ${asleepMin % 60}m`;
-    document.getElementById('sleep-start').textContent = fmtTime(period.startMins);
-    document.getElementById('sleep-end').textContent = fmtTime(period.endMins);
+    document.getElementById('sleep-start').textContent = fmtTime(startMins);
+    document.getElementById('sleep-end').textContent = fmtTime(endMins);
 
     const segClass = { 2: 'seg-light', 3: 'seg-deep', 4: 'seg-rem', 5: 'seg-awake' };
     const timeline = document.getElementById('sleep-timeline');
-    timeline.innerHTML = period.phases
+    timeline.innerHTML = phases
       .filter(ph => segClass[ph.type] && totalMin > 0)
       .map(ph => `<div class="${segClass[ph.type]}" style="width:${(ph.durationMin / totalMin) * 100}%"></div>`)
       .join('');
@@ -168,14 +174,10 @@ const Dashboard = {
 
     document.getElementById('sleep-empty').style.display = 'none';
     document.getElementById('sleep-body').style.display = 'block';
-
-    Dashboard.saveSnapshot({
-      sleep: { totalMin, asleepMin, startMins: period.startMins, endMins: period.endMins, date: new Date().toISOString().slice(0, 10) },
-    });
   },
 
   // ── HEART RATE ───────────────────────────────────────────────
-  renderHeartRate(heartRates) {
+  renderHeartRate(heartRates, date) {
     const nonZero = heartRates.filter(v => v > 0);
     if (!nonZero.length) {
       document.getElementById('heart-empty').textContent = 'No nonzero heart rate samples yet today.';
@@ -187,7 +189,7 @@ const Dashboard = {
     const gridMax = Math.ceil((max + 15) / 5) * 5;
     const gridVals = [gridMin, Math.round((gridMin + gridMax) / 2), gridMax];
 
-    document.getElementById('heart-date').textContent = Dashboard.todayLabel();
+    document.getElementById('heart-date').textContent = date || Dashboard.todayLabel();
     document.getElementById('heart-current').textContent = current;
     document.getElementById('heart-range').textContent = `Range ${min}-${max} bpm`;
     document.getElementById('heart-empty').style.display = 'none';
@@ -198,24 +200,17 @@ const Dashboard = {
   },
 
   // ── BLOOD OXYGEN ─────────────────────────────────────────────
-  renderOxygen(spo2Log) {
-    const today = spo2Log.days.find(d => d.daysPrevious === 0) || spo2Log.days[0];
-    if (!today) {
-      document.getElementById('oxygen-empty').textContent = 'No SpO2 log days returned.';
-      return;
-    }
-    const readings = today.hourly.filter(h => h.max > 0);
+  renderOxygen(hourly, date) {
+    const readings = hourly.filter(v => v > 0);
     if (!readings.length) {
       document.getElementById('oxygen-empty').textContent = 'No nonzero SpO2 readings yet today.';
       return;
     }
-    const vals = readings.flatMap(h => [h.max, h.min]);
-    const min = Math.min(...vals), max = Math.max(...vals);
-    const current = readings[readings.length - 1].max;
-    const hourly = today.hourly.map(h => h.max);
+    const min = Math.min(...readings), max = Math.max(...readings);
+    const current = readings[readings.length - 1];
     const gridVals = [80, 90, 100];
 
-    document.getElementById('oxygen-date').textContent = Dashboard.todayLabel();
+    document.getElementById('oxygen-date').textContent = date || Dashboard.todayLabel();
     document.getElementById('oxygen-current').textContent = current + '%';
     document.getElementById('oxygen-range').textContent = `Range ${min}-${max}%`;
     document.getElementById('oxygen-empty').style.display = 'none';
@@ -223,10 +218,6 @@ const Dashboard = {
     document.getElementById('oxygen-metric-row').style.display = 'flex';
 
     Dashboard.renderBarChart(document.getElementById('oxygen-chart'), hourly, gridVals, '#BFD8F5');
-
-    Dashboard.saveSnapshot({
-      spo2Log: { avg: Math.round(vals.reduce((a, b) => a + b, 0) / vals.length), min, max, date: new Date().toISOString().slice(0, 10) },
-    });
   },
 
   // ── BATTERY ──────────────────────────────────────────────────
@@ -236,6 +227,28 @@ const Dashboard = {
     document.getElementById('battery-pct').textContent = `${b.level}% Battery${b.charging ? ' (charging)' : ''}`;
     document.getElementById('battery-fill').style.width = b.level + '%';
     document.getElementById('battery-fill').style.background = b.level <= 20 ? '#E86A5C' : '#5FA97A';
+  },
+
+  // ── LOAD FROM CACHE (no connection required) ────────────────
+  // Runs immediately on page load. This is what makes the
+  // dashboard show real numbers even when the ring hasn't been
+  // connected this session — it's reading what the ring already
+  // handed over and this page already saved, the last time it was
+  // connected.
+  renderFromCache() {
+    const snap = Dashboard.loadSnapshot();
+    if (!snap) return;
+
+    if (snap.activity) Dashboard.renderActivity(snap.activity);
+    if (snap.sleepDetail) Dashboard.renderSleep(snap.sleepDetail);
+    if (snap.heartSeries) Dashboard.renderHeartRate(snap.heartSeries, snap.heartDate);
+    if (snap.oxygenHourly) Dashboard.renderOxygen(snap.oxygenHourly, snap.oxygenDate);
+    if (typeof snap.battery === 'object' && snap.battery) Dashboard.renderBattery(snap.battery);
+
+    if (snap.updatedAt) {
+      const d = new Date(snap.updatedAt);
+      document.getElementById('synced-label').textContent = 'Last synced ' + d.toLocaleString();
+    }
   },
 
   async connect() {
@@ -261,14 +274,18 @@ const Dashboard = {
 
     BLE.on('battery', b => {
       Dashboard.renderBattery(b);
-      Dashboard.saveSnapshot({ battery: b.level });
+      // Keeps the old flat `battery: level` field app.js/older pages may
+      // still read, plus a richer object form this page uses on reload.
+      Dashboard.saveSnapshot({ battery: { level: b.level, charging: b.charging } });
     });
 
     BLE.on('heartRateLog', log => {
-      Dashboard.renderHeartRate(log.heartRates);
+      const dateStr = log.timestamp ? log.timestamp.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : null;
+      Dashboard.renderHeartRate(log.heartRates, dateStr);
       const nonZero = log.heartRates.filter(v => v > 0);
       if (nonZero.length) {
         Dashboard.saveSnapshot({
+          // Unchanged shape — app.js sendChat() reads exactly this.
           hrLog: {
             count: nonZero.length,
             min: Math.min(...nonZero),
@@ -276,22 +293,30 @@ const Dashboard = {
             avg: Math.round(nonZero.reduce((a, b) => a + b, 0) / nonZero.length),
             date: log.timestamp ? log.timestamp.toISOString() : null,
           },
+          // Additive — full series so this page can redraw the chart on
+          // a future page load without needing to reconnect.
+          heartSeries: log.heartRates,
+          heartDate: dateStr,
         });
       }
     });
 
     BLE.on('steps', entries => {
       if (entries.length) {
-        Dashboard.renderActivity(entries);
         const totalSteps = entries.reduce((sum, e) => sum + e.steps, 0);
         const totalCal = entries.reduce((sum, e) => sum + e.calories, 0);
-        const totalDist = entries.reduce((sum, e) => sum + e.distance, 0);
+        const totalDistM = entries.reduce((sum, e) => sum + e.distance, 0);
         const last = entries[entries.length - 1];
+        const dateStr = new Date(last.year, last.month - 1, last.day).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        Dashboard.renderActivity({ totalSteps, totalCal, totalDistM, date: dateStr });
         Dashboard.saveSnapshot({
+          // Unchanged shape — app.js sendChat() reads exactly this.
           steps: {
-            total: totalSteps, calories: totalCal, distance: totalDist,
+            total: totalSteps, calories: totalCal, distance: totalDistM,
             date: `${last.year}-${String(last.month).padStart(2, '0')}-${String(last.day).padStart(2, '0')}`,
           },
+          // Additive — same totals, keyed for this page's own reload path.
+          activity: { totalSteps, totalCal, totalDistM, date: dateStr },
         });
       }
     });
@@ -299,8 +324,48 @@ const Dashboard = {
       document.getElementById('activity-empty').textContent = 'No step data for today yet.';
     });
 
-    BLE.on('spo2Log', log => Dashboard.renderOxygen(log));
-    BLE.on('sleepLog', log => Dashboard.renderSleep(log));
+    BLE.on('spo2Log', log => {
+      const today = log.days.find(d => d.daysPrevious === 0) || log.days[0];
+      if (!today) {
+        document.getElementById('oxygen-empty').textContent = 'No SpO2 log days returned.';
+        return;
+      }
+      const hourly = today.hourly.map(h => h.max);
+      const dateStr = Dashboard.todayLabel();
+      Dashboard.renderOxygen(hourly, dateStr);
+      if (hourly.some(v => v > 0)) {
+        Dashboard.saveSnapshot({
+          spo2Log: {
+            avg: Math.round(hourly.filter(v => v > 0).reduce((a, b) => a + b, 0) / hourly.filter(v => v > 0).length),
+            min: Math.min(...hourly.filter(v => v > 0)),
+            max: Math.max(...hourly.filter(v => v > 0)),
+            date: new Date().toISOString().slice(0, 10),
+          },
+          // Additive — full hourly array for redrawing the bar chart on
+          // a future page load without needing to reconnect.
+          oxygenHourly: hourly,
+          oxygenDate: dateStr,
+        });
+      }
+    });
+
+    BLE.on('sleepLog', log => {
+      const period = log.periods.find(p => p.daysPrevious === 0) || log.periods[0];
+      if (!period) {
+        document.getElementById('sleep-empty').textContent = 'No sleep periods returned.';
+        return;
+      }
+      const dateStr = Dashboard.todayLabel();
+      const totalMin = period.phases.reduce((sum, ph) => sum + ph.durationMin, 0);
+      const asleepMin = period.phases.filter(ph => ph.type === 2 || ph.type === 3 || ph.type === 4).reduce((sum, ph) => sum + ph.durationMin, 0);
+      Dashboard.renderSleep({ phases: period.phases, startMins: period.startMins, endMins: period.endMins, date: dateStr });
+      Dashboard.saveSnapshot({
+        sleep: { totalMin, asleepMin, startMins: period.startMins, endMins: period.endMins, date: new Date().toISOString().slice(0, 10) },
+        // Additive — full phase list so this page can redraw the
+        // timeline bar on a future page load without reconnecting.
+        sleepDetail: { phases: period.phases, startMins: period.startMins, endMins: period.endMins, date: dateStr },
+      });
+    });
 
     try {
       const name = await BLE.connect();
@@ -326,6 +391,7 @@ const Dashboard = {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
+  Dashboard.renderFromCache();
   document.getElementById('connect-btn').addEventListener('click', Dashboard.connect);
   document.getElementById('disconnect-btn').addEventListener('click', () => window.ColmiBLE.disconnect());
 });
