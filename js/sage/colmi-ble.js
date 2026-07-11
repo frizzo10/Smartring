@@ -351,6 +351,13 @@ const ColmiBLE = {
       optionalServices: [ColmiBLE.SERVICE_UUID, ColmiBLE.DATA_SERVICE_UUID],
     });
 
+    return ColmiBLE.attachToDevice();
+  },
+
+  // Everything after device selection — split out so forceReconnect()
+  // can reuse it on the SAME already-picked device without re-prompting
+  // the browser's device chooser.
+  async attachToDevice() {
     ColmiBLE.device.addEventListener('gattserverdisconnected', ColmiBLE.onDisconnected);
     ColmiBLE.emit('status', 'connecting');
     ColmiBLE.server = await ColmiBLE.device.gatt.connect();
@@ -386,6 +393,7 @@ const ColmiBLE = {
     }
 
     ColmiBLE.connected = true;
+    ColmiBLE.rawSensorActive = false; // fresh GATT session — ring-side state may have reset too
     ColmiBLE.emit('status', 'connected');
     ColmiBLE.emit('connected', ColmiBLE.device.name);
 
@@ -395,6 +403,20 @@ const ColmiBLE = {
     await ColmiBLE.readBattery();
 
     return ColmiBLE.device.name;
+  },
+
+  // A Gadgetbridge developer (independent codebase, same ring family)
+  // reported the exact symptom we hit tonight — LED stuck on after a
+  // raw/continuous stream — and found that a straight reconnect cleared
+  // it, not a specific stop command. This does that: disconnect from
+  // the current GATT session and reconnect fresh on the SAME device,
+  // no picker re-prompt. Real fix, not a guessed command byte.
+  async forceReconnect() {
+    if (ColmiBLE.device?.gatt.connected) {
+      ColmiBLE.device.gatt.disconnect();
+    }
+    await ColmiBLE.sleep(1500);
+    return ColmiBLE.attachToDevice();
   },
 
   async disconnect() {
