@@ -224,8 +224,8 @@
       <div class="metric-main"><span id="hrv-value">--</span> ms RMSSD</div>
       <div class="metric-range" id="hrv-detail">--</div>
     </div>
-    <div class="empty-note" id="hrv-empty">Not the ring's own HRV number — this is real math (bandpass filter → peak detection → RMSSD) run on raw PPG. Captures automatically as part of connect (adds ~60s, hold still during that window).</div>
-    <button id="hrv-compute-btn" style="width:100%;padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.2);background:transparent;color:#fff;font-size:14px;font-weight:600;margin-top:12px;" disabled>Recompute HRV (60s, hold still)</button>
+    <div class="empty-note" id="hrv-empty">Not the ring's own HRV number — this is real math (bandpass filter → peak detection → RMSSD) run on raw PPG. Manual only — tap below when you want a reading. Not automatic on connect: this triggers the raw sensor stream, which has occasionally left the ring's LEDs stuck on after finishing (unresolved, see Force Stop button above if that happens).</div>
+    <button id="hrv-compute-btn" style="width:100%;padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.2);background:transparent;color:#fff;font-size:14px;font-weight:600;margin-top:12px;" disabled>Compute HRV (60s, hold still)</button>
   </div>
 
   <script src="js/sage/colmi-ble.js"></script>
