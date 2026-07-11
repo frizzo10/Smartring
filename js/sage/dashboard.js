@@ -419,6 +419,11 @@ const Dashboard = {
           },
           // Additive — same totals, keyed for this page's own reload path.
           activity: { totalSteps, totalCal, totalDistM, date: dateStr },
+          // Additive — full per-15-min entry list (each has hour/minute/
+          // steps/calories/distance) for the Activity detail page's
+          // intraday chart. Discarded before tonight; real data, just
+          // never surfaced past the daily total.
+          activityEntries: entries,
         });
       }
     });
@@ -447,6 +452,10 @@ const Dashboard = {
           // a future page load without needing to reconnect.
           oxygenHourly: hourly,
           oxygenDate: dateStr,
+          // Additive — max AND min per hour (the ring logs both; the
+          // main card only ever used max). Min matters more for
+          // detecting real dips, which is the actual product focus.
+          oxygenHourlyDetail: today.hourly,
         });
       }
     });
