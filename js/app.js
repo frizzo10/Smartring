@@ -971,10 +971,27 @@ async function sendChat(){
   inp.value='';document.getElementById('chatSendBtn').disabled=true;
   addBubble('user',msg);chatMessages.push({role:'user',content:msg});showTyping();
   const t=data[data.length-1];
+  // Real ring readings (HR/SpO2/HR-log/steps), synced from sage.html or
+  // ring-data.html. Only trusted if <24h old — a stale snapshot is worse
+  // than none, since it'd get presented with the same confidence as a
+  // fresh one.
+  let ringBlock='';
+  try{
+    const ringSnap=JSON.parse(localStorage.getItem('sh_ring_latest')||'null');
+    const freshEnough=ringSnap && (Date.now()-new Date(ringSnap.updatedAt).getTime() < 24*60*60*1000);
+    if(freshEnough){
+      const lines=[];
+      if(ringSnap.hr) lines.push(`- Heart rate (live spot check): ${ringSnap.hr} bpm`);
+      if(ringSnap.spo2) lines.push(`- SpO2 (live spot check): ${ringSnap.spo2}%`);
+      if(ringSnap.hrLog) lines.push(`- Today's HR log: ${ringSnap.hrLog.count} samples, range ${ringSnap.hrLog.min}-${ringSnap.hrLog.max} bpm, avg ${ringSnap.hrLog.avg} bpm`);
+      if(ringSnap.steps) lines.push(`- Steps today: ${ringSnap.steps.total}, ${ringSnap.steps.calories} cal, ${ringSnap.steps.distance}m`);
+      if(lines.length) ringBlock=`\nREAL RING DATA (synced from the patient's actual Colmi R02, ${new Date(ringSnap.updatedAt).toLocaleString()}):\n${lines.join('\n')}\nThese are real measurements, not simulated. When the patient asks about heart rate, SpO2, or activity, use THESE numbers over the baseline data below, and give a confident, directional read — e.g. "your heart rate today is running about 12bpm above your usual resting range, which is commonly tied to poor sleep, stress, or dehydration" — not a diagnosis, but a clear opinion on what the number suggests.\n`;
+    }
+  }catch(e){/* localStorage unavailable or malformed snapshot — fall back to baseline only */}
   const sys=`You are SageHealth's AI health coach — positioned between a health coach and a physician. You help patients understand their biometric trends and prepare for doctor visits.
-You NEVER diagnose or prescribe. You interpret trends, explain metrics, and help the patient know what to discuss with their doctor.
-Patient: ${profile.name||'Frank'}, ${profile.age||48}yo ${profile.sex||'Male'}. Conditions: ${profile.conditions||'None'}.
-TK30 data: BP ${t.bpSys}/${t.bpDia} mmHg | SpO₂ ${t.spo2}% | Temp ${t.tempF}°F (${((t.tempDev*9/5)>=0?'+':'')+((t.tempDev*9/5).toFixed(1))}°F from baseline) | HRV ${avg(data,'hrv')}ms | RHR ${avg(data,'rhr')} BPM | Sleep ${avgF(data,'sleep')}h | Steps ${avg(data,'steps').toLocaleString()}/day
+You NEVER diagnose a specific medical condition or prescribe treatment. Within that limit, be confident and direct: state plainly when a number is elevated or low relative to the patient's own baseline, and name the most likely everyday explanation (sleep, stress, hydration, activity, illness) rather than hedging with "it could be many things." An opinion the patient can act on beats a neutral description.
+${ringBlock}Patient: ${profile.name||'Frank'}, ${profile.age||48}yo ${profile.sex||'Male'}. Conditions: ${profile.conditions||'None'}.
+TK30 baseline data: BP ${t.bpSys}/${t.bpDia} mmHg | SpO₂ ${t.spo2}% | Temp ${t.tempF}°F (${((t.tempDev*9/5)>=0?'+':'')+((t.tempDev*9/5).toFixed(1))}°F from baseline) | HRV ${avg(data,'hrv')}ms | RHR ${avg(data,'rhr')} BPM | Sleep ${avgF(data,'sleep')}h | Steps ${avg(data,'steps').toLocaleString()}/day
 Style: plain English, 4–6 sentences, one follow-up question. Suggest bringing findings to their doctor when relevant.`;
   try{
     const res=await fetch('/.netlify/functions/claude',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:1000,system:sys,messages:chatMessages})});
