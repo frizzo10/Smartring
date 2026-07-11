@@ -355,19 +355,32 @@ const Dashboard = {
     const handler = s => { ppgSamples.push(s.ppg); timestamps.push(performance.now()); };
     BLE.on('rawPpgSample', handler);
 
+    // Watch for the ring dropping the connection on its own mid-capture
+    // — confirmed real behavior, not a hypothetical. If it happens, we
+    // want to know immediately, not find out 60s later when the stop
+    // command silently fails against a dead connection.
+    let disconnectedDuringCapture = false;
+    const disconnectWatcher = s => { if (s === 'disconnected') disconnectedDuringCapture = true; };
+    BLE.on('status', disconnectWatcher);
+
+    let stopResult = { disconnected: false };
     try {
       await BLE.startRawSensor();
       await BLE.sleep(60000);
     } finally {
-      // ALWAYS stop the raw stream, even if something above threw —
-      // this is what turns the ring's green/red LEDs back off. Leaving
-      // this unpaired with a guaranteed stop is what leaves them stuck on.
-      await BLE.stopRawSensor();
+      stopResult = await BLE.stopRawSensor();
       BLE.off('rawPpgSample', handler);
+      BLE.off('status', disconnectWatcher);
     }
 
     btn.disabled = false;
     btn.textContent = 'Compute HRV (60s, hold still)';
+
+    if (disconnectedDuringCapture || stopResult.disconnected) {
+      document.getElementById('hrv-empty').textContent =
+        'Ring disconnected on its own during the capture — this looks like real ring/firmware behavior at the end of a raw-sensor session, not something this code can stop. If the LEDs are stuck on: take the ring off-finger or onto the charger for a few seconds, or forget + re-pair it. That has reliably cleared it.';
+      return;
+    }
 
     if (ppgSamples.length < 20) {
       document.getElementById('hrv-empty').textContent = `Only ${ppgSamples.length} PPG samples received — not enough to compute anything. Try again with the ring snug.`;
@@ -574,9 +587,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const btn = document.getElementById('force-stop-btn');
     const status = document.getElementById('force-stop-status');
     btn.disabled = true;
+
+    if (!window.ColmiBLE.device?.gatt?.connected) {
+      status.textContent = 'Ring already disconnected on its own — nothing to send a stop command to. If lights are stuck: off-finger/charger for a few seconds, or forget + re-pair.';
+      btn.disabled = false;
+      return;
+    }
+
     status.textContent = 'Sending stop command...';
     try {
-      await window.ColmiBLE.stopRawSensor();
+      const stopResult = await window.ColmiBLE.stopRawSensor();
+      if (stopResult.disconnected) {
+        status.textContent = 'Ring disconnected mid-command. Try off-finger/charger reset.';
+        btn.disabled = false;
+        return;
+      }
       status.textContent = 'Reconnecting (this is what actually clears it)...';
       await window.ColmiBLE.forceReconnect();
       status.textContent = 'Reconnected — check the ring now.';
