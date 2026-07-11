@@ -301,6 +301,14 @@ const SageRender = {
     });
     BLE.on('readingError', e => SageRender.debugLog(`[reading error] kind=${e.kind} code=${e.code}`));
     BLE.on('raw', hex => SageRender.debugLog('[raw] ' + hex));
+    BLE.on('heartRateLog', log => {
+      const nonZero = log.heartRates.filter(v => v > 0);
+      const summary = nonZero.length
+        ? `${nonZero.length} samples, range ${Math.min(...nonZero)}-${Math.max(...nonZero)}`
+        : 'no nonzero samples yet today';
+      SageRender.debugLog(`[HR log] ${log.timestamp?.toLocaleString() || 'no timestamp'} — ${summary}`, true);
+    });
+    BLE.on('heartRateLogError', () => SageRender.debugLog('[HR log] error response from ring'));
 
     try {
       const name = await BLE.connect();
