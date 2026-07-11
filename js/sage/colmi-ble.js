@@ -481,6 +481,16 @@ const ColmiBLE = {
   // ── COMMANDS ───────────────────────────────────────────────
   async write(packet) {
     if (!ColmiBLE.writeChar) return;
+    if (!ColmiBLE.device?.gatt?.connected) {
+      // The ring disconnected on its own (confirmed real behavior:
+      // it drops the BLE link at the end of a raw sensor session).
+      // Writing to a dead GATT connection throws an opaque DOMException
+      // deep inside whatever called this — that's what silently broke
+      // both the stop-retry and Force Stop earlier. Fail clearly and
+      // immediately instead.
+      ColmiBLE.connected = false;
+      throw new Error('ring_disconnected');
+    }
     await ColmiBLE.writeChar.writeValue(packet);
   },
 
@@ -531,16 +541,24 @@ const ColmiBLE = {
 
   async stopRawSensor() {
     const packet = ColmiBLE.makePacket(ColmiBLE.CMD_RAW_SENSOR, [ColmiBLE.RAW_SENSOR_DISABLE]);
-    // Sent 3x with a short gap — the ring is actively streaming raw
-    // samples at high volume during this window, and a single stop
-    // write has shown itself unreliable against that traffic (LEDs
-    // staying on after a real capture completed). Redundant writes
-    // are harmless; a dropped stop write leaves the sensors running.
     for (let i = 0; i < 3; i++) {
-      await ColmiBLE.write(packet);
+      if (!ColmiBLE.device?.gatt?.connected) {
+        // Ring already disconnected on its own — nothing left to send
+        // this to. Stop retrying, this isn't a dropped-write problem,
+        // there's no connection at all.
+        ColmiBLE.rawSensorActive = false;
+        return { disconnected: true };
+      }
+      try {
+        await ColmiBLE.write(packet);
+      } catch (e) {
+        ColmiBLE.rawSensorActive = false;
+        return { disconnected: true };
+      }
       await ColmiBLE.sleep(150);
     }
     ColmiBLE.rawSensorActive = false;
+    return { disconnected: false };
   },
   // Defaults to today. Per date_utils.py, the reference client always
   // uses midnight UTC (the ring's clock is set in UTC via set_time.js),
