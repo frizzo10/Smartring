@@ -116,9 +116,9 @@
   </div>
 
   <!-- ACTIVITY -->
-  <div id="card-activity" class="qcard">
+  <div id="card-activity" class="qcard" onclick="window.location.href='activity-detail.html'" style="cursor:pointer;">
     <div class="qcard-content">
-    <div class="qcard-title">Activity</div>
+    <div class="qcard-title">Activity <span style="font-size:12px;opacity:0.7;font-weight:400;">— tap for details ›</span></div>
     <div class="qcard-date" id="activity-date"></div>
     <div class="arc-wrap">
       <svg viewBox="0 0 220 130"><path id="activity-arc-bg" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="14" stroke-linecap="round"/><path id="activity-arc-fg" fill="none" stroke="#ffffff" stroke-width="14" stroke-linecap="round"/></svg>
@@ -165,8 +165,8 @@
   </div>
 
   <!-- HEART RATE -->
-  <div id="card-heart" class="qcard">
-    <div class="qcard-title">Heart Rate</div>
+  <div id="card-heart" class="qcard" onclick="window.location.href='heart-detail.html'" style="cursor:pointer;">
+    <div class="qcard-title">Heart Rate <span style="font-size:12px;opacity:0.7;font-weight:400;">— tap for details ›</span></div>
     <div class="qcard-date" id="heart-date"></div>
     <div class="chart-box" id="heart-chart-wrap" style="display:none;">
       <svg id="heart-chart" viewBox="0 0 300 130" preserveAspectRatio="none"></svg>
@@ -179,8 +179,8 @@
   </div>
 
   <!-- BLOOD OXYGEN -->
-  <div id="card-oxygen" class="qcard">
-    <div class="qcard-title">Blood Oxygen</div>
+  <div id="card-oxygen" class="qcard" onclick="window.location.href='oxygen-detail.html'" style="cursor:pointer;">
+    <div class="qcard-title">Blood Oxygen <span style="font-size:12px;opacity:0.7;font-weight:400;">— tap for details ›</span></div>
     <div class="qcard-date" id="oxygen-date"></div>
     <div class="chart-box" id="oxygen-chart-wrap" style="display:none;">
       <svg id="oxygen-chart" viewBox="0 0 300 130" preserveAspectRatio="none"></svg>
