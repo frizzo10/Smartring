@@ -353,8 +353,11 @@ const Dashboard = {
     const dateStr = Dashboard.todayLabel();
 
     if (result.reason === 'ok') {
-      Dashboard.renderHrv({ rmssd: result.rmssd, beatsDetected: result.beatsDetected, cleanBeats: result.cleanBeats, rejectionRate: result.rejectionRate, meanRR: result.meanRR, date: dateStr });
-      Dashboard.saveSnapshot({ hrvComputed: { rmssd: result.rmssd, beatsDetected: result.beatsDetected, cleanBeats: result.cleanBeats, rejectionRate: result.rejectionRate, meanRR: result.meanRR, date: dateStr } });
+      const entry = { rmssd: result.rmssd, beatsDetected: result.beatsDetected, cleanBeats: result.cleanBeats, rejectionRate: result.rejectionRate, meanRR: result.meanRR, date: dateStr, recordedAt: new Date().toISOString() };
+      Dashboard.renderHrv(entry);
+      const existing = Dashboard.loadSnapshot() || {};
+      const history = (existing.hrvHistory || []).concat([entry]).slice(-30); // keep last 30 captures
+      Dashboard.saveSnapshot({ hrvComputed: entry, hrvHistory: history });
       Dashboard.syncToCloud();
     } else {
       document.getElementById('hrv-empty').textContent = `No result — ${result.reason}. Beats detected: ${result.beatsDetected ?? 0}.`;
