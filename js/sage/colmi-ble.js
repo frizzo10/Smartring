@@ -242,8 +242,51 @@ const ColmiBLE = {
     },
   },
 
-  // State machine for the multi-packet step/activity log response —
-  // mirrors steps.py's SportDetailParser exactly. Verified against a
+  // HRV history log — confirmed real by a merged Gadgetbridge PR
+  // (#4222), NOT the same as the real-time HRV spot-check (kind 10)
+  // that returns undecoded garbage. Per that PR's own description:
+  // - Sync command takes a daysAgo parameter (0-6), not a timestamp
+  // - Response is "very similar to the HR response" — same 16-byte
+  //   packet family, subtype-based multi-packet structure
+  // - Samples come in 30-minute intervals (vs HR log's 5-minute)
+  // - Packet 1's byte[2] is NOT a 4-byte timestamp like HR log's —
+  //   "something else", unspecified
+  // - An earlier attempt on different hardware/firmware found the
+  //   ring confirmed the enable switch (0x38) but never answered the
+  //   data request (0x39) — so this may simply return nothing on some
+  //   rings. That's a real possible outcome, not a bug in this code.
+  // We don't have byte-exact offsets for the sample data itself, so
+  // rather than guess and risk presenting invented numbers as real,
+  // this captures and exposes the RAW packets. The header (subtype 0:
+  // size + range) reuses HR log's confirmed layout since the PR
+  // explicitly started from that code — that part's on firmer ground
+  // than the rest.
+  CMD_HRV_SWITCH: 0x38,
+  CMD_HRV_DATA: 0x39,
+
+  hrvLogRaw: {
+    packets: [],
+    size: 0,
+    range: 0,
+    reset() {
+      ColmiBLE.hrvLogRaw.packets = [];
+      ColmiBLE.hrvLogRaw.size = 0;
+      ColmiBLE.hrvLogRaw.range = 0;
+    },
+  },
+
+  async enableHrvSync() {
+    const packet = ColmiBLE.makePacket(ColmiBLE.CMD_HRV_SWITCH, [0x01]);
+    await ColmiBLE.write(packet);
+  },
+
+  async readHrvLog(daysAgo = 0) {
+    ColmiBLE.hrvLogRaw.reset();
+    const packet = ColmiBLE.makePacket(ColmiBLE.CMD_HRV_DATA, [daysAgo]);
+    await ColmiBLE.write(packet);
+  },
+
+
   // real captured packet from tonight: decoded to today's actual date
   // (2026-07-10) at a plausible time slot, steps=13, calories=35,
   // distance=7m.
@@ -684,6 +727,39 @@ const ColmiBLE = {
       if (result) {
         if (result.noData) ColmiBLE.emit('stepsNoData', {});
         else ColmiBLE.emit('steps', result.entries);
+      }
+      return;
+    }
+
+    if (cmd === ColmiBLE.CMD_HRV_DATA) {
+      const subType = bytes[1];
+      const hex = Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join(' ');
+
+      if (subType === 255) {
+        ColmiBLE.emit('hrvLogRaw', { error: true, packets: [], size: 0, range: 0 });
+        ColmiBLE.hrvLogRaw.reset();
+        return;
+      }
+
+      if (subType === 0) {
+        // Header — same layout HR log uses (confirmed reused per the
+        // Gadgetbridge PR): byte[2] = packet count, byte[3] = minutes
+        // per sample.
+        ColmiBLE.hrvLogRaw.size = bytes[2];
+        ColmiBLE.hrvLogRaw.range = bytes[3];
+      }
+
+      ColmiBLE.hrvLogRaw.packets.push({ subType, hex });
+
+      const { size, range, packets } = ColmiBLE.hrvLogRaw;
+      if (size > 0 && subType === size - 1) {
+        ColmiBLE.emit('hrvLogRaw', { error: false, packets, size, range });
+        ColmiBLE.hrvLogRaw.reset();
+      } else if (size === 0 && subType > 0) {
+        // No valid header ever arrived but we're getting numbered
+        // packets anyway — surface what we have rather than wait
+        // forever for a completion condition that may never trigger.
+        ColmiBLE.emit('hrvLogRaw', { error: false, incomplete: true, packets, size, range });
       }
       return;
     }
