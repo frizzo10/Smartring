@@ -34,6 +34,30 @@
 const Dashboard = {
   SNAPSHOT_KEY: 'sh_ring_latest',
 
+  // Real data already pulled off the ring tonight via ring-data.html —
+  // never required Bluefy/BLE here, just carrying it over so the layout
+  // isn't sitting empty. Heart Rate and Blood Oxygen are NOT seeded:
+  // no full sample series for either was captured tonight (HR log was
+  // only ever seen as a min/max range in an earlier session, SpO2 log
+  // was never read tonight at all) — seeding those would mean making
+  // up chart data, which isn't happening here. Those two stay empty
+  // until a real connect pulls them.
+  SEED_SNAPSHOT: {
+    activity: { totalSteps: 2402, totalCal: 69750, totalDistM: 1443, date: 'Jul 10, 2026' },
+    sleepDetail: {
+      phases: [
+        { type: 2, durationMin: 359 }, // light
+        { type: 3, durationMin: 74 },  // deep
+        { type: 4, durationMin: 123 }, // REM
+        { type: 5, durationMin: 78 },  // awake
+      ],
+      startMins: 22 * 60 + 27, // 22:27
+      endMins: 9 * 60 + 1,     // 09:01
+      date: 'last night',
+    },
+    updatedAt: null, // set to a fixed real timestamp below, not "now"
+  },
+
   loadSnapshot() {
     try { return JSON.parse(localStorage.getItem(Dashboard.SNAPSHOT_KEY) || 'null'); }
     catch (e) { return null; }
@@ -236,11 +260,14 @@ const Dashboard = {
   // handed over and this page already saved, the last time it was
   // connected.
   renderFromCache() {
-    const snap = Dashboard.loadSnapshot();
-    if (!snap) return;
+    const snap = Dashboard.loadSnapshot() || {};
+    const seed = Dashboard.SEED_SNAPSHOT;
 
-    if (snap.activity) Dashboard.renderActivity(snap.activity);
-    if (snap.sleepDetail) Dashboard.renderSleep(snap.sleepDetail);
+    const activity = snap.activity || seed.activity;
+    const sleepDetail = snap.sleepDetail || seed.sleepDetail;
+
+    if (activity) Dashboard.renderActivity(activity);
+    if (sleepDetail) Dashboard.renderSleep(sleepDetail);
     if (snap.heartSeries) Dashboard.renderHeartRate(snap.heartSeries, snap.heartDate);
     if (snap.oxygenHourly) Dashboard.renderOxygen(snap.oxygenHourly, snap.oxygenDate);
     if (typeof snap.battery === 'object' && snap.battery) Dashboard.renderBattery(snap.battery);
@@ -248,6 +275,8 @@ const Dashboard = {
     if (snap.updatedAt) {
       const d = new Date(snap.updatedAt);
       document.getElementById('synced-label').textContent = 'Last synced ' + d.toLocaleString();
+    } else if (!snap.activity && !snap.sleepDetail) {
+      document.getElementById('synced-label').textContent = 'Showing data from tonight\'s ring-data.html session — connect to refresh';
     }
   },
 
