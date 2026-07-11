@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<title>Dashboard — myDrSage</title>
+<meta name="theme-color" content="#14213D">
+<style>
+  :root {
+    --navy: #14213D;
+    --navy-card: #1A2A4D;
+    --parchment: #F2EFE9;
+    --muted-blue: #8A93A8;
+    --green: #5FA97A;
+    --green-text: #C7DDCF;
+    --amber: #D99A4E;
+    --line: #2A3B5E;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--navy);
+    color: var(--parchment);
+    padding: 20px 18px 60px;
+    -webkit-tap-highlight-color: transparent;
+  }
+  h1 { font-size: 20px; margin-bottom: 4px; }
+  .subhead { font-size: 13px; color: var(--muted-blue); margin-bottom: 18px; }
+
+  #connect-bar { margin-bottom: 18px; }
+  #connect-btn, #disconnect-btn {
+    width: 100%; padding: 14px; border-radius: 12px; border: none;
+    font-size: 15px; font-weight: 600; font-family: inherit;
+  }
+  #connect-btn { background: var(--parchment); color: var(--navy); }
+  #disconnect-btn { background: transparent; color: var(--parchment); border: 1px solid var(--line); margin-top: 8px; display: none; }
+  #connect-btn:active, #disconnect-btn:active { transform: scale(0.98); }
+
+  #status-line { font-size: 13px; color: var(--muted-blue); margin: 10px 0 20px; min-height: 16px; }
+
+  .stat-card {
+    background: var(--navy-card);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 18px 18px 16px;
+    margin-bottom: 14px;
+  }
+  .stat-top { display: flex; justify-content: space-between; align-items: baseline; }
+  .stat-title { font-size: 13px; font-weight: 600; color: var(--muted-blue); text-transform: uppercase; letter-spacing: 0.05em; }
+  .stat-updated { font-size: 11px; color: var(--muted-blue); }
+
+  .stat-main { display: flex; align-items: baseline; gap: 8px; margin-top: 10px; }
+  .stat-value { font-size: 40px; font-weight: 700; line-height: 1; }
+  .stat-unit { font-size: 15px; color: var(--muted-blue); }
+
+  .stat-subrow { display: flex; gap: 22px; margin-top: 12px; }
+  .stat-sub-label { font-size: 11px; color: var(--muted-blue); text-transform: uppercase; letter-spacing: 0.04em; }
+  .stat-sub-value { font-size: 17px; font-weight: 600; margin-top: 2px; }
+
+  .chart-wrap { margin-top: 16px; }
+  .chart-wrap svg { width: 100%; height: 64px; display: block; }
+  .range-label { font-size: 12px; color: var(--muted-blue); margin-top: 6px; }
+
+  .empty-note { font-size: 13px; color: var(--muted-blue); margin-top: 10px; }
+</style>
+</head>
+<body>
+
+  <h1>Dashboard</h1>
+  <div class="subhead">Today's activity, heart rate, and blood oxygen from your Colmi R02.</div>
+
+  <div id="connect-bar">
+    <button id="connect-btn">Connect Colmi R02</button>
+    <button id="disconnect-btn">Disconnect Ring</button>
+  </div>
+  <div id="status-line"></div>
+
+  <div id="card-activity" class="stat-card">
+    <div class="stat-top">
+      <div class="stat-title">Activity</div>
+      <div class="stat-updated" id="activity-updated"></div>
+    </div>
+    <div class="stat-main">
+      <div class="stat-value" id="activity-steps">--</div>
+      <div class="stat-unit">steps</div>
+    </div>
+    <div class="stat-subrow">
+      <div>
+        <div class="stat-sub-label">Calories</div>
+        <div class="stat-sub-value" id="activity-cal">--</div>
+      </div>
+      <div>
+        <div class="stat-sub-label">Distance</div>
+        <div class="stat-sub-value" id="activity-dist">--</div>
+      </div>
+    </div>
+    <div class="empty-note" id="activity-empty">No data yet — connect the ring to load today's activity.</div>
+  </div>
+
+  <div id="card-heart" class="stat-card">
+    <div class="stat-top">
+      <div class="stat-title">Heart Rate</div>
+      <div class="stat-updated" id="heart-updated"></div>
+    </div>
+    <div class="stat-main">
+      <div class="stat-value" id="heart-avg">--</div>
+      <div class="stat-unit">bpm avg</div>
+    </div>
+    <div class="chart-wrap" id="heart-chart-wrap" style="display:none;">
+      <svg id="heart-chart" viewBox="0 0 240 64" preserveAspectRatio="none"></svg>
+      <div class="range-label" id="heart-range"></div>
+    </div>
+    <div class="empty-note" id="heart-empty">No data yet — connect the ring to load today's heart rate log.</div>
+  </div>
+
+  <div id="card-oxygen" class="stat-card">
+    <div class="stat-top">
+      <div class="stat-title">Blood Oxygen</div>
+      <div class="stat-updated" id="oxygen-updated"></div>
+    </div>
+    <div class="stat-main">
+      <div class="stat-value" id="oxygen-avg">--</div>
+      <div class="stat-unit">% avg</div>
+    </div>
+    <div class="chart-wrap" id="oxygen-chart-wrap" style="display:none;">
+      <svg id="oxygen-chart" viewBox="0 0 240 64" preserveAspectRatio="none"></svg>
+      <div class="range-label" id="oxygen-range"></div>
+    </div>
+    <div class="empty-note" id="oxygen-empty">No data yet — connect the ring to load today's SpO2 log.</div>
+  </div>
+
+  <script src="js/sage/colmi-ble.js"></script>
+  <script src="js/sage/dashboard.js"></script>
+</body>
+</html>
