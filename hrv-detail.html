@@ -30,8 +30,9 @@
   .insight-row { padding: 14px 0; border-bottom: 1px solid rgba(255,255,255,0.08); }
   .insight-row:last-child { border-bottom: none; }
   .insight-title { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+  .insight-desc { font-size: 12px; color: #8A93A8; line-height: 1.5; margin-bottom: 8px; }
   .insight-body { font-size: 13px; color: #C8D0E0; line-height: 1.5; }
-  .insight-locked { font-size: 13px; color: #8A93A8; font-style: italic; }
+  .insight-locked { font-size: 13px; color: #E8A85C; line-height: 1.5; }
 </style>
 </head>
 <body>
@@ -126,6 +127,7 @@
       // 1. Personal baseline — a single RMSSD number means nothing
       // without something to compare it to. Needs at least 3 captures
       // for "average" to mean anything at all.
+      const baselineDesc = 'A single HRV number means almost nothing on its own — everyone\'s baseline is different. This compares today\'s reading to your own rolling average from past captures, so what matters is deviation from YOUR normal, not an arbitrary number.';
       if (hrvHistory.length >= 3) {
         const priorCaptures = hrvHistory.slice(0, -1); // exclude today's own capture from its own baseline
         const baseline = priorCaptures.length
@@ -135,14 +137,20 @@
         const dir = pctDiff > 0 ? 'above' : pctDiff < 0 ? 'below' : 'at';
         rows.push({
           title: 'vs. Your Own Baseline',
+          desc: baselineDesc,
           body: `Today's RMSSD (${latest.rmssd}ms) is ${Math.abs(pctDiff)}% ${dir} your ${priorCaptures.length}-capture average (${Math.round(baseline)}ms).`,
         });
       } else {
-        rows.push({ title: 'vs. Your Own Baseline', locked: `Not enough data yet — need at least 3 captures, currently have ${hrvHistory.length}.` });
+        rows.push({
+          title: 'vs. Your Own Baseline',
+          desc: baselineDesc,
+          locked: `Needs at least 3 HRV captures — currently have ${hrvHistory.length}. On the main dashboard's HRV card, tap "Compute HRV" ${3 - hrvHistory.length} more time${3 - hrvHistory.length === 1 ? '' : 's'}, ideally on different days/occasions rather than back-to-back.`,
+        });
       }
 
       // 2. HRV vs last night's sleep — both usually exist from the
       // same connect session, no extra history needed.
+      const sleepDesc = 'Pairs today\'s HRV with last night\'s sleep efficiency and wake-event count. Poor sleep together with suppressed HRV is a stronger combined signal than either one shown alone.';
       if (latest && snap.sleepDetail) {
         const sd = snap.sleepDetail;
         const totalMin = sd.phases.reduce((s, p) => s + p.durationMin, 0);
@@ -151,29 +159,39 @@
         const wakeEvents = sd.phases.filter(p => p.type === 5).length;
         rows.push({
           title: 'vs. Last Night\'s Sleep',
-          body: `Sleep efficiency ${efficiency}%, ${wakeEvents} wake event${wakeEvents === 1 ? '' : 's'} — same-session RMSSD: ${latest.rmssd}ms.`,
+          desc: sleepDesc,
+          body: `Sleep efficiency ${efficiency}%, ${wakeEvents} wake event${wakeEvents === 1 ? '' : 's'} — RMSSD: ${latest.rmssd}ms.`,
         });
       } else {
-        rows.push({ title: 'vs. Last Night\'s Sleep', locked: 'Not enough data yet — need both an HRV capture and a sleep log read from the same session.' });
+        const missing = [];
+        if (!snap.sleepDetail) missing.push('a sleep log in your data — any tap of "Connect" on the dashboard pulls this automatically');
+        if (!latest) missing.push('at least one HRV capture — tap "Compute HRV" on the dashboard\'s HRV card');
+        rows.push({ title: 'vs. Last Night\'s Sleep', desc: sleepDesc, locked: `Missing: ${missing.join('; and ')}.` });
       }
 
       // 3. HRV vs today's SpO2 dips — same-session pairing, no extra
       // history needed.
+      const spo2Desc = 'Pairs today\'s HRV with how many hours today had a blood oxygen dip. Disordered breathing and autonomic stress can show up in both at once — this is the most directly relevant pairing to the sleep-apnea focus of this whole project.';
       if (latest && snap.oxygenHourlyDetail) {
         const withMin = snap.oxygenHourlyDetail.filter(h => h.min > 0);
         const below94 = withMin.filter(h => h.min < 94).length;
         const below90 = withMin.filter(h => h.min < 90).length;
         rows.push({
           title: 'vs. Today\'s Blood Oxygen Dips',
-          body: `${below94} hour${below94 === 1 ? '' : 's'} with a dip below 94%, ${below90} below 90% — same-session RMSSD: ${latest.rmssd}ms.`,
+          desc: spo2Desc,
+          body: `${below94} hour${below94 === 1 ? '' : 's'} with a dip below 94%, ${below90} below 90% — RMSSD: ${latest.rmssd}ms.`,
         });
       } else {
-        rows.push({ title: 'vs. Today\'s Blood Oxygen Dips', locked: 'Not enough data yet — need both an HRV capture and a SpO2 log read from the same session.' });
+        const missing = [];
+        if (!snap.oxygenHourlyDetail) missing.push('a blood oxygen log in your data — any tap of "Connect" on the dashboard pulls this automatically');
+        if (!latest) missing.push('at least one HRV capture — tap "Compute HRV" on the dashboard\'s HRV card');
+        rows.push({ title: 'vs. Today\'s Blood Oxygen Dips', desc: spo2Desc, locked: `Missing: ${missing.join('; and ')}.` });
       }
 
       // 4. HRV vs yesterday's activity load — genuinely needs a second
       // day's data, which wasn't being kept until tonight. Honest
       // "not enough data" until at least 2 different days exist.
+      const activityDesc = 'Compares today\'s HRV against yesterday\'s total activity. A high-activity day followed by a suppressed HRV the next day is a real under-recovery signal — the basis of HRV-guided training used in exercise physiology.';
       const activityHistory = snap.activityHistory || [];
       const uniqueDays = [...new Set(activityHistory.map(a => a.date))];
       if (latest && uniqueDays.length >= 2) {
@@ -181,16 +199,22 @@
         const yesterday = sorted[1];
         rows.push({
           title: 'vs. Yesterday\'s Activity',
+          desc: activityDesc,
           body: `${yesterday.totalSteps.toLocaleString()} steps on ${yesterday.date} — today's RMSSD: ${latest.rmssd}ms.`,
         });
       } else {
-        rows.push({ title: 'vs. Yesterday\'s Activity', locked: `Not enough data yet — need activity data from at least 2 different days, currently have ${uniqueDays.length}. Builds automatically as you connect on different days.` });
+        rows.push({
+          title: 'vs. Yesterday\'s Activity',
+          desc: activityDesc,
+          locked: `Needs activity data from at least 2 different calendar days — currently have ${uniqueDays.length}. This builds automatically: just connect on the dashboard (any "Connect" tap pulls today's activity) on ${2 - uniqueDays.length} more different day${2 - uniqueDays.length === 1 ? '' : 's'}, plus at least one HRV capture.`,
+        });
       }
 
       document.getElementById('insights-list').innerHTML = rows.map(r => `
         <div class="insight-row">
           <div class="insight-title">${r.title}</div>
-          ${r.locked ? `<div class="insight-locked">${r.locked}</div>` : `<div class="insight-body">${r.body}</div>`}
+          <div class="insight-desc">${r.desc}</div>
+          ${r.locked ? `<div class="insight-locked">🔒 ${r.locked}</div>` : `<div class="insight-body">${r.body}</div>`}
         </div>
       `).join('');
     }
