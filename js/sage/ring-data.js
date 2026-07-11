@@ -189,6 +189,15 @@ const RingData = {
       RingData.setButtonBusy('card-sleep', false);
     });
 
+    // Raw sensor stream — accumulate counts + latest sample of each
+    // kind while streaming; runCommand('rawsensor') below reads these
+    // after the 10s window closes.
+    RingData.rawCounts = { ppg: 0, spo2: 0, accel: 0 };
+    RingData.rawLatest = { ppg: null, spo2: null, accel: null };
+    BLE.on('rawPpgSample', s => { RingData.rawCounts.ppg++; RingData.rawLatest.ppg = s; });
+    BLE.on('rawSpo2Sample', s => { RingData.rawCounts.spo2++; RingData.rawLatest.spo2 = s; });
+    BLE.on('rawAccelSample', s => { RingData.rawCounts.accel++; RingData.rawLatest.accel = s; });
+
     try {
       const name = await BLE.connect();
       RingData.setStatus('[connected] ' + name);
@@ -248,6 +257,26 @@ const RingData = {
     if (cmd === 'steps') {
       RingData.setButtonBusy(cardId, true);
       await BLE.readSteps(0);
+      return;
+    }
+
+    if (cmd === 'rawsensor') {
+      RingData.setButtonBusy(cardId, true, 'Streaming (10s)...');
+      RingData.rawCounts = { ppg: 0, spo2: 0, accel: 0 };
+      RingData.rawLatest = { ppg: null, spo2: null, accel: null };
+      await BLE.startRawSensor();
+      setTimeout(async () => {
+        await BLE.stopRawSensor();
+        const { ppg, spo2, accel } = RingData.rawCounts;
+        const l = RingData.rawLatest;
+        const lines = [`${ppg} PPG samples, ${spo2} SpO2 samples, ${accel} accel samples in 10s`];
+        if (l.ppg) lines.push(`latest PPG: ${l.ppg.ppg} (max ${l.ppg.max}, min ${l.ppg.min}, diff ${l.ppg.diff})`);
+        if (l.spo2) lines.push(`latest SpO2 raw: ${l.spo2.spo2} (max ${l.spo2.max}, min ${l.spo2.min}, diff ${l.spo2.diff})`);
+        if (l.accel) lines.push(`latest accel: x=${l.accel.accX} y=${l.accel.accY} z=${l.accel.accZ}`);
+        if (ppg + spo2 + accel === 0) lines.push('no raw sensor packets received — command may not be supported on this firmware');
+        RingData.showResult(cardId, lines.join('\n'));
+        RingData.setButtonBusy(cardId, false);
+      }, 10000);
       return;
     }
 
