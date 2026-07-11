@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<title>Sleep Detail — myDrSage</title>
+<meta name="theme-color" content="#0B1220">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #0B1220; color: #fff; padding: 16px 14px 60px;
+  }
+  a.back { color: #8A93A8; text-decoration: none; font-size: 14px; display: inline-block; margin-bottom: 14px; }
+  h1 { font-size: 22px; margin-bottom: 2px; }
+  .date { font-size: 13px; color: #8A93A8; margin-bottom: 18px; }
+
+  .card {
+    background: #1A2A4D; border: 1px solid #2A3B5E; border-radius: 18px;
+    padding: 18px 18px 20px; margin-bottom: 14px;
+  }
+  .card-title { font-size: 15px; font-weight: 700; color: #C8D0E0; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
+
+  /* real clock-time timeline */
+  #timeline-track { position: relative; height: 34px; border-radius: 6px; overflow: hidden; background: rgba(255,255,255,0.08); }
+  #timeline-track .seg { position: absolute; top: 0; bottom: 0; }
+  .seg-light { background: #7FA6D9; }
+  .seg-deep { background: #3E4E9A; }
+  .seg-rem { background: #A78BD9; }
+  .seg-awake { background: #E8A85C; }
+  #timeline-ticks { display: flex; justify-content: space-between; font-size: 11px; color: #8A93A8; margin-top: 8px; }
+  .legend { display: flex; gap: 16px; margin-top: 14px; flex-wrap: wrap; }
+  .legend .item { font-size: 12px; color: #C8D0E0; display: flex; align-items: center; gap: 6px; }
+  .legend .dot { width: 9px; height: 9px; border-radius: 50%; }
+
+  /* phase breakdown table */
+  .phase-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.08); }
+  .phase-row:last-child { border-bottom: none; }
+  .phase-name { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+  .phase-mins { font-size: 14px; font-weight: 600; }
+  .phase-pct { font-size: 12px; color: #8A93A8; margin-left: 8px; }
+
+  /* stat pair */
+  .stat-grid { display: flex; gap: 14px; }
+  .stat-box { flex: 1; background: rgba(255,255,255,0.06); border-radius: 12px; padding: 14px; text-align: center; }
+  .stat-box .val { font-size: 26px; font-weight: 800; }
+  .stat-box .lbl { font-size: 11px; color: #8A93A8; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.04em; }
+
+  /* trend chart */
+  #trend-chart { width: 100%; height: 120px; display: block; }
+  .trend-bar-label { fill: #8A93A8; font-size: 9px; }
+  .trend-grid-line { stroke: rgba(255,255,255,0.15); stroke-width: 1; stroke-dasharray: 3 3; }
+
+  .empty-note { font-size: 13px; color: #8A93A8; }
+</style>
+</head>
+<body>
+
+  <a class="back" href="dashboard.html">‹ Back to Dashboard</a>
+  <h1>Sleep Detail</h1>
+  <div class="date" id="detail-date">--</div>
+
+  <div id="content" style="display:none;">
+
+    <div class="card">
+      <div class="card-title">Timeline (real clock time)</div>
+      <div id="timeline-track"></div>
+      <div id="timeline-ticks"><span id="tick-start">--</span><span id="tick-end">--</span></div>
+      <div class="legend">
+        <div class="item"><div class="dot seg-light"></div>Light</div>
+        <div class="item"><div class="dot seg-deep"></div>Deep</div>
+        <div class="item"><div class="dot seg-rem"></div>REM</div>
+        <div class="item"><div class="dot seg-awake"></div>Awake</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Sleep Stats</div>
+      <div class="stat-grid">
+        <div class="stat-box"><div class="val" id="stat-efficiency">--%</div><div class="lbl">Sleep Efficiency</div></div>
+        <div class="stat-box"><div class="val" id="stat-wake-events">--</div><div class="lbl">Wake Events</div></div>
+        <div class="stat-box"><div class="val" id="stat-total">--</div><div class="lbl">Time in Bed</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Phase Breakdown</div>
+      <div id="phase-breakdown"></div>
+    </div>
+
+    <div class="card" id="trend-card" style="display:none;">
+      <div class="card-title">Nightly Trend</div>
+      <svg id="trend-chart" viewBox="0 0 300 120" preserveAspectRatio="none"></svg>
+      <div class="empty-note" style="margin-top:8px;">Total time asleep per night, as far back as the ring's last sleep log read actually returned.</div>
+    </div>
+
+  </div>
+
+  <div class="empty-note" id="no-data-note">No sleep data cached yet — go back and connect the ring first.</div>
+
+  <script>
+    // ── Load from the same cache the dashboard writes to ─────────
+    function loadSnapshot() {
+      try { return JSON.parse(localStorage.getItem('sh_ring_latest') || 'null'); }
+      catch (e) { return null; }
+    }
+
+    const SEG_CLASS = { 2: 'seg-light', 3: 'seg-deep', 4: 'seg-rem', 5: 'seg-awake' };
+    const TYPE_NAME = { 2: 'Light', 3: 'Deep', 4: 'REM', 5: 'Awake' };
+    const TYPE_COLOR = { 2: '#7FA6D9', 3: '#3E4E9A', 4: '#A78BD9', 5: '#E8A85C' };
+
+    function fmtTime(mins) {
+      const h = Math.floor(mins / 60) % 24, m = Math.round(mins % 60);
+      return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    }
+
+    function renderTimeline(period) {
+      const totalMin = period.phases.reduce((s, p) => s + p.durationMin, 0);
+      const track = document.getElementById('timeline-track');
+      let cursorMin = 0;
+      track.innerHTML = period.phases.map(ph => {
+        const leftPct = (cursorMin / totalMin) * 100;
+        const widthPct = (ph.durationMin / totalMin) * 100;
+        cursorMin += ph.durationMin;
+        const cls = SEG_CLASS[ph.type];
+        if (!cls) return '';
+        return `<div class="seg ${cls}" style="left:${leftPct}%;width:${widthPct}%;"></div>`;
+      }).join('');
+      document.getElementById('tick-start').textContent = fmtTime(period.startMins);
+      document.getElementById('tick-end').textContent = fmtTime(period.endMins);
+    }
+
+    function renderStats(period) {
+      const totalMin = period.phases.reduce((s, p) => s + p.durationMin, 0);
+      const asleepMin = period.phases.filter(p => p.type === 2 || p.type === 3 || p.type === 4).reduce((s, p) => s + p.durationMin, 0);
+      const efficiency = totalMin > 0 ? Math.round((asleepMin / totalMin) * 100) : 0;
+      const wakeEvents = period.phases.filter(p => p.type === 5).length;
+
+      document.getElementById('stat-efficiency').textContent = efficiency + '%';
+      document.getElementById('stat-wake-events').textContent = wakeEvents;
+      document.getElementById('stat-total').textContent = `${Math.floor(totalMin / 60)}h ${totalMin % 60}m`;
+    }
+
+    function renderPhaseBreakdown(period) {
+      const totalMin = period.phases.reduce((s, p) => s + p.durationMin, 0);
+      const totals = {};
+      period.phases.forEach(p => { totals[p.type] = (totals[p.type] || 0) + p.durationMin; });
+
+      const rows = [2, 3, 4, 5].filter(t => totals[t]).map(t => {
+        const mins = totals[t];
+        const pct = totalMin > 0 ? Math.round((mins / totalMin) * 100) : 0;
+        return `<div class="phase-row">
+          <div class="phase-name"><div class="dot" style="width:9px;height:9px;border-radius:50%;background:${TYPE_COLOR[t]};"></div>${TYPE_NAME[t]}</div>
+          <div><span class="phase-mins">${Math.floor(mins/60)}h ${mins%60}m</span><span class="phase-pct">${pct}%</span></div>
+        </div>`;
+      }).join('');
+      document.getElementById('phase-breakdown').innerHTML = rows || '<div class="empty-note">No phase data.</div>';
+    }
+
+    function renderTrend(periods) {
+      if (!periods || periods.length < 2) return; // need at least 2 nights for a trend to mean anything
+      document.getElementById('trend-card').style.display = 'block';
+
+      const nights = periods
+        .slice()
+        .sort((a, b) => b.daysPrevious - a.daysPrevious) // oldest first, left to right
+        .map(p => ({
+          label: p.daysPrevious === 0 ? 'Last night' : `${p.daysPrevious}d ago`,
+          asleepMin: p.phases.filter(ph => ph.type === 2 || ph.type === 3 || ph.type === 4).reduce((s, ph) => s + ph.durationMin, 0),
+        }));
+
+      const w = 300, h = 120, padL = 8, padR = 8, padT = 8, padB = 20;
+      const plotW = w - padL - padR, plotH = h - padT - padB;
+      const maxMin = Math.max(...nights.map(n => n.asleepMin), 1);
+      const barW = plotW / nights.length * 0.5;
+      const gap = plotW / nights.length;
+
+      let bars = '';
+      nights.forEach((n, i) => {
+        const x = padL + i * gap + (gap - barW) / 2;
+        const barH = (n.asleepMin / maxMin) * plotH;
+        const y = padT + plotH - barH;
+        bars += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${barH.toFixed(1)}" rx="3" fill="#7FA6D9"/>`;
+        bars += `<text x="${(x + barW/2).toFixed(1)}" y="${h - 6}" text-anchor="middle" class="trend-bar-label">${n.label}</text>`;
+      });
+
+      const svg = document.getElementById('trend-chart');
+      svg.innerHTML = bars;
+      svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const snap = loadSnapshot();
+      const periods = snap && snap.sleepPeriods;
+      const primary = periods ? (periods.find(p => p.daysPrevious === 0) || periods[0])
+                               : (snap && snap.sleepDetail ? { phases: snap.sleepDetail.phases, startMins: snap.sleepDetail.startMins, endMins: snap.sleepDetail.endMins } : null);
+
+      if (!primary) return; // no-data-note stays visible
+
+      document.getElementById('no-data-note').style.display = 'none';
+      document.getElementById('content').style.display = 'block';
+      document.getElementById('detail-date').textContent = (snap.sleepDetail && snap.sleepDetail.date) || '';
+
+      renderTimeline(primary);
+      renderStats(primary);
+      renderPhaseBreakdown(primary);
+      renderTrend(periods);
+    });
+  </script>
+</body>
+</html>
