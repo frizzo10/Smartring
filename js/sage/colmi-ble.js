@@ -560,6 +560,22 @@ const ColmiBLE = {
     ColmiBLE.rawSensorActive = false;
     return { disconnected: false };
   },
+
+  // EXPERIMENTAL — unconfirmed against this ring. Real command number
+  // from Gadgetbridge's actual reverse-engineered command list
+  // (CMD_HR_TIMING_MONITOR_SWITCH = 0x16). The "disable" payload shape
+  // ([0x02, 0x02, 5]) is inferred from a different, similarly-named
+  // command's documented usage, not independently confirmed for this
+  // exact byte. Worth trying now that we've confirmed the raw sensor
+  // stream's own stop command genuinely executes and does NOT clear
+  // the LED — that rules out the raw stream as the cause and points
+  // at a separate, persistent, connection-independent setting instead.
+  CMD_HR_TIMING_MONITOR_SWITCH: 0x16,
+
+  async disableAutoHrMonitor() {
+    const packet = ColmiBLE.makePacket(ColmiBLE.CMD_HR_TIMING_MONITOR_SWITCH, [0x02, 0x02, 5]);
+    await ColmiBLE.write(packet);
+  },
   // Defaults to today. Per date_utils.py, the reference client always
   // uses midnight UTC (the ring's clock is set in UTC via set_time.js),
   // not local midnight.
