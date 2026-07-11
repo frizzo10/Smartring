@@ -80,13 +80,23 @@ const Dashboard = {
     try {
       const snapshot = Dashboard.loadSnapshot();
       if (!snapshot) return;
-      await fetch('/.netlify/functions/ring-sync', {
+      const res = await fetch('/.netlify/functions/ring-sync', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(snapshot),
       });
+      const label = document.getElementById('synced-label');
+      if (res.ok) {
+        if (label) label.textContent += ' · synced to cloud ✓';
+      } else {
+        const body = await res.text();
+        console.error('cloud sync failed', res.status, body);
+        if (label) label.textContent += ` · cloud sync failed (${res.status})`;
+      }
     } catch (e) {
       console.error('cloud sync failed (non-fatal)', e);
+      const label = document.getElementById('synced-label');
+      if (label) label.textContent += ' · cloud sync failed (network)';
     }
   },
 
