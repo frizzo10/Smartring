@@ -312,13 +312,11 @@ const SageRender = {
       SageRender.debugLog(`[${label}] ${r.value}${rawNote}`, true);
       // A nonzero value means the ring has finished warming up and settled
       // on a real reading — stop showing the spinner for this phase.
-      if (r.value > 0) {
-        SageRender.hideWarmup();
-        // Only save HR/SpO2 into the snapshot the AI chat reads from —
-        // those are the two validated metrics on this hardware.
-        if (r.kind === BLE.READING_HEART_RATE) SageRender.saveRingSnapshot({ hr: r.value });
-        if (r.kind === BLE.READING_SPO2) SageRender.saveRingSnapshot({ spo2: r.value });
-      }
+      // NOT saved into the Dr. Sage snapshot: a live spot-check is one
+      // moment in time, not representative history. The ring's own
+      // logged data (heartRateLog below) is what Dr. Sage should reason
+      // from.
+      if (r.value > 0) SageRender.hideWarmup();
     });
     BLE.on('readingError', e => SageRender.debugLog(`[reading error] kind=${e.kind} code=${e.code}`));
     BLE.on('raw', hex => SageRender.debugLog('[raw] ' + hex));
