@@ -466,7 +466,15 @@ const ColmiBLE = {
 
   async stopRawSensor() {
     const packet = ColmiBLE.makePacket(ColmiBLE.CMD_RAW_SENSOR, [ColmiBLE.RAW_SENSOR_DISABLE]);
-    await ColmiBLE.write(packet);
+    // Sent 3x with a short gap — the ring is actively streaming raw
+    // samples at high volume during this window, and a single stop
+    // write has shown itself unreliable against that traffic (LEDs
+    // staying on after a real capture completed). Redundant writes
+    // are harmless; a dropped stop write leaves the sensors running.
+    for (let i = 0; i < 3; i++) {
+      await ColmiBLE.write(packet);
+      await ColmiBLE.sleep(150);
+    }
     ColmiBLE.rawSensorActive = false;
   },
   // Defaults to today. Per date_utils.py, the reference client always
