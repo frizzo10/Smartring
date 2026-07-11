@@ -270,6 +270,7 @@ const Dashboard = {
     if (sleepDetail) Dashboard.renderSleep(sleepDetail);
     if (snap.heartSeries) Dashboard.renderHeartRate(snap.heartSeries, snap.heartDate);
     if (snap.oxygenHourly) Dashboard.renderOxygen(snap.oxygenHourly, snap.oxygenDate);
+    if (snap.hrvComputed) Dashboard.renderHrv(snap.hrvComputed);
     if (typeof snap.battery === 'object' && snap.battery) Dashboard.renderBattery(snap.battery);
 
     if (snap.updatedAt) {
@@ -277,6 +278,56 @@ const Dashboard = {
       document.getElementById('synced-label').textContent = 'Last synced ' + d.toLocaleString();
     } else if (!snap.activity && !snap.sleepDetail) {
       document.getElementById('synced-label').textContent = 'Showing data from tonight\'s ring-data.html session — connect to refresh';
+    }
+  },
+
+  // ── HRV ──────────────────────────────────────────────────────
+  renderHrv({ rmssd, beatsDetected, cleanBeats, rejectionRate, meanRR, date }) {
+    document.getElementById('hrv-date').textContent = date || Dashboard.todayLabel();
+    document.getElementById('hrv-value').textContent = rmssd;
+    document.getElementById('hrv-detail').textContent = `${cleanBeats}/${beatsDetected} beats, mean RR ${meanRR}ms`;
+    document.getElementById('hrv-empty').style.display = 'none';
+    document.getElementById('hrv-metric-row').style.display = 'flex';
+  },
+
+  async computeHrv() {
+    const btn = document.getElementById('hrv-compute-btn');
+    if (!window.ColmiBLE.connected) {
+      document.getElementById('hrv-empty').textContent = 'Connect the ring first, then tap this.';
+      return;
+    }
+    btn.disabled = true;
+    btn.textContent = 'Capturing (60s)...';
+
+    const BLE = window.ColmiBLE;
+    const ppgSamples = [];
+    const timestamps = [];
+    const handler = s => { ppgSamples.push(s.ppg); timestamps.push(performance.now()); };
+    BLE.on('rawPpgSample', handler);
+
+    await BLE.startRawSensor();
+    await BLE.sleep(60000);
+    await BLE.stopRawSensor();
+    BLE.off('rawPpgSample', handler);
+
+    btn.disabled = false;
+    btn.textContent = 'Compute HRV (60s, hold still)';
+
+    if (ppgSamples.length < 20) {
+      document.getElementById('hrv-empty').textContent = `Only ${ppgSamples.length} PPG samples received — not enough to compute anything. Try again with the ring snug.`;
+      return;
+    }
+
+    const durationSec = (timestamps[timestamps.length - 1] - timestamps[0]) / 1000;
+    const sampleRateHz = ppgSamples.length / durationSec;
+    const result = window.HRV.computeHRV(ppgSamples, sampleRateHz);
+    const dateStr = Dashboard.todayLabel();
+
+    if (result.reason === 'ok') {
+      Dashboard.renderHrv({ rmssd: result.rmssd, beatsDetected: result.beatsDetected, cleanBeats: result.cleanBeats, rejectionRate: result.rejectionRate, meanRR: result.meanRR, date: dateStr });
+      Dashboard.saveSnapshot({ hrvComputed: { rmssd: result.rmssd, beatsDetected: result.beatsDetected, cleanBeats: result.cleanBeats, rejectionRate: result.rejectionRate, meanRR: result.meanRR, date: dateStr } });
+    } else {
+      document.getElementById('hrv-empty').textContent = `No result — ${result.reason}. Beats detected: ${result.beatsDetected ?? 0}.`;
     }
   },
 
@@ -293,11 +344,13 @@ const Dashboard = {
       if (s === 'connected') {
         disconnectBtn.style.display = 'block';
         connectBtn.textContent = 'Connected';
+        document.getElementById('hrv-compute-btn').disabled = false;
       }
       if (s === 'disconnected') {
         disconnectBtn.style.display = 'none';
         connectBtn.disabled = false;
         connectBtn.textContent = 'Connect Colmi R02';
+        document.getElementById('hrv-compute-btn').disabled = true;
       }
     });
 
@@ -423,4 +476,5 @@ document.addEventListener('DOMContentLoaded', () => {
   Dashboard.renderFromCache();
   document.getElementById('connect-btn').addEventListener('click', Dashboard.connect);
   document.getElementById('disconnect-btn').addEventListener('click', () => window.ColmiBLE.disconnect());
+  document.getElementById('hrv-compute-btn').addEventListener('click', Dashboard.computeHrv);
 });
