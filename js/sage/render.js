@@ -271,6 +271,18 @@ const SageRender = {
     if (card) card.classList.remove('visible');
   },
 
+  // Persists real ring readings so the main Dr. Sage chat (app.js
+  // sendChat()) can use real numbers instead of SimRing's fabricated
+  // data. Merges rather than overwrites since HR, SpO2, and the HR log
+  // arrive from separate events at separate times.
+  saveRingSnapshot(partial) {
+    try {
+      const existing = JSON.parse(localStorage.getItem('sh_ring_latest') || '{}');
+      const merged = { ...existing, ...partial, updatedAt: new Date().toISOString() };
+      localStorage.setItem('sh_ring_latest', JSON.stringify(merged));
+    } catch (e) { /* localStorage unavailable — fail silently */ }
+  },
+
   async connectRing() {
     const btn = document.getElementById('connect-ring-btn');
     const disconnectBtn = document.getElementById('disconnect-ring-btn');
@@ -290,14 +302,23 @@ const SageRender = {
         btn.textContent = 'Connect Colmi R02';
       }
     });
-    BLE.on('battery', b => SageRender.debugLog(`[battery] ${b.level}% ${b.charging ? '(charging)' : ''}`, true));
+    BLE.on('battery', b => {
+      SageRender.debugLog(`[battery] ${b.level}% ${b.charging ? '(charging)' : ''}`, true);
+      SageRender.saveRingSnapshot({ battery: b.level });
+    });
     BLE.on('reading', r => {
       const label = r.kind === BLE.READING_HEART_RATE ? 'HR' : r.kind === BLE.READING_SPO2 ? 'SpO2' : 'kind ' + r.kind;
       const rawNote = r.rawSample ? ` (raw@6-7: ${r.rawSampleHex})` : '';
       SageRender.debugLog(`[${label}] ${r.value}${rawNote}`, true);
       // A nonzero value means the ring has finished warming up and settled
       // on a real reading — stop showing the spinner for this phase.
-      if (r.value > 0) SageRender.hideWarmup();
+      if (r.value > 0) {
+        SageRender.hideWarmup();
+        // Only save HR/SpO2 into the snapshot the AI chat reads from —
+        // those are the two validated metrics on this hardware.
+        if (r.kind === BLE.READING_HEART_RATE) SageRender.saveRingSnapshot({ hr: r.value });
+        if (r.kind === BLE.READING_SPO2) SageRender.saveRingSnapshot({ spo2: r.value });
+      }
     });
     BLE.on('readingError', e => SageRender.debugLog(`[reading error] kind=${e.kind} code=${e.code}`));
     BLE.on('raw', hex => SageRender.debugLog('[raw] ' + hex));
@@ -307,6 +328,17 @@ const SageRender = {
         ? `${nonZero.length} samples, range ${Math.min(...nonZero)}-${Math.max(...nonZero)}`
         : 'no nonzero samples yet today';
       SageRender.debugLog(`[HR log] ${log.timestamp?.toLocaleString() || 'no timestamp'} — ${summary}`, true);
+      if (nonZero.length) {
+        SageRender.saveRingSnapshot({
+          hrLog: {
+            count: nonZero.length,
+            min: Math.min(...nonZero),
+            max: Math.max(...nonZero),
+            avg: Math.round(nonZero.reduce((a, b) => a + b, 0) / nonZero.length),
+            date: log.timestamp ? log.timestamp.toISOString() : null,
+          },
+        });
+      }
     });
     BLE.on('heartRateLogError', () => SageRender.debugLog('[HR log] error response from ring'));
 
