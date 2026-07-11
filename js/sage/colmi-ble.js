@@ -724,4 +724,25 @@ const ColmiBLE = {
 };
 
 if (typeof window !== 'undefined') window.ColmiBLE = ColmiBLE;
+
+// ── SAFETY NET ─────────────────────────────────────────────
+// If the raw sensor stream is left running when the page closes,
+// backgrounds, or the person navigates away mid-capture (e.g. during
+// the 60s HRV window), the ring's own firmware doesn't know to stop —
+// it just leaves the green/red LEDs on indefinitely. Best-effort stop
+// on both pagehide and visibilitychange (backgrounding on iOS fires
+// visibilitychange reliably, pagehide covers actual navigation/close).
+if (typeof window !== 'undefined') {
+  const emergencyStop = () => {
+    if (ColmiBLE.rawSensorActive && ColmiBLE.connected) {
+      // Fire-and-forget — page may be gone before this resolves, that's
+      // fine, the write is what matters, not waiting for a response.
+      ColmiBLE.stopRawSensor().catch(() => {});
+    }
+  };
+  window.addEventListener('pagehide', emergencyStop);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') emergencyStop();
+  });
+}
 if (typeof module !== 'undefined') module.exports = ColmiBLE;
