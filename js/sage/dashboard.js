@@ -71,6 +71,25 @@ const Dashboard = {
     } catch (e) { /* localStorage unavailable — fail silently, this is a bonus, not critical path */ }
   },
 
+  // Fire-and-forget write to Supabase via the ring-sync function — this
+  // is what gives us history beyond what the ring's own memory or the
+  // browser cache hold. Failure here should never block or break the
+  // rest of the page; it just means this particular sync didn't land
+  // in the permanent history.
+  async syncToCloud() {
+    try {
+      const snapshot = Dashboard.loadSnapshot();
+      if (!snapshot) return;
+      await fetch('/.netlify/functions/ring-sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(snapshot),
+      });
+    } catch (e) {
+      console.error('cloud sync failed (non-fatal)', e);
+    }
+  },
+
   setStatus(msg) {
     document.getElementById('status-line').textContent = msg;
   },
@@ -326,6 +345,7 @@ const Dashboard = {
     if (result.reason === 'ok') {
       Dashboard.renderHrv({ rmssd: result.rmssd, beatsDetected: result.beatsDetected, cleanBeats: result.cleanBeats, rejectionRate: result.rejectionRate, meanRR: result.meanRR, date: dateStr });
       Dashboard.saveSnapshot({ hrvComputed: { rmssd: result.rmssd, beatsDetected: result.beatsDetected, cleanBeats: result.cleanBeats, rejectionRate: result.rejectionRate, meanRR: result.meanRR, date: dateStr } });
+      Dashboard.syncToCloud();
     } else {
       document.getElementById('hrv-empty').textContent = `No result — ${result.reason}. Beats detected: ${result.beatsDetected ?? 0}.`;
     }
@@ -468,6 +488,7 @@ const Dashboard = {
       } catch (e) {
         document.getElementById('sleep-empty').textContent = e.message;
       }
+      Dashboard.syncToCloud();
     } catch (e) {
       Dashboard.setStatus(`[error] ${e.name || 'Error'}: ${e.message || '(no message)'}`);
       connectBtn.disabled = false;
