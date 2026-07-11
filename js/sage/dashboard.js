@@ -484,6 +484,14 @@ const Dashboard = {
           // never surfaced past the daily total.
           activityEntries: entries,
         });
+        // Additive, deduped by date — separate from `activity` above
+        // (which gets overwritten every connect). This is what makes
+        // "HRV vs yesterday's activity" possible once there's more
+        // than one day's data; today it usually won't be.
+        const existingAH = Dashboard.loadSnapshot() || {};
+        const activityHistory = (existingAH.activityHistory || []).filter(a => a.date !== dateStr);
+        activityHistory.push({ date: dateStr, totalSteps, totalCal, totalDistM });
+        Dashboard.saveSnapshot({ activityHistory: activityHistory.slice(-30) });
       }
     });
     BLE.on('stepsNoData', () => {
