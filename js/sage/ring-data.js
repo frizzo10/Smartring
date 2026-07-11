@@ -260,6 +260,48 @@ const RingData = {
       return;
     }
 
+    if (cmd === 'hrvcomputed') {
+      RingData.setButtonBusy(cardId, true, 'Capturing (60s)...');
+      const ppgSamples = [];
+      const timestamps = [];
+      const handler = s => { ppgSamples.push(s.ppg); timestamps.push(performance.now()); };
+      BLE.on('rawPpgSample', handler);
+
+      await BLE.startRawSensor();
+      setTimeout(async () => {
+        await BLE.stopRawSensor();
+        BLE.off('rawPpgSample', handler);
+
+        if (ppgSamples.length < 20) {
+          RingData.showResult(cardId, `Only ${ppgSamples.length} PPG samples received in 60s — not enough to compute anything. Check the ring is snug and the raw stream is actually running.`);
+          RingData.setButtonBusy(cardId, false);
+          return;
+        }
+
+        // Measured sample rate from actual arrival timestamps, not
+        // assumed — BLE notification timing isn't perfectly uniform,
+        // this is the real average rate over the capture window.
+        const durationSec = (timestamps[timestamps.length - 1] - timestamps[0]) / 1000;
+        const sampleRateHz = ppgSamples.length / durationSec;
+
+        const result = window.HRV.computeHRV(ppgSamples, sampleRateHz);
+
+        const lines = [`${ppgSamples.length} PPG samples over ${durationSec.toFixed(1)}s (measured ${sampleRateHz.toFixed(1)} Hz)`];
+        if (result.reason === 'ok') {
+          lines.push(`RMSSD: ${result.rmssd} ms`);
+          lines.push(`beats detected: ${result.beatsDetected}, clean: ${result.cleanBeats}, rejected: ${(result.rejectionRate * 100).toFixed(1)}%`);
+          lines.push(`mean RR interval: ${result.meanRR} ms`);
+        } else {
+          lines.push(`No result — reason: ${result.reason}`);
+          if (result.beatsDetected !== undefined) lines.push(`beats detected: ${result.beatsDetected}`);
+          if (result.rejectionRate !== undefined) lines.push(`rejection rate: ${(result.rejectionRate * 100).toFixed(1)}%`);
+        }
+        RingData.showResult(cardId, lines.join('\n'));
+        RingData.setButtonBusy(cardId, false);
+      }, 60000);
+      return;
+    }
+
     if (cmd === 'rawsensor') {
       RingData.setButtonBusy(cardId, true, 'Streaming (10s)...');
       RingData.rawCounts = { ppg: 0, spo2: 0, accel: 0 };
