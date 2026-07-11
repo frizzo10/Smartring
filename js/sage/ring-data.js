@@ -378,9 +378,10 @@ const RingData = {
           lines.push(`beats detected: ${result.beatsDetected}, clean: ${result.cleanBeats}, rejected: ${(result.rejectionRate * 100).toFixed(1)}%`);
           lines.push(`mean RR interval: ${result.meanRR} ms`);
           const dateStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-          RingData.saveSnapshot({
-            hrvComputed: { rmssd: result.rmssd, beatsDetected: result.beatsDetected, cleanBeats: result.cleanBeats, rejectionRate: result.rejectionRate, meanRR: result.meanRR, date: dateStr },
-          });
+          const entry = { rmssd: result.rmssd, beatsDetected: result.beatsDetected, cleanBeats: result.cleanBeats, rejectionRate: result.rejectionRate, meanRR: result.meanRR, date: dateStr, recordedAt: new Date().toISOString() };
+          const existing = JSON.parse(localStorage.getItem('sh_ring_latest') || '{}');
+          const history = (existing.hrvHistory || []).concat([entry]).slice(-30);
+          RingData.saveSnapshot({ hrvComputed: entry, hrvHistory: history });
           RingData.syncToCloud();
         } else {
           lines.push(`No result — reason: ${result.reason}`);
