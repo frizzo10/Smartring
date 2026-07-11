@@ -26,6 +26,12 @@
   .grid-line { stroke: rgba(255,255,255,0.15); stroke-width: 1; stroke-dasharray: 3 3; }
   .grid-label { fill: rgba(255,255,255,0.5); font-size: 9px; }
   .empty-note { font-size: 13px; color: #8A93A8; }
+
+  .insight-row { padding: 14px 0; border-bottom: 1px solid rgba(255,255,255,0.08); }
+  .insight-row:last-child { border-bottom: none; }
+  .insight-title { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+  .insight-body { font-size: 13px; color: #C8D0E0; line-height: 1.5; }
+  .insight-locked { font-size: 13px; color: #8A93A8; font-style: italic; }
 </style>
 </head>
 <body>
@@ -52,6 +58,12 @@
       <div class="card-title">Capture History</div>
       <div class="card-sub">RMSSD across every successful capture so far — real trend, builds over time.</div>
       <svg id="trend-chart" class="chart" viewBox="0 0 300 130" preserveAspectRatio="none"></svg>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Insights</div>
+      <div class="card-sub">A single HRV number means almost nothing on its own — these are the combinations that actually say something. Anything without enough data yet says so directly, rather than hiding or faking it.</div>
+      <div id="insights-list"></div>
     </div>
 
     <div class="card">
@@ -106,6 +118,83 @@
       svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
     }
 
+    function renderInsights(snap) {
+      const rows = [];
+      const hrvHistory = snap.hrvHistory || [];
+      const latest = snap.hrvComputed;
+
+      // 1. Personal baseline — a single RMSSD number means nothing
+      // without something to compare it to. Needs at least 3 captures
+      // for "average" to mean anything at all.
+      if (hrvHistory.length >= 3) {
+        const priorCaptures = hrvHistory.slice(0, -1); // exclude today's own capture from its own baseline
+        const baseline = priorCaptures.length
+          ? priorCaptures.reduce((s, e) => s + e.rmssd, 0) / priorCaptures.length
+          : hrvHistory.reduce((s, e) => s + e.rmssd, 0) / hrvHistory.length;
+        const pctDiff = Math.round(((latest.rmssd - baseline) / baseline) * 100);
+        const dir = pctDiff > 0 ? 'above' : pctDiff < 0 ? 'below' : 'at';
+        rows.push({
+          title: 'vs. Your Own Baseline',
+          body: `Today's RMSSD (${latest.rmssd}ms) is ${Math.abs(pctDiff)}% ${dir} your ${priorCaptures.length}-capture average (${Math.round(baseline)}ms).`,
+        });
+      } else {
+        rows.push({ title: 'vs. Your Own Baseline', locked: `Not enough data yet — need at least 3 captures, currently have ${hrvHistory.length}.` });
+      }
+
+      // 2. HRV vs last night's sleep — both usually exist from the
+      // same connect session, no extra history needed.
+      if (latest && snap.sleepDetail) {
+        const sd = snap.sleepDetail;
+        const totalMin = sd.phases.reduce((s, p) => s + p.durationMin, 0);
+        const asleepMin = sd.phases.filter(p => p.type === 2 || p.type === 3 || p.type === 4).reduce((s, p) => s + p.durationMin, 0);
+        const efficiency = totalMin > 0 ? Math.round((asleepMin / totalMin) * 100) : 0;
+        const wakeEvents = sd.phases.filter(p => p.type === 5).length;
+        rows.push({
+          title: 'vs. Last Night\'s Sleep',
+          body: `Sleep efficiency ${efficiency}%, ${wakeEvents} wake event${wakeEvents === 1 ? '' : 's'} — same-session RMSSD: ${latest.rmssd}ms.`,
+        });
+      } else {
+        rows.push({ title: 'vs. Last Night\'s Sleep', locked: 'Not enough data yet — need both an HRV capture and a sleep log read from the same session.' });
+      }
+
+      // 3. HRV vs today's SpO2 dips — same-session pairing, no extra
+      // history needed.
+      if (latest && snap.oxygenHourlyDetail) {
+        const withMin = snap.oxygenHourlyDetail.filter(h => h.min > 0);
+        const below94 = withMin.filter(h => h.min < 94).length;
+        const below90 = withMin.filter(h => h.min < 90).length;
+        rows.push({
+          title: 'vs. Today\'s Blood Oxygen Dips',
+          body: `${below94} hour${below94 === 1 ? '' : 's'} with a dip below 94%, ${below90} below 90% — same-session RMSSD: ${latest.rmssd}ms.`,
+        });
+      } else {
+        rows.push({ title: 'vs. Today\'s Blood Oxygen Dips', locked: 'Not enough data yet — need both an HRV capture and a SpO2 log read from the same session.' });
+      }
+
+      // 4. HRV vs yesterday's activity load — genuinely needs a second
+      // day's data, which wasn't being kept until tonight. Honest
+      // "not enough data" until at least 2 different days exist.
+      const activityHistory = snap.activityHistory || [];
+      const uniqueDays = [...new Set(activityHistory.map(a => a.date))];
+      if (latest && uniqueDays.length >= 2) {
+        const sorted = activityHistory.slice().sort((a, b) => new Date(b.date) - new Date(a.date));
+        const yesterday = sorted[1];
+        rows.push({
+          title: 'vs. Yesterday\'s Activity',
+          body: `${yesterday.totalSteps.toLocaleString()} steps on ${yesterday.date} — today's RMSSD: ${latest.rmssd}ms.`,
+        });
+      } else {
+        rows.push({ title: 'vs. Yesterday\'s Activity', locked: `Not enough data yet — need activity data from at least 2 different days, currently have ${uniqueDays.length}. Builds automatically as you connect on different days.` });
+      }
+
+      document.getElementById('insights-list').innerHTML = rows.map(r => `
+        <div class="insight-row">
+          <div class="insight-title">${r.title}</div>
+          ${r.locked ? `<div class="insight-locked">${r.locked}</div>` : `<div class="insight-body">${r.body}</div>`}
+        </div>
+      `).join('');
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
       const snap = loadSnapshot();
       const latest = snap && snap.hrvComputed;
@@ -123,6 +212,7 @@
       document.getElementById('stat-meanrr').textContent = latest.meanRR;
 
       renderTrend(snap.hrvHistory);
+      renderInsights(snap);
     });
   </script>
 </body>
