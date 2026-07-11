@@ -88,6 +88,20 @@ const ColmiBLE = {
   // today's actual date and a plausible step count.
   CMD_GET_STEP_SOMEDAY: 67,
 
+  // Raw sensor streaming — confirmed from edgeimpulse/example-data-
+  // collection-colmi-r02's ring.py, a working, published tool that
+  // logs actual PPG, SpO2, and accelerometer samples straight off the
+  // ring for ML data collection. This is a genuinely different tier
+  // from every other reading kind above: not a settled value, not an
+  // undecoded black-box composite, but the literal sensor samples the
+  // ring's own algorithms are built from. No firmware flash required
+  // to get this — the repo's custom firmware is only for a *faster*
+  // stream, the base command works on stock firmware. Same command
+  // service we already use (6e40fff0...), not the second data service.
+  CMD_RAW_SENSOR: 0xA1,
+  RAW_SENSOR_ENABLE: 0x04,
+  RAW_SENSOR_DISABLE: 0x02,
+
   // Full RealTimeReading enum from real_time.py / colmi.puxtril.com.
   // HEART_RATE and SPO2 are the two the community (and our own testing
   // tonight) confirms as trustworthy. The rest are real protocol slots —
@@ -119,6 +133,7 @@ const ColmiBLE = {
   dataNotifyChar: null,
   dataServiceAvailable: false,
   connected: false,
+  rawSensorActive: false,
   listeners: {},
 
   // Reassembly buffer for the data-service responses. Unlike the main
@@ -386,6 +401,7 @@ const ColmiBLE = {
     if (ColmiBLE.connected) {
       await ColmiBLE.stopRealTime(ColmiBLE.READING_HEART_RATE);
       await ColmiBLE.stopRealTime(ColmiBLE.READING_SPO2);
+      if (ColmiBLE.rawSensorActive) await ColmiBLE.stopRawSensor();
     }
     if (ColmiBLE.device?.gatt.connected) ColmiBLE.device.gatt.disconnect();
     ColmiBLE.connected = false;
@@ -437,6 +453,21 @@ const ColmiBLE = {
   async readSteps(dayOffset = 0) {
     const packet = ColmiBLE.makePacket(ColmiBLE.CMD_GET_STEP_SOMEDAY, [dayOffset, 0x0f, 0x00, 0x5f, 0x01]);
     await ColmiBLE.write(packet);
+  },
+
+  // Starts the raw PPG/SpO2/accelerometer sensor stream. Ring responds
+  // with a continuous flow of 0xA1-prefixed packets (routed in onData
+  // below) until stopRawSensor() is called.
+  async startRawSensor() {
+    const packet = ColmiBLE.makePacket(ColmiBLE.CMD_RAW_SENSOR, [ColmiBLE.RAW_SENSOR_ENABLE]);
+    await ColmiBLE.write(packet);
+    ColmiBLE.rawSensorActive = true;
+  },
+
+  async stopRawSensor() {
+    const packet = ColmiBLE.makePacket(ColmiBLE.CMD_RAW_SENSOR, [ColmiBLE.RAW_SENSOR_DISABLE]);
+    await ColmiBLE.write(packet);
+    ColmiBLE.rawSensorActive = false;
   },
   // Defaults to today. Per date_utils.py, the reference client always
   // uses midnight UTC (the ring's clock is set in UTC via set_time.js),
@@ -624,6 +655,57 @@ const ColmiBLE = {
         if (result.noData) ColmiBLE.emit('stepsNoData', {});
         else ColmiBLE.emit('steps', result.entries);
       }
+      return;
+    }
+
+    if (cmd === ColmiBLE.CMD_RAW_SENSOR) {
+      const subtype = bytes[1];
+
+      if (subtype === 0x01) {
+        // SpO2 raw sample — formula copied verbatim from ring.py's
+        // handle_notification(), byte offsets confirmed against a
+        // working, published data logger.
+        ColmiBLE.emit('rawSpo2Sample', {
+          spo2: (bytes[2] << 8) | bytes[3],
+          max: bytes[5],
+          min: bytes[7],
+          diff: bytes[9],
+        });
+        return;
+      }
+
+      if (subtype === 0x02) {
+        // PPG raw sample — the actual light-sensor waveform value HR/
+        // SpO2 are derived from internally. This is the closest thing
+        // to true raw sensor data this ring exposes over BLE.
+        ColmiBLE.emit('rawPpgSample', {
+          ppg: (bytes[2] << 8) | bytes[3],
+          max: (bytes[4] << 8) | bytes[5],
+          min: (bytes[6] << 8) | bytes[7],
+          diff: (bytes[8] << 8) | bytes[9],
+        });
+        return;
+      }
+
+      if (subtype === 0x03) {
+        // Accelerometer raw sample — 12-bit nibble-packed values per
+        // axis. Sign-check and offset copied verbatim from ring.py;
+        // not independently re-derived, just carried over exactly as
+        // the working reference has it.
+        const decode12 = (hi, lo) => {
+          const v = (hi << 4) | (lo & 0xF);
+          return (hi & 0x8) ? v - (1 << 11) : v;
+        };
+        ColmiBLE.emit('rawAccelSample', {
+          accY: decode12(bytes[2], bytes[3]),
+          accZ: decode12(bytes[4], bytes[5]),
+          accX: decode12(bytes[6], bytes[7]),
+        });
+        return;
+      }
+
+      // Unrecognized 0xA1 subtype — surface it rather than drop it.
+      ColmiBLE.emit('raw', Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join(' '));
       return;
     }
 
