@@ -95,6 +95,24 @@
   .metric-range { font-size: 14px; opacity: 0.85; }
 
   .empty-note { font-size: 13px; opacity: 0.8; margin-top: 14px; }
+
+  #spinner {
+    display: none; align-items: center; justify-content: center; gap: 10px;
+    padding: 12px; margin-top: 10px; font-size: 13px; color: #C8D0E0;
+  }
+  #spinner .dot {
+    width: 8px; height: 8px; border-radius: 50%; background: #7FA6D9;
+    animation: pulse 1s ease-in-out infinite;
+  }
+  #spinner .dot:nth-child(2) { animation-delay: 0.15s; }
+  #spinner .dot:nth-child(3) { animation-delay: 0.3s; }
+  @keyframes pulse { 0%, 100% { opacity: 0.3; transform: scale(0.8); } 50% { opacity: 1; transform: scale(1.1); } }
+
+  #data-banner {
+    font-size: 12px; text-align: center; padding: 8px; border-radius: 8px; margin: 8px 0 14px;
+  }
+  #data-banner.archived { background: rgba(232,168,92,0.12); color: #E8A85C; }
+  #data-banner.fresh { background: rgba(127,166,217,0.12); color: #7FA6D9; }
 </style>
 </head>
 <body>
@@ -103,8 +121,10 @@
     <button id="connect-btn">Connect Colmi R02</button>
     <button id="disconnect-btn">Disconnect Ring</button>
     <div style="font-size:11px;color:#8A93A8;margin-top:6px;text-align:center;">Open this page in the Bluefy app for Bluetooth to work — Safari/Chrome can't connect.</div>
+    <div id="spinner"><div class="dot"></div><div class="dot"></div><div class="dot"></div><span id="spinner-text">Connecting...</span></div>
   </div>
   <div id="status-line"></div>
+  <div id="data-banner"></div>
   <div id="synced-label" style="font-size:12px;color:#8A93A8;margin:-8px 0 14px;"></div>
 
   <div id="battery-banner">
