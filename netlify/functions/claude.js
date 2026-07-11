@@ -1,11 +1,13 @@
 /* ─────────────────────────────────────────────────────
    SageHealth AI proxy — Groq (everything)
    Groq free tier: 14,400 req/day
-   Model: llama-3.3-70b-versatile
-   ~10x cheaper, ~5x faster than Claude Sonnet
+   Model: qwen/qwen3.6-27b (llama-3.3-70b-versatile deprecates
+   08/16/26 — same migration already done on Fern AI's 9 backend
+   functions; qwen3-32b was also deprecated by Groq on 6/17/26,
+   this is the current recommended replacement for both)
    ───────────────────────────────────────────────────── */
 
-const GROQ_MODEL = 'llama-3.3-70b-versatile';
+const GROQ_MODEL = 'qwen/qwen3.6-27b';
 
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') {
@@ -48,6 +50,7 @@ exports.handler = async (event) => {
         model: GROQ_MODEL,
         max_tokens: body.max_tokens || 1000,
         temperature: 0.7,
+        reasoning_effort: 'none', // matches Fern AI's working default for this model family
         messages
       })
     });
