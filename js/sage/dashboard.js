@@ -104,6 +104,25 @@ const Dashboard = {
     document.getElementById('status-line').textContent = msg;
   },
 
+  showSpinner(text) {
+    const el = document.getElementById('spinner');
+    el.style.display = 'flex';
+    document.getElementById('spinner-text').textContent = text;
+  },
+
+  hideSpinner() {
+    document.getElementById('spinner').style.display = 'none';
+  },
+
+  // Makes it visually unambiguous whether what's on screen right now is
+  // archived (cached from a past connect, could be hours/days old) or
+  // genuinely fresh (this connect, just now).
+  showDataBanner(kind, text) {
+    const el = document.getElementById('data-banner');
+    el.className = kind; // 'archived' or 'fresh'
+    el.textContent = text;
+  },
+
   todayLabel() {
     return new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   },
@@ -305,8 +324,10 @@ const Dashboard = {
     if (snap.updatedAt) {
       const d = new Date(snap.updatedAt);
       document.getElementById('synced-label').textContent = 'Last synced ' + d.toLocaleString();
+      Dashboard.showDataBanner('archived', `⏱ Archived data from ${d.toLocaleString()} — not live. Tap Connect for a fresh pull.`);
     } else if (!snap.activity && !snap.sleepDetail) {
       document.getElementById('synced-label').textContent = 'Showing data from tonight\'s ring-data.html session — connect to refresh';
+      Dashboard.showDataBanner('archived', '⏱ Archived data — not live. Tap Connect for a fresh pull.');
     }
   },
 
@@ -369,6 +390,8 @@ const Dashboard = {
     const disconnectBtn = document.getElementById('disconnect-btn');
     connectBtn.disabled = true;
     connectBtn.textContent = 'Connecting...';
+    Dashboard.showSpinner('Connecting to ring...');
+    Dashboard.showDataBanner('archived', '⏱ Still showing archived data below — connecting now...');
 
     const BLE = window.ColmiBLE;
 
@@ -498,13 +521,17 @@ const Dashboard = {
     try {
       const name = await BLE.connect();
       Dashboard.setStatus('[connected] ' + name);
+      Dashboard.showSpinner('Pulling heart rate log...');
       await BLE.readHeartRateLog();
+      Dashboard.showSpinner('Pulling steps...');
       await BLE.readSteps(0);
+      Dashboard.showSpinner('Pulling blood oxygen log...');
       try {
         await BLE.readSpO2Log();
       } catch (e) {
         document.getElementById('oxygen-empty').textContent = e.message;
       }
+      Dashboard.showSpinner('Pulling sleep log...');
       try {
         await BLE.readSleepLog();
       } catch (e) {
@@ -514,9 +541,15 @@ const Dashboard = {
       // Adds ~60s to the connect (needs a still capture to have enough
       // beats to work with), which is a real, visible tradeoff — but no
       // separate tap required anymore.
+      Dashboard.showSpinner('Computing HRV — hold still (60s)...');
       await Dashboard.computeHrv();
       Dashboard.syncToCloud();
+      Dashboard.hideSpinner();
+      const now = new Date();
+      Dashboard.showDataBanner('fresh', `✓ Fresh data — synced just now (${now.toLocaleTimeString()})`);
+      document.getElementById('synced-label').textContent = 'Last synced ' + now.toLocaleString();
     } catch (e) {
+      Dashboard.hideSpinner();
       Dashboard.setStatus(`[error] ${e.name || 'Error'}: ${e.message || '(no message)'}`);
       connectBtn.disabled = false;
       connectBtn.textContent = 'Connect failed — tap to retry';
