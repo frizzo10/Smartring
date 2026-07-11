@@ -7,6 +7,18 @@
    ───────────────────────────────────────────────────────── */
 
 const RingData = {
+  // Persists real ring readings so the main Dr. Sage chat (app.js
+  // sendChat()) can use them instead of — or alongside — SimRing's
+  // fabricated data. Merges rather than overwrites, since HR, SpO2,
+  // HR log, and steps arrive from separate events at separate times.
+  saveSnapshot(partial) {
+    try {
+      const existing = JSON.parse(localStorage.getItem('sh_ring_latest') || '{}');
+      const merged = { ...existing, ...partial, updatedAt: new Date().toISOString() };
+      localStorage.setItem('sh_ring_latest', JSON.stringify(merged));
+    } catch (e) { /* localStorage unavailable — fail silently, this is a bonus, not critical path */ }
+  },
+
   // Maps each card's data-cmd to a real-time READING_* kind, for the
   // cards that go through the generic streamReading() path.
   REALTIME_KINDS: {
@@ -76,6 +88,7 @@ const RingData = {
     BLE.on('battery', b => {
       RingData.showResult('card-battery', `${b.level}%${b.charging ? ' (charging)' : ''}`);
       RingData.setButtonBusy('card-battery', false);
+      RingData.saveSnapshot({ battery: b.level });
     });
 
     BLE.on('reading', r => {
@@ -83,6 +96,13 @@ const RingData = {
       if (!cardId) return;
       const rawNote = r.rawSample ? `\nraw@6-7: ${r.rawSampleHex}` : '';
       RingData.showResult(cardId, `value: ${r.value}${rawNote}`);
+      // Only save the two validated readings into the shared snapshot —
+      // no point handing the AI a "confident" HRV/ECG/blood-pressure
+      // number when we already know this hardware can't back it up.
+      if (r.value > 0) {
+        if (r.kind === BLE.READING_HEART_RATE) RingData.saveSnapshot({ hr: r.value });
+        if (r.kind === BLE.READING_SPO2) RingData.saveSnapshot({ spo2: r.value });
+      }
     });
 
     BLE.on('readingError', e => {
@@ -99,6 +119,17 @@ const RingData = {
         : 'no nonzero samples yet today';
       RingData.showResult('card-hrlog', summary);
       RingData.setButtonBusy('card-hrlog', false);
+      if (nonZero.length) {
+        RingData.saveSnapshot({
+          hrLog: {
+            count: nonZero.length,
+            min: Math.min(...nonZero),
+            max: Math.max(...nonZero),
+            avg: Math.round(nonZero.reduce((a, b) => a + b, 0) / nonZero.length),
+            date: log.timestamp ? log.timestamp.toISOString() : null,
+          },
+        });
+      }
     });
     BLE.on('heartRateLogError', () => {
       RingData.showResult('card-hrlog', 'error response from ring');
@@ -116,6 +147,7 @@ const RingData = {
         RingData.showResult('card-steps',
           `${entries.length} time-slot entries for ${last.year}-${String(last.month).padStart(2, '0')}-${String(last.day).padStart(2, '0')}\n`
           + `total steps: ${totalSteps}\ntotal calories: ${totalCal}\ntotal distance: ${totalDist}m`);
+        RingData.saveSnapshot({ steps: { total: totalSteps, calories: totalCal, distance: totalDist, date: `${last.year}-${String(last.month).padStart(2, '0')}-${String(last.day).padStart(2, '0')}` } });
       }
       RingData.setButtonBusy('card-steps', false);
     });
