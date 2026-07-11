@@ -353,10 +353,21 @@ const RingData = {
       const handler = s => { ppgSamples.push(s.ppg); timestamps.push(performance.now()); };
       BLE.on('rawPpgSample', handler);
 
-      await BLE.startRawSensor();
-      setTimeout(async () => {
-        await BLE.stopRawSensor();
+      try {
+        await BLE.startRawSensor();
+      } catch (e) {
         BLE.off('rawPpgSample', handler);
+        RingData.showResult(cardId, `Failed to start raw sensor stream: ${e.message}`);
+        RingData.setButtonBusy(cardId, false);
+        return;
+      }
+
+      setTimeout(async () => {
+        try {
+          await BLE.stopRawSensor();
+        } finally {
+          BLE.off('rawPpgSample', handler);
+        }
 
         if (ppgSamples.length < 20) {
           RingData.showResult(cardId, `Only ${ppgSamples.length} PPG samples received in 60s — not enough to compute anything. Check the ring is snug and the raw stream is actually running.`);
