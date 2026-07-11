@@ -26,13 +26,21 @@ const RingData = {
     try {
       const snapshot = JSON.parse(localStorage.getItem('sh_ring_latest') || 'null');
       if (!snapshot) return;
-      await fetch('/.netlify/functions/ring-sync', {
+      const res = await fetch('/.netlify/functions/ring-sync', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(snapshot),
       });
+      if (res.ok) {
+        RingData.setStatus(document.getElementById('status-line').textContent + ' · synced to cloud ✓');
+      } else {
+        const body = await res.text();
+        console.error('cloud sync failed', res.status, body);
+        RingData.setStatus(document.getElementById('status-line').textContent + ` · cloud sync failed (${res.status})`);
+      }
     } catch (e) {
       console.error('cloud sync failed (non-fatal)', e);
+      RingData.setStatus(document.getElementById('status-line').textContent + ' · cloud sync failed (network)');
     }
   },
 
