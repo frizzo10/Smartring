@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<title>Heart Rate Detail — myDrSage</title>
+<meta name="theme-color" content="#0B1220">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0B1220; color: #fff; padding: 16px 14px 60px; }
+  a.back { color: #8A93A8; text-decoration: none; font-size: 14px; display: inline-block; margin-bottom: 14px; }
+  h1 { font-size: 22px; margin-bottom: 2px; }
+  .date { font-size: 13px; color: #8A93A8; margin-bottom: 18px; }
+  .card { background: #1A2A4D; border: 1px solid #2A3B5E; border-radius: 18px; padding: 18px 18px 20px; margin-bottom: 14px; }
+  .card-title { font-size: 15px; font-weight: 700; color: #C8D0E0; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .card-sub { font-size: 12px; color: #8A93A8; margin-bottom: 12px; }
+  svg.chart { width: 100%; height: 160px; display: block; }
+  .grid-line { stroke: rgba(255,255,255,0.15); stroke-width: 1; stroke-dasharray: 3 3; }
+  .grid-label { fill: rgba(255,255,255,0.5); font-size: 9px; }
+  .stat-grid { display: flex; gap: 14px; }
+  .stat-box { flex: 1; background: rgba(255,255,255,0.06); border-radius: 12px; padding: 14px; text-align: center; }
+  .stat-box .val { font-size: 22px; font-weight: 800; }
+  .stat-box .lbl { font-size: 11px; color: #8A93A8; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .period-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.08); }
+  .period-row:last-child { border-bottom: none; }
+  .period-name { font-size: 14px; }
+  .period-vals { font-size: 14px; font-weight: 600; }
+  .empty-note { font-size: 13px; color: #8A93A8; }
+</style>
+</head>
+<body>
+
+  <a class="back" href="dashboard.html">‹ Back to Dashboard</a>
+  <h1>Heart Rate Detail</h1>
+  <div class="date" id="detail-date">--</div>
+
+  <div id="content" style="display:none;">
+
+    <div class="card">
+      <div class="card-title">Full-Day Chart</div>
+      <div class="card-sub">All 288 5-minute samples the ring logged today.</div>
+      <svg id="hr-chart" class="chart" viewBox="0 0 300 160" preserveAspectRatio="none"></svg>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Today's Stats</div>
+      <div class="stat-grid">
+        <div class="stat-box"><div class="val" id="stat-resting">--</div><div class="lbl">Est. Resting HR</div></div>
+        <div class="stat-box"><div class="val" id="stat-peak">--</div><div class="lbl">Peak Reading</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">By Time of Day</div>
+      <div class="card-sub">Average bpm across nonzero samples in each window.</div>
+      <div id="period-breakdown"></div>
+    </div>
+
+  </div>
+
+  <div class="empty-note" id="no-data-note">No heart rate data cached yet — go back and connect the ring first.</div>
+
+  <script>
+    function loadSnapshot() {
+      try { return JSON.parse(localStorage.getItem('sh_ring_latest') || 'null'); }
+      catch (e) { return null; }
+    }
+
+    function fmtTime(mins) {
+      const h = Math.floor(mins / 60) % 24, m = mins % 60;
+      return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+    }
+
+    function renderLineChart(svgEl, values, gridVals) {
+      const w = 300, h = 160, padL = 26, padR = 4, padT = 8, padB = 8;
+      const plotW = w - padL - padR, plotH = h - padT - padB;
+      const min = Math.min(...gridVals), max = Math.max(...gridVals);
+
+      let grid = '';
+      gridVals.forEach(v => {
+        const y = padT + plotH - ((v - min) / (max - min)) * plotH;
+        grid += `<line x1="${padL}" y1="${y}" x2="${w-padR}" y2="${y}" class="grid-line"/>`;
+        grid += `<text x="${w-padR}" y="${y-2}" text-anchor="end" class="grid-label">${v}</text>`;
+      });
+
+      const nonZeroIdx = values.map((v,i) => v > 0 ? i : -1).filter(i => i >= 0);
+      let line = '';
+      if (nonZeroIdx.length > 1) {
+        const points = nonZeroIdx.map(i => {
+          const x = padL + (i / (values.length - 1)) * plotW;
+          const clamped = Math.max(min, Math.min(max, values[i]));
+          const y = padT + plotH - ((clamped - min) / (max - min)) * plotH;
+          return `${x.toFixed(1)},${y.toFixed(1)}`;
+        }).join(' ');
+        line = `<polyline points="${points}" fill="none" stroke="#E86A5C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`;
+      }
+      svgEl.innerHTML = grid + line;
+      svgEl.setAttribute('viewBox', `0 0 ${w} ${h}`);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const snap = loadSnapshot();
+      const series = snap && snap.heartSeries;
+      if (!series || !series.length) return; // no-data-note stays visible
+
+      document.getElementById('no-data-note').style.display = 'none';
+      document.getElementById('content').style.display = 'block';
+      document.getElementById('detail-date').textContent = snap.heartDate || '';
+
+      const nonZero = series.map((v,i) => ({v,i})).filter(s => s.v > 0);
+      if (!nonZero.length) return;
+
+      const min = Math.min(...nonZero.map(s => s.v));
+      const max = Math.max(...nonZero.map(s => s.v));
+      const gridMin = Math.max(0, Math.floor((min-15)/5)*5);
+      const gridMax = Math.ceil((max+15)/5)*5;
+      renderLineChart(document.getElementById('hr-chart'), series, [gridMin, Math.round((gridMin+gridMax)/2), gridMax]);
+
+      document.getElementById('stat-resting').textContent = min + ' bpm';
+      const peakSample = nonZero.reduce((best, s) => s.v > best.v ? s : best, nonZero[0]);
+      document.getElementById('stat-peak').textContent = peakSample.v + ' bpm';
+
+      // Each sample index = 5-minute slot from midnight
+      const periods = [
+        { name: 'Night (12am–6am)', from: 0, to: 6*60 },
+        { name: 'Morning (6am–12pm)', from: 6*60, to: 12*60 },
+        { name: 'Afternoon (12pm–6pm)', from: 12*60, to: 18*60 },
+        { name: 'Evening (6pm–12am)', from: 18*60, to: 24*60 },
+      ];
+      const rows = periods.map(p => {
+        const inWindow = nonZero.filter(s => {
+          const mins = s.i * 5;
+          return mins >= p.from && mins < p.to;
+        });
+        if (!inWindow.length) return `<div class="period-row"><div class="period-name">${p.name}</div><div class="period-vals" style="color:#8A93A8;">no data</div></div>`;
+        const avg = Math.round(inWindow.reduce((a,s) => a+s.v, 0) / inWindow.length);
+        const pmin = Math.min(...inWindow.map(s => s.v));
+        const pmax = Math.max(...inWindow.map(s => s.v));
+        return `<div class="period-row"><div class="period-name">${p.name}</div><div class="period-vals">${avg} bpm avg <span style="color:#8A93A8;font-weight:400;">(${pmin}-${pmax})</span></div></div>`;
+      }).join('');
+      document.getElementById('period-breakdown').innerHTML = rows;
+    });
+  </script>
+</body>
+</html>
