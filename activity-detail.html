@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<title>Activity Detail — myDrSage</title>
+<meta name="theme-color" content="#0B1220">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0B1220; color: #fff; padding: 16px 14px 60px; }
+  a.back { color: #8A93A8; text-decoration: none; font-size: 14px; display: inline-block; margin-bottom: 14px; }
+  h1 { font-size: 22px; margin-bottom: 2px; }
+  .date { font-size: 13px; color: #8A93A8; margin-bottom: 18px; }
+  .card { background: #1A2A4D; border: 1px solid #2A3B5E; border-radius: 18px; padding: 18px 18px 20px; margin-bottom: 14px; }
+  .card-title { font-size: 15px; font-weight: 700; color: #C8D0E0; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .card-sub { font-size: 12px; color: #8A93A8; margin-bottom: 12px; }
+  svg.chart { width: 100%; height: 140px; display: block; }
+  .grid-line { stroke: rgba(255,255,255,0.15); stroke-width: 1; stroke-dasharray: 3 3; }
+  .grid-label { fill: rgba(255,255,255,0.5); font-size: 9px; }
+  .stat-grid { display: flex; gap: 14px; }
+  .stat-box { flex: 1; background: rgba(255,255,255,0.06); border-radius: 12px; padding: 14px; text-align: center; }
+  .stat-box .val { font-size: 22px; font-weight: 800; }
+  .stat-box .lbl { font-size: 11px; color: #8A93A8; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .callout { background: rgba(255,255,255,0.06); border-radius: 10px; padding: 12px 14px; font-size: 14px; margin-top: 10px; }
+  .warn { color: #E8A85C; font-size: 12px; margin-top: 8px; }
+  .empty-note { font-size: 13px; color: #8A93A8; }
+</style>
+</head>
+<body>
+
+  <a class="back" href="dashboard.html">‹ Back to Dashboard</a>
+  <h1>Activity Detail</h1>
+  <div class="date" id="detail-date">--</div>
+
+  <div id="content" style="display:none;">
+
+    <div class="card">
+      <div class="card-title">Intraday Steps</div>
+      <div class="card-sub">Every 15-minute slot the ring logged today — real per-slot data, not a daily total.</div>
+      <svg id="steps-chart" class="chart" viewBox="0 0 300 140" preserveAspectRatio="none"></svg>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Intraday Calories</div>
+      <div class="card-sub">Same per-slot data, calorie field.</div>
+      <svg id="cal-chart" class="chart" viewBox="0 0 300 140" preserveAspectRatio="none"></svg>
+      <div class="warn">⚠ Known ~100x scaling bug in the ring's calorie output (open item, not corrected here) — shown as real raw ring data, not a trustworthy calorie count.</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Today's Stats</div>
+      <div class="stat-grid">
+        <div class="stat-box"><div class="val" id="stat-active-slots">--</div><div class="lbl">Active Slots</div></div>
+        <div class="stat-box"><div class="val" id="stat-sedentary-slots">--</div><div class="lbl">Sedentary Slots</div></div>
+      </div>
+      <div class="callout" id="peak-window">Most active window: --</div>
+    </div>
+
+  </div>
+
+  <div class="empty-note" id="no-data-note">No activity data cached yet — go back and connect the ring first.</div>
+
+  <script>
+    function loadSnapshot() {
+      try { return JSON.parse(localStorage.getItem('sh_ring_latest') || 'null'); }
+      catch (e) { return null; }
+    }
+
+    function renderBarChart(svgEl, values, labels, gridVals, color) {
+      const w = 300, h = 140, padL = 26, padR = 4, padT = 8, padB = 18;
+      const plotW = w - padL - padR, plotH = h - padT - padB;
+      const maxV = Math.max(...gridVals, ...values, 1);
+      const minV = 0;
+      const barGap = plotW / values.length;
+      const barW = barGap * 0.7;
+
+      let grid = '';
+      gridVals.forEach(v => {
+        const y = padT + plotH - (v / maxV) * plotH;
+        grid += `<line x1="${padL}" y1="${y}" x2="${w-padR}" y2="${y}" class="grid-line"/>`;
+        grid += `<text x="${w-padR}" y="${y-2}" text-anchor="end" class="grid-label">${v}</text>`;
+      });
+
+      let bars = '';
+      values.forEach((v, i) => {
+        if (v <= 0) return;
+        const x = padL + i * barGap + (barGap - barW) / 2;
+        const barH = (v / maxV) * plotH;
+        const y = padT + plotH - barH;
+        bars += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${barH.toFixed(1)}" rx="1.5" fill="${color}"/>`;
+      });
+
+      // A handful of x-axis time labels, not one per slot (too dense)
+      let labelsSvg = '';
+      const labelEvery = Math.ceil(values.length / 6);
+      labels.forEach((lbl, i) => {
+        if (i % labelEvery !== 0) return;
+        const x = padL + i * barGap + barGap / 2;
+        labelsSvg += `<text x="${x.toFixed(1)}" y="${h-4}" text-anchor="middle" class="grid-label">${lbl}</text>`;
+      });
+
+      svgEl.innerHTML = grid + bars + labelsSvg;
+      svgEl.setAttribute('viewBox', `0 0 ${w} ${h}`);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const snap = loadSnapshot();
+      const entries = snap && snap.activityEntries;
+
+      if (!entries || !entries.length) return; // no-data-note stays visible
+
+      document.getElementById('no-data-note').style.display = 'none';
+      document.getElementById('content').style.display = 'block';
+      document.getElementById('detail-date').textContent = (snap.activity && snap.activity.date) || '';
+
+      const steps = entries.map(e => e.steps);
+      const cals = entries.map(e => e.calories);
+      const labels = entries.map(e => `${String(e.hour).padStart(2,'0')}:${String(e.minute).padStart(2,'0')}`);
+
+      renderBarChart(document.getElementById('steps-chart'), steps, labels, [Math.max(...steps, 10)], '#8FA9C4');
+      renderBarChart(document.getElementById('cal-chart'), cals, labels, [Math.max(...cals, 10)], '#E8A85C');
+
+      const activeSlots = entries.filter(e => e.steps > 0).length;
+      const sedentarySlots = entries.length - activeSlots;
+      document.getElementById('stat-active-slots').textContent = activeSlots;
+      document.getElementById('stat-sedentary-slots').textContent = sedentarySlots;
+
+      const peak = entries.reduce((best, e) => e.steps > (best?.steps || 0) ? e : best, null);
+      if (peak && peak.steps > 0) {
+        const startLbl = `${String(peak.hour).padStart(2,'0')}:${String(peak.minute).padStart(2,'0')}`;
+        const endMin = peak.minute + 15;
+        const endHour = peak.hour + Math.floor(endMin / 60);
+        const endLbl = `${String(endHour % 24).padStart(2,'0')}:${String(endMin % 60).padStart(2,'0')}`;
+        document.getElementById('peak-window').textContent = `Most active window: ${startLbl}–${endLbl}, ${peak.steps} steps`;
+      } else {
+        document.getElementById('peak-window').textContent = 'No active slots recorded yet today.';
+      }
+    });
+  </script>
+</body>
+</html>
