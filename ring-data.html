@@ -119,6 +119,14 @@
     <pre class="result"></pre>
   </div>
 
+  <div id="card-spo2log" class="card">
+    <div class="card-top">
+      <div><div class="card-title">SpO2 Log</div><div class="card-desc">On-device logged blood oxygen history, hourly max/min, on the ring's second BLE service</div></div>
+    </div>
+    <button class="read-btn" data-cmd="spo2log" disabled>Read</button>
+    <pre class="result"></pre>
+  </div>
+
   <div id="card-steps" class="card">
     <div class="card-top">
       <div><div class="card-title">Steps / Activity</div><div class="card-desc">On-device logged steps, calories, distance — also auto-pushed on connect</div></div>
@@ -128,9 +136,10 @@
   </div>
   <div id="card-sleep" class="card">
     <div class="card-top">
-      <div><div class="card-title">Sleep</div><div class="card-desc">Separate command family in the ring's protocol</div></div>
+      <div><div class="card-title">Sleep</div><div class="card-desc">On-device logged sleep phases and timing, on the ring's second BLE service</div></div>
     </div>
-    <button class="read-btn" disabled>Not wired up yet</button>
+    <button class="read-btn" data-cmd="sleep" disabled>Read</button>
+    <pre class="result"></pre>
   </div>
   <div id="card-bp" class="card">
     <div class="card-top">
