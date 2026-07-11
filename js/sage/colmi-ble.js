@@ -14,7 +14,7 @@
    Packet format (16 bytes, both directions):
      byte 0:     command
      bytes 1-14: payload
-     byte 15:    checksum = sum(bytes 0-14) mod 255
+     byte 15:    checksum = sum(bytes 0-14) mod 256 (i.e. `sum & 255`)
 
    Real-time reading command (CMD_START_REAL_TIME = 0x69 / 105):
      request:  [105, readingType, action, 0,0,0,0,0,0,0,0,0,0, checksum]
@@ -28,6 +28,11 @@
    Battery command (CMD_BATTERY = 0x03 / 3):
      request:  [3, 0,0,0,0,0,0,0,0,0,0,0,0,0, checksum]
      response: [3, batteryLevel, charging(0/1), ...]
+
+   Heart rate log command (CMD_READ_HEART_RATE = 0x15 / 21) — pulls the
+   ring's own on-device logged HR history for a given day, independent
+   of any live connection. The ring auto-pushes today's log on every
+   connect without being asked. Multi-packet response, see hrLog below.
    ───────────────────────────────────────────────────────── */
 
 const ColmiBLE = {
@@ -52,6 +57,16 @@ const ColmiBLE = {
   // after the first poke interval.
   CMD_REAL_TIME_HEART_RATE: 30,
 
+  // Confirmed from hr.py (CMD_READ_HEART_RATE = 21 / 0x15). This is the
+  // exact packet type that showed up unprompted in every session tonight
+  // right after connecting — the ring auto-pushes today's logged HR data
+  // on connect without us ever requesting it. Multi-packet response:
+  // sub_type 0 = header (size = packet count, range = minutes per
+  // sample), sub_type 1 = 4-byte timestamp + first 9 samples, sub_type
+  // 2..N-1 = 13 samples each, last packet (sub_type === size-1) closes
+  // out the log.
+  CMD_READ_HEART_RATE: 21,
+
   READING_HEART_RATE: 1,
   READING_SPO2: 3,
 
@@ -67,14 +82,111 @@ const ColmiBLE = {
   connected: false,
   listeners: {},
 
+  // State machine for the multi-packet heart rate log response —
+  // mirrors hr.py's HeartRateLogParser class exactly.
+  hrLog: {
+    rawHeartRates: [],
+    timestamp: null,
+    size: 0,
+    index: 0,
+    range: 5,
+
+    reset() {
+      ColmiBLE.hrLog.rawHeartRates = [];
+      ColmiBLE.hrLog.timestamp = null;
+      ColmiBLE.hrLog.size = 0;
+      ColmiBLE.hrLog.index = 0;
+      ColmiBLE.hrLog.range = 5;
+    },
+
+    // Returns a completed log object once the final packet arrives,
+    // otherwise null (still accumulating).
+    parse(bytes) {
+      const log = ColmiBLE.hrLog;
+      const subType = bytes[1];
+
+      if (subType === 255) {
+        log.reset();
+        return { error: true };
+      }
+
+      if (subType === 0) {
+        // Header: byte[2] = expected packet count, byte[3] = minutes
+        // per sample (range).
+        log.size = bytes[2];
+        log.range = bytes[3];
+        log.rawHeartRates = new Array(log.size * 13).fill(-1);
+        log.index = 0;
+        return null;
+      }
+
+      if (subType === 1) {
+        // 4-byte little-endian unix timestamp at offset 2, then the
+        // first 9 samples fill bytes[6:15].
+        const ts = bytes[2] | (bytes[3] << 8) | (bytes[4] << 16) | (bytes[5] << 24);
+        log.timestamp = new Date(ts * 1000);
+        for (let i = 0; i < 9; i++) log.rawHeartRates[i] = bytes[6 + i];
+        log.index = 9;
+        return null;
+      }
+
+      // subType 2..N-1: 13 samples per packet, bytes[2:15].
+      for (let i = 0; i < 13; i++) log.rawHeartRates[log.index + i] = bytes[2 + i];
+      log.index += 13;
+
+      if (subType === log.size - 1) {
+        const result = {
+          heartRates: ColmiBLE.hrLog.normalize(),
+          timestamp: log.timestamp,
+          size: log.size,
+          range: log.range,
+        };
+        log.reset();
+        return result;
+      }
+      return null;
+    },
+
+    // Pads/truncates to 288 samples (24h at 5-min intervals) and zeroes
+    // out any slots that are still in the future for "today" — matches
+    // hr.py's heart_rates property.
+    normalize() {
+      let hr = ColmiBLE.hrLog.rawHeartRates.slice();
+      if (hr.length > 288) hr = hr.slice(0, 288);
+      else while (hr.length < 288) hr.push(0);
+
+      const ts = ColmiBLE.hrLog.timestamp;
+      if (ts) {
+        const now = new Date();
+        const isToday = ts.getUTCFullYear() === now.getUTCFullYear()
+          && ts.getUTCMonth() === now.getUTCMonth()
+          && ts.getUTCDate() === now.getUTCDate();
+        if (isToday) {
+          const midnightUTC = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+          const minutesSoFar = Math.round((now.getTime() - midnightUTC) / 60000) + 1;
+          const slotsSoFar = Math.floor(minutesSoFar / 5);
+          for (let i = slotsSoFar; i < hr.length; i++) hr[i] = 0;
+        }
+      }
+      return hr;
+    },
+  },
+
   // ── PACKET BUILDING ────────────────────────────────────────
   checksum(bytes15) {
-    // sum of the first 15 bytes, mod 255 — verified against the
-    // documented example: battery request [3,0,0...] checksum=3;
-    // battery response [3,64,0,...] checksum=67 (0x43, ASCII 'C')
+    // Verified directly against colmi_r02_client's packet.py:
+    // `sum(packet) & 255` — i.e. mod 256, NOT mod 255. Our previous
+    // % 255 implementation happened to match every packet we'd tested
+    // so far only because those payloads were small enough that the
+    // sum never crossed 255. Confirmed the bug against a real captured
+    // packet: '69 01 00 5b 00 00 8d 02 00...54' sums to 340 —
+    // 340 % 256 = 84 = 0x54 (matches the real checksum byte),
+    // 340 % 255 = 85 (would have been wrong). The heart rate log
+    // request below carries a 4-byte timestamp, easily large enough
+    // to expose this, so fixing it now before relying on it.
     let sum = 0;
     for (let i = 0; i < 15; i++) sum += bytes15[i] || 0;
-    return sum % 255;
+    return sum & 255;
   },
 
   makePacket(command, payload = []) {
@@ -185,6 +297,22 @@ const ColmiBLE = {
     await ColmiBLE.write(packet);
   },
 
+  // Requests the ring's own logged HR history for a given date.
+  // Defaults to today. Per date_utils.py, the reference client always
+  // uses midnight UTC (the ring's clock is set in UTC via set_time.js),
+  // not local midnight.
+  async readHeartRateLog(date = new Date()) {
+    const midnightUTC = Math.floor(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()) / 1000);
+    const payload = [
+      midnightUTC & 0xff,
+      (midnightUTC >> 8) & 0xff,
+      (midnightUTC >> 16) & 0xff,
+      (midnightUTC >> 24) & 0xff,
+    ];
+    const packet = ColmiBLE.makePacket(ColmiBLE.CMD_READ_HEART_RATE, payload);
+    await ColmiBLE.write(packet);
+  },
+
   // Start a real-time HR or SpO2 stream and auto-poke it with
   // "continue" every 2s to keep it flowing, for the given duration.
   async streamReading(readingType, durationSec, onReading) {
@@ -242,6 +370,15 @@ const ColmiBLE = {
       // here so it's visible without decoding hex by hand.
       const rawSample = bytes[6] | (bytes[7] << 8);
       ColmiBLE.emit('reading', { kind, value, rawSample, rawSampleHex: rawSample.toString(16).padStart(4, '0') });
+      return;
+    }
+
+    if (cmd === ColmiBLE.CMD_READ_HEART_RATE) {
+      const result = ColmiBLE.hrLog.parse(bytes);
+      if (result) {
+        if (result.error) ColmiBLE.emit('heartRateLogError', {});
+        else ColmiBLE.emit('heartRateLog', result);
+      }
       return;
     }
 
