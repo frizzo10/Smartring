@@ -243,6 +243,17 @@ const RingData = {
       RingData.setButtonBusy('card-spo2log', false);
     });
 
+    BLE.on('hrvLogRaw', result => {
+      if (result.error) {
+        RingData.showResult('card-hrvlog', 'error response from ring');
+        RingData.setButtonBusy('card-hrvlog', false);
+        return;
+      }
+      const lines = [`size=${result.size}, range=${result.range}min, ${result.packets.length} packet(s) received`];
+      result.packets.forEach(p => lines.push(`subType ${p.subType}: ${p.hex}`));
+      RingData.showResult('card-hrvlog', lines.join('\n'));
+      RingData.setButtonBusy('card-hrvlog', false);
+    });
     BLE.on('sleepLog', log => {
       if (!log.periods.length) {
         RingData.showResult('card-sleep', 'no sleep periods returned');
@@ -305,6 +316,24 @@ const RingData = {
   async runCommand(cmd) {
     const BLE = window.ColmiBLE;
     const cardId = 'card-' + cmd;
+
+    if (cmd === 'hrvlog') {
+      RingData.setButtonBusy(cardId, true);
+      await BLE.enableHrvSync();
+      await BLE.sleep(300);
+      await BLE.readHrvLog(0);
+      // Some rings/firmware confirm the enable switch but never answer
+      // the data request at all — per the real Gadgetbridge report this
+      // is based on. Time out rather than leave the button stuck busy.
+      setTimeout(() => {
+        const btn = document.getElementById(cardId)?.querySelector('.read-btn');
+        if (btn && btn.disabled) {
+          RingData.showResult(cardId, 'No response from ring after 8s — this firmware may not answer the HRV data request (a known possible outcome, not necessarily a bug).');
+          RingData.setButtonBusy(cardId, false);
+        }
+      }, 8000);
+      return;
+    }
 
     if (cmd === 'battery') {
       RingData.setButtonBusy(cardId, true);
