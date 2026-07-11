@@ -971,21 +971,21 @@ async function sendChat(){
   inp.value='';document.getElementById('chatSendBtn').disabled=true;
   addBubble('user',msg);chatMessages.push({role:'user',content:msg});showTyping();
   const t=data[data.length-1];
-  // Real ring readings (HR/SpO2/HR-log/steps), synced from sage.html or
-  // ring-data.html. Only trusted if <24h old — a stale snapshot is worse
-  // than none, since it'd get presented with the same confidence as a
-  // fresh one.
+  // Real ring data (HR log + steps), synced from sage.html or
+  // ring-data.html. Deliberately NOT the live spot-check reading — a
+  // single point-in-time value isn't representative history to build a
+  // confident opinion on. Only trusted if <24h old — a stale snapshot is
+  // worse than none, since it'd get presented with the same confidence
+  // as a fresh one.
   let ringBlock='';
   try{
     const ringSnap=JSON.parse(localStorage.getItem('sh_ring_latest')||'null');
     const freshEnough=ringSnap && (Date.now()-new Date(ringSnap.updatedAt).getTime() < 24*60*60*1000);
     if(freshEnough){
       const lines=[];
-      if(ringSnap.hr) lines.push(`- Heart rate (live spot check): ${ringSnap.hr} bpm`);
-      if(ringSnap.spo2) lines.push(`- SpO2 (live spot check): ${ringSnap.spo2}%`);
-      if(ringSnap.hrLog) lines.push(`- Today's HR log: ${ringSnap.hrLog.count} samples, range ${ringSnap.hrLog.min}-${ringSnap.hrLog.max} bpm, avg ${ringSnap.hrLog.avg} bpm`);
+      if(ringSnap.hrLog) lines.push(`- Today's HR log (ring's own on-device history): ${ringSnap.hrLog.count} samples, range ${ringSnap.hrLog.min}-${ringSnap.hrLog.max} bpm, avg ${ringSnap.hrLog.avg} bpm`);
       if(ringSnap.steps) lines.push(`- Steps today: ${ringSnap.steps.total}, ${ringSnap.steps.calories} cal, ${ringSnap.steps.distance}m`);
-      if(lines.length) ringBlock=`\nREAL RING DATA (synced from the patient's actual Colmi R02, ${new Date(ringSnap.updatedAt).toLocaleString()}):\n${lines.join('\n')}\nThese are real measurements, not simulated. When the patient asks about heart rate, SpO2, or activity, use THESE numbers over the baseline data below, and give a confident, directional read — e.g. "your heart rate today is running about 12bpm above your usual resting range, which is commonly tied to poor sleep, stress, or dehydration" — not a diagnosis, but a clear opinion on what the number suggests.\n`;
+      if(lines.length) ringBlock=`\nREAL RING DATA (synced from the patient's actual Colmi R02's own logged history, ${new Date(ringSnap.updatedAt).toLocaleString()}):\n${lines.join('\n')}\nThese are real measurements from the ring's own log, not simulated and not a single spot-check. When the patient asks about heart rate or activity, use THESE numbers over the baseline data below, and give a confident, directional read — e.g. "your average heart rate today is running about 12bpm above your usual resting range, which is commonly tied to poor sleep, stress, or dehydration" — not a diagnosis, but a clear opinion on what the pattern suggests.\n`;
     }
   }catch(e){/* localStorage unavailable or malformed snapshot — fall back to baseline only */}
   const sys=`You are SageHealth's AI health coach — positioned between a health coach and a physician. You help patients understand their biometric trends and prepare for doctor visits.
