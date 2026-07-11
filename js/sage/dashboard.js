@@ -560,12 +560,6 @@ const Dashboard = {
       } catch (e) {
         document.getElementById('sleep-empty').textContent = e.message;
       }
-      // HRV — automatic now, same tier as the other logged data above.
-      // Adds ~60s to the connect (needs a still capture to have enough
-      // beats to work with), which is a real, visible tradeoff — but no
-      // separate tap required anymore.
-      Dashboard.showSpinner('Computing HRV — hold still (60s)...');
-      await Dashboard.computeHrv();
       Dashboard.syncToCloud();
       Dashboard.hideSpinner();
       const now = new Date();
