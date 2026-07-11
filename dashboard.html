@@ -102,6 +102,7 @@
     <button id="disconnect-btn">Disconnect Ring</button>
   </div>
   <div id="status-line"></div>
+  <div id="synced-label" style="font-size:12px;color:#8A93A8;margin:-8px 0 14px;"></div>
 
   <div id="battery-banner">
     <div>
@@ -118,6 +119,7 @@
     <div class="arc-wrap">
       <svg viewBox="0 0 220 130"><path id="activity-arc-bg" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="14" stroke-linecap="round"/><path id="activity-arc-fg" fill="none" stroke="#ffffff" stroke-width="14" stroke-linecap="round"/></svg>
       <div class="arc-center">
+        <div style="font-size:18px;opacity:0.85;">👑</div>
         <div class="arc-value" id="activity-steps">--</div>
         <div class="arc-label">of 10,000 step goal</div>
       </div>
@@ -138,6 +140,7 @@
       <div class="arc-wrap">
         <svg viewBox="0 0 220 130"><path id="sleep-arc-bg" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="14" stroke-linecap="round"/><path id="sleep-arc-fg" fill="none" stroke="#ffffff" stroke-width="14" stroke-linecap="round"/></svg>
         <div class="arc-center">
+          <div style="font-size:18px;opacity:0.85;">👑</div>
           <div class="arc-value" id="sleep-hours">--</div>
           <div class="arc-label">total sleep</div>
         </div>
