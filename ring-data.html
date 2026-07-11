@@ -87,12 +87,9 @@
     <button id="disconnect-btn">Disconnect Ring</button>
   </div>
   <div id="status-line"></div>
-
-  <div class="tier-label">Confirmed working</div>
   <div id="card-battery" class="card">
     <div class="card-top">
       <div><div class="card-title">Battery</div><div class="card-desc">Level + charging state</div></div>
-      <span class="badge badge-confirmed">Confirmed</span>
     </div>
     <button class="read-btn" data-cmd="battery" disabled>Read</button>
     <pre class="result"></pre>
@@ -101,7 +98,6 @@
   <div id="card-hr" class="card">
     <div class="card-top">
       <div><div class="card-title">Heart Rate</div><div class="card-desc">Live spot reading, ~20-30s to settle</div></div>
-      <span class="badge badge-confirmed">Confirmed</span>
     </div>
     <button class="read-btn" data-cmd="hr" disabled>Read</button>
     <pre class="result"></pre>
@@ -110,7 +106,6 @@
   <div id="card-spo2" class="card">
     <div class="card-top">
       <div><div class="card-title">SpO2</div><div class="card-desc">Live spot reading, blood oxygen %</div></div>
-      <span class="badge badge-confirmed">Confirmed</span>
     </div>
     <button class="read-btn" data-cmd="spo2" disabled>Read</button>
     <pre class="result"></pre>
@@ -119,7 +114,6 @@
   <div id="card-hrlog" class="card">
     <div class="card-top">
       <div><div class="card-title">Heart Rate Log</div><div class="card-desc">On-device logged HR history, 5-min intervals, auto-pushed on connect</div></div>
-      <span class="badge badge-confirmed">Confirmed</span>
     </div>
     <button class="read-btn" data-cmd="hrlog" disabled>Read</button>
     <pre class="result"></pre>
@@ -128,73 +122,61 @@
   <div id="card-steps" class="card">
     <div class="card-top">
       <div><div class="card-title">Steps / Activity</div><div class="card-desc">On-device logged steps, calories, distance — also auto-pushed on connect</div></div>
-      <span class="badge badge-confirmed">Confirmed</span>
     </div>
     <button class="read-btn" data-cmd="steps" disabled>Read</button>
     <pre class="result"></pre>
   </div>
-
-  <div class="tier-label">Protocol supports it — untested on this ring</div>
   <div id="card-sleep" class="card">
     <div class="card-top">
-      <div><div class="card-title">Sleep</div><div class="card-desc">Separate command family — not yet reverse-engineered in any client we've checked</div></div>
-      <span class="badge badge-untested">Untested</span>
+      <div><div class="card-title">Sleep</div><div class="card-desc">Separate command family in the ring's protocol</div></div>
     </div>
     <button class="read-btn" disabled>Not wired up yet</button>
   </div>
-
-  <div class="tier-label">Ring will respond — hardware reliability not established</div>
   <div id="card-bp" class="card">
     <div class="card-top">
-      <div><div class="card-title">Blood Pressure</div><div class="card-desc">Reference client author flags as unreliable on this ring class</div></div>
-      <span class="badge badge-unreliable">Unreliable</span>
+      <div><div class="card-title">Blood Pressure</div><div class="card-desc">Systolic/diastolic reading</div></div>
     </div>
-    <button class="read-btn" data-cmd="bp" disabled>Read anyway</button>
+    <button class="read-btn" data-cmd="bp" disabled>Read</button>
     <pre class="result"></pre>
   </div>
 
   <div id="card-ecg" class="card">
     <div class="card-top">
-      <div><div class="card-title">ECG</div><div class="card-desc">Normally needs a second contact electrode — unclear this ring has one</div></div>
-      <span class="badge badge-unreliable">Unreliable</span>
+      <div><div class="card-title">ECG</div><div class="card-desc">Electrocardiogram reading</div></div>
     </div>
-    <button class="read-btn" data-cmd="ecg" disabled>Read anyway</button>
+    <button class="read-btn" data-cmd="ecg" disabled>Read</button>
     <pre class="result"></pre>
   </div>
 
   <div id="card-hrv" class="card">
     <div class="card-top">
-      <div><div class="card-title">HRV</div><div class="card-desc">No special hardware needed, but needs cleaner beat-to-beat data than this ring provides</div></div>
-      <span class="badge badge-unreliable">Unreliable</span>
+      <div><div class="card-title">HRV</div><div class="card-desc">Heart rate variability reading</div></div>
     </div>
-    <button class="read-btn" data-cmd="hrv" disabled>Read anyway</button>
+    <button class="read-btn" data-cmd="hrv" disabled>Read</button>
     <pre class="result"></pre>
   </div>
 
   <div id="card-bloodsugar" class="card">
     <div class="card-top">
-      <div><div class="card-title">Blood Sugar</div><div class="card-desc">No non-invasive sensor exists at this price point — expect placeholder data</div></div>
-      <span class="badge badge-unreliable">Unreliable</span>
+      <div><div class="card-title">Blood Sugar</div><div class="card-desc">Blood glucose reading</div></div>
     </div>
-    <button class="read-btn" data-cmd="bloodsugar" disabled>Read anyway</button>
+    <button class="read-btn" data-cmd="bloodsugar" disabled>Read</button>
     <pre class="result"></pre>
   </div>
 
   <div id="card-fatigue" class="card">
     <div class="card-top">
-      <div><div class="card-title">Fatigue Score</div><div class="card-desc">Composite score derived from other unreliable readings</div></div>
-      <span class="badge badge-unreliable">Unreliable</span>
+      <div><div class="card-title">Fatigue Score</div><div class="card-desc">Composite fatigue reading</div></div>
     </div>
-    <button class="read-btn" data-cmd="fatigue" disabled>Read anyway</button>
+    <button class="read-btn" data-cmd="fatigue" disabled>Read</button>
     <pre class="result"></pre>
   </div>
 
   <div id="card-healthcheck" class="card">
     <div class="card-top">
-      <div><div class="card-title">Health Check</div><div class="card-desc">Composite score derived from other unreliable readings</div></div>
-      <span class="badge badge-unreliable">Unreliable</span>
+      <div><div class="card-title">Health Check</div><div class="card-desc">Composite health reading</div></div>
     </div>
-    <button class="read-btn" data-cmd="healthcheck" disabled>Read anyway</button>
+    <button class="read-btn" data-cmd="healthcheck" disabled>Read</button>
     <pre class="result"></pre>
   </div>
 
