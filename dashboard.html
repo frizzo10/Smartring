@@ -52,16 +52,11 @@
   .qcard-title { font-size: 19px; font-weight: 700; }
   .qcard-date { font-size: 12px; opacity: 0.75; margin-top: 2px; }
 
-  #card-activity, #card-sleep { background: #14213D; }
+  #card-activity { background: linear-gradient(180deg, #4A6382 0%, #6C86A8 100%); }
+  #card-sleep { background: linear-gradient(180deg, #2B2A5C 0%, #1B2440 100%); }
   #card-heart { background: #1A2A4D; border: 1px solid #2A3B5E; }
   #card-oxygen { background: linear-gradient(180deg, #2E5B86 0%, #274A72 100%); }
 
-  .qcard-scene { position: absolute; inset: 0; z-index: 0; }
-  .qcard-scene svg { width: 100%; height: 100%; display: block; }
-  .qcard-scrim {
-    position: absolute; inset: 0; z-index: 1;
-    background: linear-gradient(180deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.25) 100%);
-  }
   .qcard-content { position: relative; z-index: 2; }
 
   /* arc gauge */
@@ -121,39 +116,6 @@
 
   <!-- ACTIVITY -->
   <div id="card-activity" class="qcard">
-    <div class="qcard-scene">
-      <svg viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice">
-        <defs>
-          <linearGradient id="sky-day" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="#7FA8D6"/>
-            <stop offset="55%" stop-color="#A9C4DE"/>
-            <stop offset="100%" stop-color="#D8E1E4"/>
-          </linearGradient>
-          <linearGradient id="mtn-far" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="#8FA6C2"/>
-            <stop offset="100%" stop-color="#7C93B0"/>
-          </linearGradient>
-          <linearGradient id="mtn-mid" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="#6C86A8"/>
-            <stop offset="100%" stop-color="#587092"/>
-          </linearGradient>
-          <linearGradient id="mtn-near" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="#4A6382"/>
-            <stop offset="100%" stop-color="#38506E"/>
-          </linearGradient>
-          <filter id="soft-blur"><feGaussianBlur stdDeviation="9"/></filter>
-        </defs>
-        <rect x="0" y="0" width="400" height="300" fill="url(#sky-day)"/>
-        <circle cx="330" cy="55" r="34" fill="#FFF7DF" opacity="0.55" filter="url(#soft-blur)"/>
-        <circle cx="330" cy="55" r="16" fill="#FFFDF4" opacity="0.9"/>
-        <ellipse cx="80" cy="70" rx="46" ry="14" fill="#FFFFFF" opacity="0.5" filter="url(#soft-blur)"/>
-        <ellipse cx="150" cy="95" rx="34" ry="10" fill="#FFFFFF" opacity="0.4" filter="url(#soft-blur)"/>
-        <polygon points="0,220 60,140 110,190 170,110 230,200 280,150 340,210 400,160 400,300 0,300" fill="url(#mtn-far)"/>
-        <polygon points="0,260 70,180 130,225 190,150 260,235 330,175 400,230 400,300 0,300" fill="url(#mtn-mid)"/>
-        <polygon points="0,300 50,215 120,270 200,190 270,265 340,205 400,270 400,300 0,300" fill="url(#mtn-near)"/>
-      </svg>
-    </div>
-    <div class="qcard-scrim"></div>
     <div class="qcard-content">
     <div class="qcard-title">Activity</div>
     <div class="qcard-date" id="activity-date"></div>
@@ -176,44 +138,6 @@
 
   <!-- SLEEP -->
   <div id="card-sleep" class="qcard">
-    <div class="qcard-scene">
-      <svg viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice">
-        <defs>
-          <linearGradient id="sky-night" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="#12163A"/>
-            <stop offset="55%" stop-color="#2B2A5C"/>
-            <stop offset="100%" stop-color="#1B2440"/>
-          </linearGradient>
-          <filter id="moon-blur"><feGaussianBlur stdDeviation="10"/></filter>
-        </defs>
-        <rect x="0" y="0" width="400" height="300" fill="url(#sky-night)"/>
-        <circle cx="90" cy="55" r="30" fill="#F4EFD8" opacity="0.35" filter="url(#moon-blur)"/>
-        <circle cx="90" cy="55" r="17" fill="#F7F2E3"/>
-        <g fill="#FFFFFF">
-          <circle cx="30" cy="30" r="1.2" opacity="0.9"/>
-          <circle cx="60" cy="90" r="0.9" opacity="0.7"/>
-          <circle cx="140" cy="40" r="1.4" opacity="0.85"/>
-          <circle cx="180" cy="20" r="0.8" opacity="0.6"/>
-          <circle cx="210" cy="70" r="1.1" opacity="0.8"/>
-          <circle cx="250" cy="35" r="1.3" opacity="0.9"/>
-          <circle cx="290" cy="60" r="0.9" opacity="0.65"/>
-          <circle cx="320" cy="25" r="1.1" opacity="0.8"/>
-          <circle cx="360" cy="45" r="1.3" opacity="0.85"/>
-          <circle cx="380" cy="90" r="0.9" opacity="0.6"/>
-          <circle cx="15" cy="120" r="1" opacity="0.7"/>
-          <circle cx="120" cy="110" r="0.8" opacity="0.55"/>
-          <circle cx="230" cy="105" r="1" opacity="0.7"/>
-          <circle cx="340" cy="115" r="1.2" opacity="0.75"/>
-          <circle cx="70" cy="15" r="0.7" opacity="0.5"/>
-          <circle cx="270" cy="12" r="0.9" opacity="0.6"/>
-          <circle cx="160" cy="75" r="0.7" opacity="0.55"/>
-          <circle cx="395" cy="140" r="0.9" opacity="0.6"/>
-        </g>
-        <polygon points="0,300 0,240 15,255 30,220 45,250 60,225 75,255 90,215 105,250 120,230 135,260 150,225 165,255 180,235 195,265 210,220 225,255 240,230 255,260 270,225 285,255 300,235 315,265 330,225 345,255 360,235 375,260 390,230 400,250 400,300"
-                 fill="#10142E" opacity="0.9"/>
-      </svg>
-    </div>
-    <div class="qcard-scrim"></div>
     <div class="qcard-content">
     <div class="qcard-title">Sleep</div>
     <div class="qcard-date" id="sleep-date"></div>
