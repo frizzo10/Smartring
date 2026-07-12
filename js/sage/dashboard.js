@@ -643,10 +643,10 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
     btn.disabled = true;
-    status.textContent = 'Sending reboot command — ring will disconnect shortly...';
+    status.textContent = 'Sending reboot — this is the confirmed fix, ring will disconnect briefly...';
     try {
       await window.ColmiBLE.rebootRing();
-      status.textContent = 'Reboot sent. Ring should disconnect and restart — check the lights once it reconnects or you reconnect manually.';
+      status.textContent = 'Reboot sent — ring should disconnect and the LEDs should clear. Reconnect when ready.';
     } catch (e) {
       status.textContent = 'Failed: ' + e.message;
     }
