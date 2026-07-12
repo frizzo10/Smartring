@@ -646,7 +646,7 @@ document.addEventListener('DOMContentLoaded', () => {
     status.textContent = 'Sending reboot — this is the confirmed fix, ring will disconnect briefly...';
     try {
       await window.ColmiBLE.rebootRing();
-      status.textContent = 'Reboot sent — wait about 10s for the ring to finish restarting, then tap "Connect Colmi R02" above when you\'re ready.';
+      status.textContent = 'Reboot sent — wait about 10s for the ring to finish restarting. Note: iOS will likely still show it as "Connected" in Settings afterward — go to Settings → Bluetooth → (ⓘ) → Disconnect on the ring before it\'ll show up here again.';
     } catch (e) {
       status.textContent = 'Failed: ' + e.message;
     }
