@@ -577,13 +577,12 @@ const ColmiBLE = {
     await ColmiBLE.write(packet);
   },
 
-  // CONFIRMED command, cross-verified two independent ways: Gadgetbridge's
-  // real reverse-engineered constant list has CMD_RE_BOOT = 0x08, AND
-  // tahnok/colmi_r02_client's own CLI has a working `reboot` subcommand.
-  // Stronger than anything else tried tonight — a full reboot kills any
-  // stuck sensor loop state outright rather than asking it to stop
-  // gracefully. Tradeoff: the ring will briefly disconnect while it
-  // restarts, unlike the softer stop/reconnect attempts.
+  // CONFIRMED WORKING — tested live: clears the stuck-LED state that
+  // three other approaches (stop-retry, forceReconnect, experimental
+  // auto-monitor disable) all failed to fix. Cross-verified in source
+  // two ways before testing (Gadgetbridge's CMD_RE_BOOT = 0x08,
+  // tahnok/colmi_r02_client's own working `reboot` CLI command) — this
+  // is the real answer for a stuck LED, not another guess.
   CMD_RE_BOOT: 0x08,
 
   async rebootRing() {
