@@ -576,6 +576,20 @@ const ColmiBLE = {
     const packet = ColmiBLE.makePacket(ColmiBLE.CMD_HR_TIMING_MONITOR_SWITCH, [0x02, 0x02, 5]);
     await ColmiBLE.write(packet);
   },
+
+  // CONFIRMED command, cross-verified two independent ways: Gadgetbridge's
+  // real reverse-engineered constant list has CMD_RE_BOOT = 0x08, AND
+  // tahnok/colmi_r02_client's own CLI has a working `reboot` subcommand.
+  // Stronger than anything else tried tonight — a full reboot kills any
+  // stuck sensor loop state outright rather than asking it to stop
+  // gracefully. Tradeoff: the ring will briefly disconnect while it
+  // restarts, unlike the softer stop/reconnect attempts.
+  CMD_RE_BOOT: 0x08,
+
+  async rebootRing() {
+    const packet = ColmiBLE.makePacket(ColmiBLE.CMD_RE_BOOT);
+    await ColmiBLE.write(packet);
+  },
   // Defaults to today. Per date_utils.py, the reference client always
   // uses midnight UTC (the ring's clock is set in UTC via set_time.js),
   // not local midnight.
