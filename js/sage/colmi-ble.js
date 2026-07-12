@@ -588,17 +588,15 @@ const ColmiBLE = {
   async rebootRing() {
     const packet = ColmiBLE.makePacket(ColmiBLE.CMD_RE_BOOT);
     await ColmiBLE.write(packet);
-    // The ring rebooting doesn't cleanly signal a disconnect the way a
-    // normal GATT teardown does — it just goes silent. Left alone, iOS's
-    // Bluetooth stack can be slow to notice that silence, leaving the
-    // ring showing "Connected" in Settings and unable to show up in the
-    // device picker again until manually disconnected there. Forcing
-    // our own side to disconnect immediately, rather than waiting on
-    // the ring or iOS to notice, is what should fix that.
-    await ColmiBLE.sleep(200); // let the write actually go out first
-    if (ColmiBLE.device?.gatt?.connected) {
-      ColmiBLE.device.gatt.disconnect();
-    }
+    // Tried forcing our own gatt.disconnect() here to speed up iOS
+    // releasing the device — tested live, didn't help. iOS's system
+    // Bluetooth connection state is managed by CoreBluetooth, outside
+    // what a web page can control. After a reboot, iOS's Bluetooth
+    // Settings will likely keep showing this ring as "Connected" and
+    // it won't appear in the device picker until manually disconnected
+    // there (Settings → Bluetooth → ⓘ → Disconnect). That's a real,
+    // confirmed extra step in this recovery flow, not a bug to keep
+    // chasing in code.
   },
   // Defaults to today. Per date_utils.py, the reference client always
   // uses midnight UTC (the ring's clock is set in UTC via set_time.js),
