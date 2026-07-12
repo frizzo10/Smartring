@@ -121,12 +121,12 @@
     <button id="connect-btn">Connect Colmi R02</button>
     <button id="disconnect-btn">Disconnect Ring</button>
     <div style="font-size:11px;color:#8A93A8;margin-top:6px;text-align:center;">Open this page in the Bluefy app for Bluetooth to work — Safari/Chrome can't connect.</div>
-    <button id="force-stop-btn" style="width:100%;padding:10px;border-radius:10px;border:1px solid rgba(232,168,92,0.4);background:transparent;color:#E8A85C;font-size:13px;font-weight:600;margin-top:10px;" disabled>Force Stop Sensors (if ring lights are stuck on)</button>
-    <div id="force-stop-status" style="font-size:11px;color:#8A93A8;margin-top:4px;text-align:center;"></div>
-    <button id="disable-auto-hr-btn" style="width:100%;padding:10px;border-radius:10px;border:1px solid rgba(127,166,217,0.4);background:transparent;color:#7FA6D9;font-size:13px;font-weight:600;margin-top:8px;" disabled>Try: Disable Auto HR Monitor (experimental)</button>
-    <div id="disable-auto-hr-status" style="font-size:11px;color:#8A93A8;margin-top:4px;text-align:center;"></div>
-    <button id="reboot-ring-btn" style="width:100%;padding:10px;border-radius:10px;border:1px solid rgba(190,120,220,0.4);background:transparent;color:#BE78DC;font-size:13px;font-weight:600;margin-top:8px;" disabled>Reboot Ring (confirmed command — will briefly disconnect)</button>
+    <button id="reboot-ring-btn" style="width:100%;padding:12px;border-radius:10px;border:1px solid rgba(190,120,220,0.6);background:rgba(190,120,220,0.12);color:#BE78DC;font-size:14px;font-weight:700;margin-top:10px;" disabled>✓ Reboot Ring (confirmed fix — clears stuck LEDs, briefly disconnects)</button>
     <div id="reboot-ring-status" style="font-size:11px;color:#8A93A8;margin-top:4px;text-align:center;"></div>
+    <button id="force-stop-btn" style="width:100%;padding:10px;border-radius:10px;border:1px solid rgba(232,168,92,0.3);background:transparent;color:#8A93A8;font-size:12px;font-weight:600;margin-top:10px;" disabled>Force Stop Sensors (didn't clear it in testing — try Reboot instead)</button>
+    <div id="force-stop-status" style="font-size:11px;color:#8A93A8;margin-top:4px;text-align:center;"></div>
+    <button id="disable-auto-hr-btn" style="width:100%;padding:10px;border-radius:10px;border:1px solid rgba(127,166,217,0.3);background:transparent;color:#8A93A8;font-size:12px;font-weight:600;margin-top:8px;" disabled>Try: Disable Auto HR Monitor (didn't clear it in testing)</button>
+    <div id="disable-auto-hr-status" style="font-size:11px;color:#8A93A8;margin-top:4px;text-align:center;"></div>
     <div id="spinner"><div class="dot"></div><div class="dot"></div><div class="dot"></div><span id="spinner-text">Connecting...</span></div>
   </div>
   <div id="status-line"></div>
