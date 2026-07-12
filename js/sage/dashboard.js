@@ -422,6 +422,7 @@ const Dashboard = {
         document.getElementById('hrv-compute-btn').disabled = false;
         document.getElementById('force-stop-btn').disabled = false;
         document.getElementById('disable-auto-hr-btn').disabled = false;
+        document.getElementById('reboot-ring-btn').disabled = false;
       }
       if (s === 'disconnected') {
         disconnectBtn.style.display = 'none';
@@ -430,6 +431,7 @@ const Dashboard = {
         document.getElementById('hrv-compute-btn').disabled = true;
         document.getElementById('force-stop-btn').disabled = true;
         document.getElementById('disable-auto-hr-btn').disabled = true;
+        document.getElementById('reboot-ring-btn').disabled = true;
       }
     });
 
@@ -627,6 +629,24 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       await window.ColmiBLE.disableAutoHrMonitor();
       status.textContent = 'Sent — check the ring. Report back either way, this tells us if the theory is right.';
+    } catch (e) {
+      status.textContent = 'Failed: ' + e.message;
+    }
+    btn.disabled = false;
+  });
+
+  document.getElementById('reboot-ring-btn').addEventListener('click', async () => {
+    const btn = document.getElementById('reboot-ring-btn');
+    const status = document.getElementById('reboot-ring-status');
+    if (!window.ColmiBLE.device?.gatt?.connected) {
+      status.textContent = 'Not connected — nothing to send this to.';
+      return;
+    }
+    btn.disabled = true;
+    status.textContent = 'Sending reboot command — ring will disconnect shortly...';
+    try {
+      await window.ColmiBLE.rebootRing();
+      status.textContent = 'Reboot sent. Ring should disconnect and restart — check the lights once it reconnects or you reconnect manually.';
     } catch (e) {
       status.textContent = 'Failed: ' + e.message;
     }
