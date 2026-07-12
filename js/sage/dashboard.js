@@ -646,16 +646,9 @@ document.addEventListener('DOMContentLoaded', () => {
     status.textContent = 'Sending reboot — this is the confirmed fix, ring will disconnect briefly...';
     try {
       await window.ColmiBLE.rebootRing();
-      status.textContent = 'Reboot sent — waiting for the ring to finish restarting (10s)...';
-      // The ring needs real time to complete its own boot cycle before
-      // it's connectable again — trying too soon just fails. This wait
-      // is a guess at how long that takes, not a confirmed spec value.
-      await window.ColmiBLE.sleep(10000);
-      status.textContent = 'Reconnecting...';
-      await window.ColmiBLE.forceReconnect();
-      status.textContent = '✓ Reconnected after reboot — check the ring.';
+      status.textContent = 'Reboot sent — wait about 10s for the ring to finish restarting, then tap "Connect Colmi R02" above when you\'re ready.';
     } catch (e) {
-      status.textContent = `Reboot sent but auto-reconnect failed (${e.message}). Wait a few more seconds and tap "Connect Colmi R02" above manually.`;
+      status.textContent = 'Failed: ' + e.message;
     }
     btn.disabled = false;
   });
