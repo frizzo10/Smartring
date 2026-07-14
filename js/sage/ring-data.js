@@ -438,21 +438,37 @@ const RingData = {
       RingData.setButtonBusy(cardId, true, 'Streaming (10s)...');
       RingData.rawCounts = { ppg: 0, spo2: 0, accel: 0 };
       RingData.rawLatest = { ppg: null, spo2: null, accel: null };
+      // Testing specifically for a 4th, unrecognized data channel — if
+      // this chip has any onboard temperature sensor, this is the most
+      // likely place it would show up, alongside PPG/SpO2/accel in the
+      // same raw stream. Previously these were silently dropped.
+      RingData.unknownRawPackets = [];
+      const unknownHandler = hex => RingData.unknownRawPackets.push(hex);
+      BLE.on('raw', unknownHandler);
       await BLE.startRawSensor();
       setTimeout(async () => {
         await BLE.stopRawSensor();
+        BLE.off('raw', unknownHandler);
         const { ppg, spo2, accel } = RingData.rawCounts;
         const l = RingData.rawLatest;
+        const unknown = RingData.unknownRawPackets;
         const lines = [`${ppg} PPG samples, ${spo2} SpO2 samples, ${accel} accel samples in 10s`];
         if (l.ppg) lines.push(`latest PPG: ${l.ppg.ppg} (max ${l.ppg.max}, min ${l.ppg.min}, diff ${l.ppg.diff})`);
         if (l.spo2) lines.push(`latest SpO2 raw: ${l.spo2.spo2} (max ${l.spo2.max}, min ${l.spo2.min}, diff ${l.spo2.diff})`);
         if (l.accel) lines.push(`latest accel: x=${l.accel.accX} y=${l.accel.accY} z=${l.accel.accZ}`);
         if (ppg + spo2 + accel === 0) lines.push('no raw sensor packets received — command may not be supported on this firmware');
+        if (unknown.length > 0) {
+          lines.push(`\n⚠ ${unknown.length} UNRECOGNIZED packet(s) — a 4th data channel exists (possibly temperature, or something else undocumented):`);
+          const uniqueSample = [...new Set(unknown)].slice(0, 5);
+          uniqueSample.forEach(hex => lines.push(`  ${hex}`));
+        } else {
+          lines.push('\nNo unrecognized packets — only PPG/SpO2/accel channels present. No evidence of a 4th (e.g. temperature) channel in this stream.');
+        }
         RingData.showResult(cardId, lines.join('\n'));
         RingData.setButtonBusy(cardId, false);
         if (ppg + spo2 + accel > 0) {
           RingData.saveSnapshot({
-            rawSensorTest: { ppgCount: ppg, spo2Count: spo2, accelCount: accel, latest: l, recordedAt: new Date().toISOString() },
+            rawSensorTest: { ppgCount: ppg, spo2Count: spo2, accelCount: accel, latest: l, unknownPacketCount: unknown.length, recordedAt: new Date().toISOString() },
           });
           RingData.syncToCloud();
         }
