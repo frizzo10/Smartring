@@ -145,8 +145,8 @@ const Scores = {
 
     if (!result.ok) {
       const msgs = {
-        no_hrv: 'Needs at least one HRV reading (Dashboard → HRV card → Compute HRV) plus a synced sleep log to compute.',
-        latest_hrv_invalid: 'Your most recent HRV attempt didn\u2019t produce a clean reading — try Compute HRV again while holding still.',
+        no_hrv: 'Needs at least one resting check (from the Dashboard) plus a synced sleep log to compute.',
+        latest_hrv_invalid: 'Your last resting check didn\u2019t produce a clean reading — try again while holding still.',
       };
       emptyEl.textContent = msgs[result.reason] || 'Not enough data yet.';
       emptyEl.style.display = 'block';
@@ -328,7 +328,7 @@ const Scores = {
     const dateEl = document.getElementById('stress-date');
 
     if (!result.ok) {
-      emptyEl.textContent = `Needs at least 3 HRV readings to establish your personal baseline before Stress can be scored (you have ${result.have}).`;
+      emptyEl.textContent = `Needs a few resting checks over time to learn your personal baseline before Stress can be scored (you have ${result.have}).`;
       emptyEl.style.display = 'block';
       bodyEl.style.display = 'none';
       dateEl.textContent = '--';
@@ -396,10 +396,10 @@ const Scores = {
     const band = Scores.bandFor(r.score).label;
     let driver;
     if (r.baselinePct == null) {
-      driver = `your HRV reading is ${r.hrvMs}ms \u2014 not yet enough history to say if that's typical for you`;
+      driver = `your last resting check came back at ${r.hrvMs}ms \u2014 not yet enough history to say if that's typical for you`;
     } else {
       const dir = r.baselinePct < 0 ? 'below' : 'above';
-      driver = `HRV is ${Math.abs(r.baselinePct)}% ${dir} your personal baseline (${r.hrvMs}ms)`;
+      driver = `your resting check is ${Math.abs(r.baselinePct)}% ${dir} your personal baseline (${r.hrvMs}ms)`;
     }
     const sleepPart = r.sleepHrs != null ? `, sleep was ${r.sleepHrs} hrs` : ', no sleep data synced today';
     return `Recovery is ${r.score} (${band}) \u2014 driven mainly by ${driver}${sleepPart}.`;
@@ -415,7 +415,7 @@ const Scores = {
     if (!st.ok) return null;
     const band = Scores.stressBandFor(st.score).label;
     const dir = st.baselinePct <= 0 ? 'lower' : 'higher';
-    return `Stress is ${st.score} (${band}) \u2014 this reading's HRV is ${Math.abs(st.baselinePct)}% ${dir} than your baseline.`;
+    return `Stress is ${st.score} (${band}) \u2014 this reading is ${Math.abs(st.baselinePct)}% ${dir} than your baseline.`;
   },
 
   renderStatusLine(elId, text) {
@@ -777,22 +777,69 @@ const Scores = {
 
   SPECIALIST_ROLES: {
     sleep: { name: 'Willow', title: 'Sleep Coach', voice: 'Willow, an attentive sleep coach' },
-    stress: { name: 'Lotus', title: 'Mindfulness Coach', voice: 'Lotus, a grounded mindfulness and stress-reduction coach' },
-    activity: { name: 'Hawthorn', title: 'Exercise Coach', voice: 'Hawthorn, an encouraging exercise coach' },
-    nutrition: { name: 'Basil', title: 'Nutrition Coach', voice: 'Basil, a practical nutrition coach' },
+    stress: { name: 'Lotus', title: 'Mindfulness Coach', voice: 'Lotus, a mindfulness coach and active yoga practitioner' },
+    activity: { name: 'Hawthorn', title: 'Exercise Coach', voice: 'Hawthorn, an exercise coach who builds real training regimens from real data' },
+    nutrition: { name: 'Basil', title: 'Nutrition Coach', voice: 'Basil, a nutrition coach focused on helping people eat better' },
+  },
+
+  // ── TEAM PROFILE (from Meet the Team onboarding) ──────────
+  // Same storage key as team.js — real answers a person gave
+  // when meeting each specialist. These get woven directly into
+  // that specialist's actual prompts below, not just displayed
+  // somewhere as a bio. Works entirely offline from the ring —
+  // pure self-report, available before any hardware is involved.
+  PROFILE_KEY: 'sh_team_profile',
+
+  loadTeamProfile() {
+    try { return JSON.parse(localStorage.getItem(Scores.PROFILE_KEY) || '{}'); }
+    catch (e) { return {}; }
+  },
+
+  // Turns one specialist's saved answers into a short readable
+  // block for their prompt. Returns '' if nothing was ever
+  // answered for that domain — never fabricates missing context.
+  formatProfileAnswers(domain, profile) {
+    const answers = profile?.[domain];
+    if (!answers || !Object.keys(answers).length) return '';
+    return Object.entries(answers)
+      .filter(([k, v]) => v && String(v).trim())
+      .map(([k, v]) => `${k}: ${v}`)
+      .join('\n');
+  },
+
+  // Medical/family history, captured only by Dr. Sage during
+  // onboarding, but treated as SHARED context every specialist
+  // gets — same tier as the journal log, not siloed like
+  // domain-specific profile answers (Hawthorn needs to know about
+  // a heart condition before suggesting exercise intensity, not
+  // after). Deliberately labeled as context, never as a "medical
+  // record" or "risk factors" — that framing alone can nudge a
+  // model toward risk-assessment language it has no business
+  // producing.
+  formatMedicalContext(profile) {
+    const d = profile?.drSage || {};
+    const lines = [];
+    if (d.medicalHistory && d.medicalHistory.trim()) lines.push(`Diagnosed conditions they've shared: ${d.medicalHistory.trim()}`);
+    if (d.familyHistory && d.familyHistory.trim()) lines.push(`Family health history they've shared: ${d.familyHistory.trim()}`);
+    return lines.join('\n');
   },
 
   async callSpecialist(domain, domainInfo, journalBlock) {
     const role = Scores.SPECIALIST_ROLES[domain];
     if (!role) return null;
-    const userMessage = `Here is this person's real ${role.title.toLowerCase()} data:\n${domainInfo.score != null ? domainInfo.score + '/100 \u2014 ' : ''}${domainInfo.detail}\n\nTheir recent self-logged daily habits:\n${journalBlock}\n\nBased ONLY on the real data above, give ONE short specialist observation and ONE small concrete daily action you'd suggest, as a 7-day experiment. Respond ONLY with valid JSON, no markdown: {"note": "1-2 sentence observation in your voice, referencing the real number(s) above", "suggestedAction": "one small concrete daily action"}`;
+    const profile = Scores.loadTeamProfile();
+    const profileText = Scores.formatProfileAnswers(domain, profile);
+    const profileBlock = profileText ? `\n\nWhat they told you about themselves when you first met:\n${profileText}` : '';
+    const medicalText = Scores.formatMedicalContext(profile);
+    const medicalBlock = medicalText ? `\n\nContext they've shared with Dr. Sage (for awareness only \u2014 use this to inform how careful or attentive your suggestion should be, NEVER to state or imply a diagnosis, risk assessment, or medical conclusion):\n${medicalText}` : '';
+    const userMessage = `Here is this person's real ${role.title.toLowerCase()} data:\n${domainInfo.score != null ? domainInfo.score + '/100 \u2014 ' : ''}${domainInfo.detail}${profileBlock}${medicalBlock}\n\nTheir recent self-logged daily habits:\n${journalBlock}\n\nBased on the real data (and what they've told you about themselves, if anything above), give ONE short specialist observation and ONE small concrete daily action you'd suggest, as a 7-day experiment. Respond ONLY with valid JSON, no markdown: {"note": "1-2 sentence observation in your voice, referencing the real number(s) above", "suggestedAction": "one small concrete daily action"}`;
 
     try {
       const res = await fetch('/.netlify/functions/claude', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          system: `You are ${role.voice}, part of a care team reviewing ONE person's real health data. Sign your observation naturally as yourself, ${role.name} \u2014 no need to state your title, the person already knows who you are. You are NOT a licensed doctor, dietitian, or clinician \u2014 stay in coach/guide register, never diagnostic. You NEVER diagnose, NEVER name a medical condition, NEVER claim certainty that anything will fix anything \u2014 frame your suggestion as a guided experiment. You NEVER invent a number not given to you. Respond with ONLY the requested JSON, nothing else.`,
+          system: `You are ${role.voice}, part of a care team reviewing ONE person's real health data. Sign your observation naturally as yourself, ${role.name} \u2014 no need to state your title, the person already knows who you are. You are NOT a licensed doctor, dietitian, or clinician \u2014 stay in coach/guide register, never diagnostic. You NEVER diagnose, NEVER name a medical condition, NEVER claim certainty that anything will fix anything \u2014 frame your suggestion as a guided experiment. You NEVER invent a number not given to you. If any medical or family health context appears below, use it ONLY to calibrate how careful or attentive your suggestion should be \u2014 you NEVER reference it to state a risk, a diagnosis, or a medical conclusion of any kind. Respond with ONLY the requested JSON, nothing else.`,
           messages: [{ role: 'user', content: userMessage }],
           max_tokens: 180,
         }),
@@ -851,7 +898,9 @@ const Scores = {
     const notesBlock = specialistResults.map(s => `${s.role} (${s.domain}): "${s.note}" \u2014 suggests: "${s.suggestedAction}"`).join('\n');
     const validKeys = 'alcohol, caffeine, meditation, lateMeal, screenLate, stressfulDay';
     const validDomains = specialistResults.map(s => s.domain).join(', ');
-    return `Here is real input from this person's specialist care team, each reviewing only their own domain:\n\n${notesBlock}\n\nTheir recent self-logged habits:\n${journalBlock}\n\nAs the coordinating advisor synthesizing this team's input, weave 2-5 of their suggested actions into ONE cohesive 7-day plan (you may lightly adapt wording, but stay true to what each specialist actually suggested \u2014 do not invent a new action for a domain not covered above). Also decide if any domain is worth a real referral \u2014 a fuller one-on-one consult with that specialist \u2014 based on your own judgment of what you're seeing, not just a fixed rule. Respond ONLY with valid JSON, no markdown: {"goalText": "1-2 plain sentences tying the team's observations together", "actions": [{"text": "one small concrete daily action", "domain": "one of: ${validDomains}", "journalKey": "one of: ${validKeys}, or null"}, ...2-5 actions], "referrals": [{"domain": "one of: ${validDomains}", "reason": "one short sentence on why this specialist is worth a fuller consult"}, ...0-2 referrals, empty array if none warranted]}`;
+    const stated = Scores.formatProfileAnswers('drSage', Scores.loadTeamProfile());
+    const goalBlock = stated ? `\n\nWhat this person told Dr. Sage when they first met (their goal, and any medical or family health context they chose to share \u2014 use the latter only to calibrate attentiveness and referral judgment, NEVER to state a diagnosis or risk assessment):\n${stated}\n` : '';
+    return `Here is real input from this person's specialist care team, each reviewing only their own area of focus:\n\n${notesBlock}\n\nTheir recent self-logged habits:\n${journalBlock}${goalBlock}\n\nAs the coordinating advisor synthesizing this team's input, weave 2-5 of their suggested actions into ONE cohesive 7-day plan (you may lightly adapt wording, but stay true to what each specialist actually suggested \u2014 do not invent a new action for an area not covered above). Also decide if any area is worth a real referral \u2014 a fuller one-on-one consult with that specialist \u2014 based on your own judgment of what you're seeing, not just a fixed rule. Respond ONLY with valid JSON, no markdown: {"goalText": "1-2 plain sentences tying the team's observations together", "actions": [{"text": "one small concrete daily action", "domain": "one of: ${validDomains}", "journalKey": "one of: ${validKeys}, or null"}, ...2-5 actions], "referrals": [{"domain": "one of: ${validDomains}", "reason": "one short sentence on why this specialist is worth a fuller consult"}, ...0-2 referrals, empty array if none warranted]}`;
   },
 
   parsePlanResponse(text) {
@@ -917,7 +966,7 @@ const Scores = {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          system: 'You are Dr. Sage. You are a doctor, but not a medical doctor \u2014 your entire job is monitoring this person\u2019s real health data over time, coordinating a small team of specialist coaches, noticing patterns, and referring to a specialist when it\u2019s warranted. You do not treat, prescribe, diagnose, name a medical condition, or order any test \u2014 that is never your job, monitoring and coordination are. You NEVER claim certainty that any action will fix anything \u2014 frame it as a guided experiment. You NEVER invent a number not given to you, and NEVER introduce a domain the specialist team didn\u2019t cover. You always respond with ONLY the requested JSON, nothing else.',
+          system: 'You are Dr. Sage, a holistic wellness doctor \u2014 your entire job is monitoring this person\u2019s real health data over time, coordinating a small team of specialist coaches, noticing patterns, and referring to a specialist when it\u2019s warranted. You do not treat, prescribe, diagnose, name a medical condition, or order any test \u2014 that is never your job, monitoring and coordination are. You NEVER claim certainty that any action will fix anything \u2014 frame it as a guided experiment. You NEVER invent a number not given to you, and NEVER introduce an area the specialist team didn\u2019t cover. If this person has shared any medical or family health context, use it ONLY to inform how closely you watch something or how quickly you refer \u2014 you NEVER state or imply a risk assessment, diagnosis, or medical conclusion from it, even indirectly. You always respond with ONLY the requested JSON, nothing else.',
           messages: [{ role: 'user', content: synthesisMessage }],
           max_tokens: 500,
         }),
@@ -1066,16 +1115,21 @@ const Scores = {
 
     const role = Scores.SPECIALIST_ROLES[domain];
     const note = plan.specialistNotes?.[domain];
-    if (!role || !note) { onDone({ error: 'No specialist data available for this domain.' }); return; }
+    if (!role || !note) { onDone({ error: 'No specialist data available right now.' }); return; }
 
-    const userMessage = `Dr. Sage has referred this person to you for a fuller consult. Your earlier brief note was: "${note.note}" (you'd suggested: "${note.suggestedAction}"). Dr. Sage's reason for referring: ${referral.reasons.join('; ')}\n\nWrite a short, warm, first-person consult (3-5 sentences) as ${role.name}, this person's ${role.title.toLowerCase()} \u2014 more detail and personality than your earlier brief note, but still grounded only in what's already been said above. Do not diagnose. Do not name a medical condition. Do not order any test. Do not claim certainty. Respond with plain text only, no JSON, no markdown.`;
+    const profile = Scores.loadTeamProfile();
+    const profileText = Scores.formatProfileAnswers(domain, profile);
+    const profileBlock = profileText ? `\n\nWhat they told you about themselves when you first met:\n${profileText}` : '';
+    const medicalText = Scores.formatMedicalContext(profile);
+    const medicalBlock = medicalText ? `\n\nContext they've shared with Dr. Sage (for awareness only \u2014 use only to calibrate how careful your suggestion should be, NEVER to state a diagnosis or risk assessment):\n${medicalText}` : '';
+    const userMessage = `Dr. Sage has referred this person to you for a fuller consult. Your earlier brief note was: "${note.note}" (you'd suggested: "${note.suggestedAction}"). Dr. Sage's reason for referring: ${referral.reasons.join('; ')}${profileBlock}${medicalBlock}\n\nWrite a short, warm, first-person consult (3-5 sentences) as ${role.name}, this person's ${role.title.toLowerCase()} \u2014 more detail and personality than your earlier brief note, but still grounded only in what's already been said above. Do not diagnose. Do not name a medical condition. Do not order any test. Do not claim certainty. Respond with plain text only, no JSON, no markdown.`;
 
     try {
       const res = await fetch('/.netlify/functions/claude', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          system: `You are ${role.voice}. You are NOT a licensed doctor, dietitian, or clinician \u2014 you are a coach. You NEVER diagnose, NEVER name a medical condition, NEVER order or suggest a test, NEVER claim certainty that anything will fix anything. Respond with plain text only, 3-5 sentences.`,
+          system: `You are ${role.voice}. You are NOT a licensed doctor, dietitian, or clinician \u2014 you are a coach. You NEVER diagnose, NEVER name a medical condition, NEVER order or suggest a test, NEVER claim certainty that anything will fix anything. If any medical or family health context appears in the message, use it ONLY to calibrate tone and care level \u2014 NEVER to state a risk, diagnosis, or medical conclusion. Respond with plain text only, 3-5 sentences.`,
           messages: [{ role: 'user', content: userMessage }],
           max_tokens: 300,
         }),
@@ -1110,7 +1164,7 @@ const Scores = {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          system: 'You are Dr. Sage\u2019s planning module, now narrating a real completed result in the voice of the relevant specialist coach(es) \u2014 nutrition, exercise, mindfulness, or sleep coach, as fits the domains involved. You are NOT a licensed doctor, dietitian, or clinician. You NEVER diagnose, NEVER name a medical condition, and NEVER claim certainty that an action caused a result \u2014 correlation only. You NEVER invent a number not given to you. Respond with plain text only, 2-4 sentences, no JSON, no markdown.',
+          system: 'You are Dr. Sage\u2019s planning module, now narrating a real completed result in the voice of the relevant specialist coach(es) \u2014 nutrition, exercise, mindfulness, or sleep coach, as fits what was covered. You are NOT a licensed doctor, dietitian, or clinician. You NEVER diagnose, NEVER name a medical condition, and NEVER claim certainty that an action caused a result \u2014 correlation only. You NEVER invent a number not given to you. Respond with plain text only, 2-4 sentences, no JSON, no markdown.',
           messages: [{ role: 'user', content: userMessage }],
           max_tokens: 250,
         }),
