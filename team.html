@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<title>Meet Your Team — myDrSage</title>
+<meta name="theme-color" content="#0A0D14">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #0A0D14; color: #F4F5F7;
+    min-height: 100vh; display: flex; flex-direction: column;
+  }
+
+  #progress-track { display: flex; gap: 6px; padding: 18px 20px 0; }
+  .progress-dot { flex: 1; height: 3px; border-radius: 3px; background: rgba(255,255,255,0.12); }
+  .progress-dot.done { background: var(--accent, #7FC4C9); }
+  .progress-dot.active { background: var(--accent, #7FC4C9); opacity: 0.5; }
+
+  #card-area { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 34px 24px 24px; text-align: center; }
+
+  .avatar-lg {
+    width: 84px; height: 84px; border-radius: 50%; margin-bottom: 20px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 30px; color: #fff;
+    border: 3px solid rgba(255,255,255,0.14); position: relative;
+  }
+  .avatar-lg.speaking { animation: pulse 1.4s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(255,255,255,0.25); } 50% { box-shadow: 0 0 0 12px rgba(255,255,255,0); } }
+
+  .member-name { font-size: 26px; font-weight: 700; margin-bottom: 4px; }
+  .member-title { font-size: 13.5px; color: #9CA3AF; margin-bottom: 22px; }
+  .intro-text { font-size: 16px; line-height: 1.55; color: #E4E6EA; margin-bottom: 26px; max-width: 380px; }
+
+  .question-block { width: 100%; max-width: 400px; margin-bottom: 10px; }
+  .question-label { font-size: 15px; font-weight: 600; margin-bottom: 18px; }
+
+  .mic-btn {
+    width: 84px; height: 84px; border-radius: 50%; border: none; margin: 0 auto 16px;
+    background: var(--accent, #7FC4C9); display: flex; align-items: center; justify-content: center;
+    font-size: 30px; cursor: pointer;
+  }
+  .mic-btn.listening { animation: pulse 1s ease-in-out infinite; background: #E86A5C; }
+  .mic-status { font-size: 12.5px; color: #6B7280; margin-bottom: 18px; min-height: 16px; }
+
+  .type-toggle { font-size: 12.5px; color: #6B7280; text-decoration: underline; background: none; border: none; cursor: pointer; }
+
+  textarea {
+    width: 100%; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.14);
+    border-radius: 12px; padding: 12px; color: #fff; font-family: inherit; font-size: 14px;
+    min-height: 64px; resize: vertical; margin-bottom: 12px;
+  }
+  .option-row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+  .option-chip {
+    padding: 10px 16px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.18);
+    background: rgba(255,255,255,0.04); font-size: 13.5px; color: #E4E6EA; cursor: pointer;
+  }
+  .option-chip.selected { border-color: var(--accent, #7FC4C9); background: rgba(127,196,201,0.16); color: var(--accent, #7FC4C9); font-weight: 600; }
+
+  .transcript-preview { font-size: 14px; color: var(--accent, #7FC4C9); font-style: italic; margin-bottom: 14px; min-height: 20px; }
+
+  .sensitive-note {
+    font-size: 12px; color: #6B7280; line-height: 1.5; margin-bottom: 16px;
+    background: rgba(255,255,255,0.04); border-radius: 10px; padding: 10px 14px;
+  }
+
+  .auto-skip-note {
+    font-size: 12px; color: #6B7280; background: rgba(255,255,255,0.04); border-radius: 10px;
+    padding: 8px 12px; margin-top: 10px; max-width: 380px;
+  }
+
+  #nav-row { display: flex; gap: 12px; padding: 0 24px 34px; }
+  .btn { flex: 1; padding: 15px; border-radius: 14px; border: none; font-size: 15px; font-weight: 700; font-family: inherit; cursor: pointer; }
+  .btn-primary { background: var(--accent, #7FC4C9); color: #0A0D14; }
+  .btn-primary:disabled { opacity: 0.4; }
+  .btn-skip { background: transparent; color: #6B7280; flex: 0 0 auto; padding: 15px 18px; }
+
+  #done-screen { display: none; flex: 1; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 40px; }
+  .team-row { display: flex; gap: 10px; margin-bottom: 24px; }
+  .mini-av { width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px; color: #fff; }
+</style>
+</head>
+<body>
+
+  <div id="progress-track"></div>
+  <div id="card-area"></div>
+  <div id="nav-row">
+    <button class="btn btn-skip" id="skip-btn">Skip</button>
+    <button class="btn btn-primary" id="next-btn">Continue</button>
+  </div>
+
+  <div id="done-screen">
+    <div class="team-row" id="done-team-row"></div>
+    <h2 style="font-size:22px; margin-bottom:10px;">Your team's ready.</h2>
+    <p style="color:#9CA3AF; font-size:14.5px; max-width:320px; line-height:1.5; margin-bottom:28px;">Everything you shared gets folded into how Willow, Lotus, Hawthorn, and Basil actually think about your data — not just kept on file.</p>
+    <button class="btn btn-primary" style="max-width:220px;" onclick="window.location.href='scores.html'">Go to Scores</button>
+  </div>
+
+<script>
+const Team = {
+  PROFILE_KEY: 'sh_team_profile',
+
+  STEPS: [
+    {
+      key: 'drSage', name: 'Dr. Sage', title: 'Holistic Wellness Doctor',
+      color: 'linear-gradient(145deg,#5FA5AA,#2F5C60)', accent: '#7FC4C9', voiceKey: 'drSage',
+      intro: "Hi, I'm Dr. Sage. I keep an eye on your health between doctor visits, and get you ready for every appointment. Let's take two minutes to get acquainted.",
+      questions: [
+        { key: 'goal', label: "What's the main thing you're hoping to get out of this?", type: 'text' },
+        { key: 'medicalHistory', label: 'Any diagnosed health conditions I should know about?', type: 'text', optional: true,
+          sensitiveNote: 'Totally optional. This helps me know what to pay closer attention to \u2014 it\u2019s never used to diagnose anything.' },
+        { key: 'familyHistory', label: 'Any family history of things like heart disease, diabetes, or similar?', type: 'text', optional: true,
+          sensitiveNote: 'Also optional. Same idea \u2014 context for your team, not a medical record.' },
+      ],
+    },
+    {
+      key: 'sleep', name: 'Willow', title: 'Sleep Coach',
+      color: 'linear-gradient(145deg,#6B7DC4,#45559A)', accent: '#9AACE8', voiceKey: 'sleep',
+      intro: "I'm Willow. I'll be watching your nights \u2014 duration, efficiency, how restless things get.",
+      questions: [
+        { key: 'bedtime', label: 'What time do you usually try to go to bed?', type: 'text' },
+        { key: 'struggle', label: "What's your biggest sleep struggle?", type: 'options',
+          options: ['Falling asleep', 'Staying asleep', 'Waking too early', "Not feeling rested"] },
+      ],
+    },
+    {
+      key: 'stress', name: 'Lotus', title: 'Mindfulness Coach',
+      color: 'linear-gradient(145deg,#B692D0,#8560A8)', accent: '#D0AAEE', voiceKey: 'stress',
+      intro: "I'm Lotus. I practice yoga myself, and I care about how stress actually shows up in your body.",
+      questions: [
+        { key: 'experience', label: 'Any experience with meditation or yoga?', type: 'options',
+          options: ['None', 'A little', 'Regular practice', 'Very experienced'] },
+        { key: 'stressors', label: 'What tends to stress you out most?', type: 'text' },
+      ],
+    },
+    {
+      key: 'activity', name: 'Hawthorn', title: 'Exercise Coach',
+      color: 'linear-gradient(145deg,#EC8E56,#C4622A)', accent: '#F2A579', voiceKey: 'activity',
+      intro: "I'm Hawthorn. I build real training regimens from your real activity data.",
+      questions: [
+        { key: 'current', label: 'What does exercise currently look like for you?', type: 'text' },
+        { key: 'goal', label: "What's one fitness goal you have right now?", type: 'text' },
+      ],
+    },
+    {
+      key: 'nutrition', name: 'Basil', title: 'Nutrition Coach',
+      color: 'linear-gradient(145deg,#82BD82,#558A55)', accent: '#9FD49F', voiceKey: 'nutrition',
+      intro: "I'm Basil. I'm here to help you eat better \u2014 not perfectly, just better.",
+      questions: [
+        { key: 'restrictions', label: 'Any dietary preferences or restrictions?', type: 'text' },
+        { key: 'hardest', label: "What's the hardest part of eating well for you?", type: 'text' },
+      ],
+    },
+  ],
+
+  flatQuestions() {
+    const flat = [];
+    Team.STEPS.forEach(step => {
+      step.questions.forEach(q => flat.push({ stepKey: step.key, ...q }));
+    });
+    return flat;
+  },
+
+  stepIndex: 0,
+  questionIndexInStep: -1,
+  answered: {},
+  speechSupported: !!(window.SpeechRecognition || window.webkitSpeechRecognition),
+  typedMode: false,
+  currentTranscript: '',
+
+  loadProfile() {
+    try { return JSON.parse(localStorage.getItem(Team.PROFILE_KEY) || '{}'); }
+    catch (e) { return {}; }
+  },
+
+  saveProfile(profile) {
+    try { localStorage.setItem(Team.PROFILE_KEY, JSON.stringify(profile)); }
+    catch (e) { /* non-critical */ }
+  },
+
+  saveAnswer(stepKey, qKey, value) {
+    if (!value || !String(value).trim()) return;
+    const profile = Team.loadProfile();
+    profile[stepKey] = profile[stepKey] || {};
+    profile[stepKey][qKey] = value;
+    Team.saveProfile(profile);
+    Team.answered[stepKey + '.' + qKey] = true;
+  },
+
+  async speak(text, voiceKey, avatarEl) {
+    if (!text || !text.trim()) return;
+    try {
+      const res = await fetch('/.netlify/functions/tts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: text.trim(), voiceKey }),
+      });
+      if (!res.ok) return;
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      if (avatarEl) avatarEl.classList.add('speaking');
+      audio.addEventListener('ended', () => {
+        URL.revokeObjectURL(url);
+        if (avatarEl) avatarEl.classList.remove('speaking');
+      });
+      await audio.play();
+    } catch (e) { /* spoken intro is a nice-to-have, never a blocker */ }
+  },
+
+  startListening(onResult, onError) {
+    const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRec) { onError('not_supported'); return null; }
+    const rec = new SpeechRec();
+    rec.continuous = false;
+    rec.interimResults = false;
+    rec.lang = 'en-US';
+    rec.onresult = (e) => onResult(e.results[0][0].transcript);
+    rec.onerror = (e) => onError(e.error);
+    rec.start();
+    return rec;
+  },
+
+  async checkOverlap(justAnsweredLabel, justAnsweredValue) {
+    const remaining = Team.flatQuestions().filter(function(q) {
+      return q.type === 'text' && !Team.answered[q.stepKey + '.' + q.key];
+    });
+    if (!remaining.length) return {};
+
+    const questionList = remaining.map(function(q) { return q.stepKey + '.' + q.key + ': "' + q.label + '"'; }).join('\n');
+    try {
+      const res = await fetch('/.netlify/functions/claude', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system: 'You detect when someone\u2019s answer to one question already contains a real answer to OTHER pending questions, so they never get asked twice. Only mark a question covered if the answer genuinely, specifically addresses it \u2014 not just loosely related. Never invent an answer that wasn\u2019t actually said. Respond with ONLY valid JSON, no markdown.',
+          messages: [{ role: 'user', content: 'They were just asked: "' + justAnsweredLabel + '"\nThey answered: "' + justAnsweredValue + '"\n\nHere are other pending questions:\n' + questionList + '\n\nDoes their answer above ALSO genuinely answer any of these? Respond ONLY with JSON: {"covered": [{"key": "stepKey.questionKey", "extractedAnswer": "the answer, drawn only from what they actually said"}]} \u2014 empty array if none.' }],
+          max_tokens: 300,
+        }),
+      });
+      if (!res.ok) return {};
+      const data = await res.json();
+      const text = (data.content && data.content[0] && data.content[0].text || '').replace(/```json\s*|```\s*/g, '').trim();
+      const parsed = JSON.parse(text);
+      const result = {};
+      (parsed.covered || []).forEach(function(c) {
+        const parts = String(c.key || '').split('.');
+        const stepKey = parts[0], qKey = parts[1];
+        if (stepKey && qKey && c.extractedAnswer) result[c.key] = { stepKey: stepKey, qKey: qKey, value: c.extractedAnswer };
+      });
+      return result;
+    } catch (e) {
+      return {};
+    }
+  },
+
+  renderProgress() {
+    const track = document.getElementById('progress-track');
+    track.innerHTML = Team.STEPS.map(function(s, i) {
+      const cls = i < Team.stepIndex ? 'done' : (i === Team.stepIndex ? 'active' : '');
+      return '<div class="progress-dot ' + cls + '"></div>';
+    }).join('');
+  },
+
+  currentStep() { return Team.STEPS[Team.stepIndex]; },
+
+  nextUnansweredQuestionIndex(step, fromIndex) {
+    for (let i = fromIndex; i < step.questions.length; i++) {
+      const q = step.questions[i];
+      if (!Team.answered[step.key + '.' + q.key]) return i;
+    }
+    return -1;
+  },
+
+  renderIntro() {
+    const step = Team.currentStep();
+    if (!step) { Team.renderDone(); return; }
+    document.documentElement.style.setProperty('--accent', step.accent);
+    Team.renderProgress();
+    Team.questionIndexInStep = -1;
+
+    const initials = step.name[0];
+    document.getElementById('card-area').innerHTML =
+      '<div class="avatar-lg" id="speaking-avatar" style="background:' + step.color + ';">' + initials + '</div>' +
+      '<div class="member-name">' + step.name + '</div>' +
+      '<div class="member-title">' + step.title + '</div>' +
+      '<div class="intro-text">' + step.intro + '</div>';
+    document.getElementById('next-btn').textContent = 'Continue';
+    document.getElementById('next-btn').disabled = false;
+
+    Team.speak(step.intro, step.voiceKey, document.getElementById('speaking-avatar'));
+  },
+
+  renderQuestion() {
+    const step = Team.currentStep();
+    const q = step.questions[Team.questionIndexInStep];
+    document.documentElement.style.setProperty('--accent', step.accent);
+
+    const profile = Team.loadProfile();
+    const existing = (profile[step.key] && profile[step.key][q.key]) || '';
+
+    if (q.type === 'options') {
+      const chips = q.options.map(function(opt) {
+        const selected = existing === opt ? 'selected' : '';
+        return '<div class="option-chip ' + selected + '" data-value="' + opt + '">' + opt + '</div>';
+      }).join('');
+      document.getElementById('card-area').innerHTML =
+        '<div class="member-title" style="margin-bottom:20px;">' + step.name + '</div>' +
+        '<div class="question-block"><div class="question-label">' + q.label + '</div>' +
+        '<div class="option-row" id="option-row">' + chips + '</div></div>';
+      document.querySelectorAll('.option-chip').forEach(function(el) {
+        el.addEventListener('click', function() {
+          document.querySelectorAll('.option-chip').forEach(function(c) { c.classList.remove('selected'); });
+          el.classList.add('selected');
+          Team.saveAnswer(step.key, q.key, el.dataset.value);
+          document.getElementById('next-btn').disabled = false;
+        });
+      });
+      document.getElementById('next-btn').disabled = !existing;
+      document.getElementById('next-btn').textContent = 'Continue';
+      return;
+    }
+
+    const micOrType = Team.typedMode
+      ? '<textarea id="text-input" placeholder="Type your answer\u2026">' + existing + '</textarea>' +
+        '<button class="type-toggle" id="mode-toggle">Use voice instead</button>'
+      : '<button class="mic-btn" id="mic-btn">' + (Team.speechSupported ? '\u{1F3A4}' : '\u2328\uFE0F') + '</button>' +
+        '<div class="mic-status" id="mic-status">' + (Team.speechSupported ? 'Tap to answer' : 'Voice not available on this device') + '</div>' +
+        '<div class="transcript-preview" id="transcript-preview">' + existing + '</div>' +
+        '<button class="type-toggle" id="mode-toggle">Type instead</button>';
+
+    const sensitiveNoteHtml = q.sensitiveNote ? '<div class="sensitive-note">' + q.sensitiveNote + '</div>' : '';
+
+    document.getElementById('card-area').innerHTML =
+      '<div class="member-title" style="margin-bottom:20px;">' + step.name + '</div>' +
+      '<div class="question-block"><div class="question-label">' + q.label + '</div>' +
+      sensitiveNoteHtml + micOrType + '<div id="auto-skip-area"></div></div>';
+
+    document.getElementById('mode-toggle').addEventListener('click', function() {
+      Team.typedMode = !Team.typedMode;
+      Team.renderQuestion();
+    });
+
+    if (Team.typedMode) {
+      const ta = document.getElementById('text-input');
+      ta.addEventListener('input', function() {
+        Team.currentTranscript = ta.value;
+        document.getElementById('next-btn').disabled = q.optional ? false : !ta.value.trim();
+      });
+      document.getElementById('next-btn').disabled = q.optional ? false : !existing;
+    } else if (Team.speechSupported) {
+      document.getElementById('mic-btn').addEventListener('click', function() { Team.handleMicTap(step, q); });
+      document.getElementById('next-btn').disabled = q.optional ? false : !existing;
+    } else {
+      document.getElementById('next-btn').disabled = q.optional ? false : true;
+    }
+
+    document.getElementById('next-btn').textContent = 'Continue';
+  },
+
+  async handleMicTap(step, q) {
+    const btn = document.getElementById('mic-btn');
+    const status = document.getElementById('mic-status');
+    btn.classList.add('listening');
+    status.textContent = 'Listening\u2026';
+
+    Team.startListening(
+      async function(transcript) {
+        btn.classList.remove('listening');
+        status.textContent = 'Got it';
+        document.getElementById('transcript-preview').textContent = transcript;
+        Team.currentTranscript = transcript;
+        Team.saveAnswer(step.key, q.key, transcript);
+        document.getElementById('next-btn').disabled = false;
+
+        if (q.type === 'text') {
+          const covered = await Team.checkOverlap(q.label, transcript);
+          const keys = Object.keys(covered);
+          if (keys.length) {
+            keys.forEach(function(k) {
+              const c = covered[k];
+              Team.saveAnswer(c.stepKey, c.qKey, c.value);
+            });
+            const area = document.getElementById('auto-skip-area');
+            if (area) area.innerHTML = '<div class="auto-skip-note">That also covered ' + keys.length + ' other question' + (keys.length > 1 ? 's' : '') + ' \u2014 you won\u2019t be asked ' + (keys.length > 1 ? 'those' : 'that') + ' again.</div>';
+          }
+        }
+      },
+      function(err) {
+        btn.classList.remove('listening');
+        status.textContent = err === 'not_supported' ? 'Voice not available \u2014 try typing' : 'Didn\u2019t catch that \u2014 try again';
+      }
+    );
+  },
+
+  advance() {
+    const step = Team.currentStep();
+    if (!step) return;
+
+    if (Team.questionIndexInStep === -1) {
+      const next = Team.nextUnansweredQuestionIndex(step, 0);
+      if (next === -1) { Team.nextStep(); return; }
+      Team.questionIndexInStep = next;
+      Team.renderQuestion();
+      return;
+    }
+
+    const next = Team.nextUnansweredQuestionIndex(step, Team.questionIndexInStep + 1);
+    if (next === -1) { Team.nextStep(); return; }
+    Team.questionIndexInStep = next;
+    Team.renderQuestion();
+  },
+
+  nextStep() {
+    Team.stepIndex++;
+    Team.typedMode = false;
+    Team.renderIntro();
+  },
+
+  skip() { Team.advance(); },
+
+  renderDone() {
+    document.getElementById('card-area').style.display = 'none';
+    document.getElementById('nav-row').style.display = 'none';
+    document.getElementById('progress-track').style.display = 'none';
+    const done = document.getElementById('done-screen');
+    done.style.display = 'flex';
+    document.getElementById('done-team-row').innerHTML = Team.STEPS.map(function(s) {
+      return '<div class="mini-av" style="background:' + s.color + ';">' + s.name[0] + '</div>';
+    }).join('');
+  },
+
+  init() {
+    const profile = Team.loadProfile();
+    Team.flatQuestions().forEach(function(q) {
+      if (profile[q.stepKey] && profile[q.stepKey][q.key]) Team.answered[q.stepKey + '.' + q.key] = true;
+    });
+
+    document.getElementById('next-btn').addEventListener('click', Team.advance);
+    document.getElementById('skip-btn').addEventListener('click', Team.skip);
+    Team.renderIntro();
+  },
+};
+
+Team.init();
+</script>
+</body>
+</html>
