@@ -105,7 +105,7 @@ const Team = {
     {
       key: 'drSage', name: 'Dr. Sage', title: 'Holistic Wellness Doctor',
       color: 'linear-gradient(145deg,#5FA5AA,#2F5C60)', accent: '#7FC4C9', voiceKey: 'drSage',
-      intro: "Hi, I'm Dr. Sage. I keep an eye on your health between doctor visits, and get you ready for every appointment. Let's take two minutes to get acquainted.",
+      intro: "I'm Dr. Sage. I will be your team leader, but rest assured I have a team of specialists monitoring every facet of your health. Let's take a couple of minutes to get acquainted, and then I want you to meet the team \u2014 I'll chat with you again once you're through.",
       questions: [
         { key: 'goal', label: "What's the main thing you're hoping to get out of this?", type: 'text' },
         { key: 'medicalHistory', label: 'Any diagnosed health conditions I should know about?', type: 'text', optional: true,
@@ -151,6 +151,16 @@ const Team = {
         { key: 'restrictions', label: 'Any dietary preferences or restrictions?', type: 'text' },
         { key: 'hardest', label: "What's the hardest part of eating well for you?", type: 'text' },
       ],
+    },
+    {
+      // Dr. Sage again, closing the loop \u2014 same key namespace is
+      // deliberately avoided ('drSageClosing' not 'drSage') so this
+      // never collides with his opening step's saved profile answers.
+      // voiceKey stays 'drSage' so TTS still uses his real voice.
+      key: 'drSageClosing', name: 'Dr. Sage', title: 'Holistic Wellness Doctor',
+      color: 'linear-gradient(145deg,#5FA5AA,#2F5C60)', accent: '#7FC4C9', voiceKey: 'drSage',
+      intro: "That's the team. Willow, Lotus, Hawthorn, and Basil are all watching now, and everything you just shared is already helping them do their job. I'll be checking in as your reports come together \u2014 talk soon.",
+      questions: [],
     },
   ],
 
