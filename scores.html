@@ -148,6 +148,7 @@
   <div id="top-bar">
     <button id="back-btn" onclick="window.location.href='dashboard.html'">‹</button>
     <h1>Scores</h1>
+    <button id="team-btn" onclick="window.location.href='team.html'" style="margin-left:auto; background:transparent; border:1px solid #2A3B5E; border-radius:10px; color:#fff; font-size:12px; font-weight:600; padding:8px 12px;">Meet the Team</button>
   </div>
   <div id="top-sub">Computed from what your ring has actually logged — no score shows unless the underlying data is real.</div>
 
@@ -170,7 +171,7 @@
         <div class="score-detail-row"><span class="lbl">Sleep</span><span id="recovery-sleepin">--</span></div>
       </div>
     </div>
-    <div class="empty-note" id="recovery-empty">Needs at least one HRV reading (Dashboard → HRV card → Compute HRV) plus a synced sleep log to compute.</div>
+    <div class="empty-note" id="recovery-empty">Needs at least one resting check (from the Dashboard) plus a synced sleep log to compute.</div>
     <div class="status-line" id="recovery-status" style="display:none;"></div>
     <button class="trend-btn" id="recovery-trend-btn" style="display:none;">Is this normal for me?</button>
     <div class="trend-response" id="recovery-trend-response" style="display:none;"></div>
@@ -219,7 +220,7 @@
         <div class="score-detail-row"><span class="lbl">Reading age</span><span id="stress-age">--</span></div>
       </div>
     </div>
-    <div class="empty-note" id="stress-empty">Needs at least 3 HRV readings to establish your personal baseline before Stress can be scored.</div>
+    <div class="empty-note" id="stress-empty">Needs a few resting checks over time to learn your personal baseline before Stress can be scored.</div>
     <div class="status-line" id="stress-status" style="display:none;"></div>
     <button class="trend-btn" id="stress-trend-btn" style="display:none;">Is this normal for me?</button>
     <div class="trend-response" id="stress-trend-response" style="display:none;"></div>
@@ -245,7 +246,7 @@
   <div class="section-label">Action Plan</div>
   <div id="plan-last-result" class="plan-card" style="display:none;"></div>
   <div id="plan-empty-state" class="score-card" style="background:#14181f; border:1px solid #2A3B5E; cursor:default;">
-    <div class="score-sub">One holistic 7-day plan spanning every domain we have real data for \u2014 not a single-issue fix.</div>
+    <div class="score-sub">One holistic 7-day plan spanning everything we have real data for \u2014 not a single-issue fix.</div>
     <button id="build-plan-btn" class="trend-btn" style="margin-top:14px;">Build my action plan</button>
     <div class="empty-note" id="plan-build-error" style="display:none;"></div>
   </div>
