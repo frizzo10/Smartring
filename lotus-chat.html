@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<title>Talk with Lotus</title>
+<meta name="theme-color" content="#0A0D14">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #0A0D14; color: #F4F5F7;
+    display: flex; flex-direction: column;
+  }
+  #top-bar { display: flex; align-items: center; gap: 10px; padding: 18px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); flex-shrink: 0; }
+  #back-btn {
+    width: 36px; height: 36px; border-radius: 10px; border: 1px solid #2A3B5E;
+    background: transparent; color: #fff; font-size: 18px; display: flex;
+    align-items: center; justify-content: center;
+  }
+  #top-bar h1 { font-size: 17px; font-weight: 700; }
+  #top-bar .sub { font-size: 11.5px; color: #6B7280; }
+
+  #messages { flex: 1; overflow-y: auto; padding: 18px 16px 8px; display: flex; flex-direction: column; gap: 12px; }
+  .msg { max-width: 82%; padding: 12px 14px; border-radius: 16px; font-size: 14.5px; line-height: 1.5; }
+  .msg.lotus { align-self: flex-start; background: rgba(166,127,196,0.16); border: 1px solid rgba(166,127,196,0.3); border-bottom-left-radius: 4px; }
+  .msg.user { align-self: flex-end; background: rgba(255,255,255,0.08); border-bottom-right-radius: 4px; }
+  .msg.crisis {
+    align-self: center; max-width: 100%; background: rgba(232,106,92,0.14);
+    border: 1px solid rgba(232,106,92,0.4); text-align: left;
+  }
+  .msg.crisis strong { color: #E86A5C; }
+  .msg.crisis a { color: #F2A579; }
+
+  #empty-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 30px; }
+  #empty-state .av { width: 64px; height: 64px; border-radius: 50%; background: linear-gradient(145deg,#B692D0,#8560A8); margin-bottom: 16px; }
+  #empty-state p { color: #9CA3AF; font-size: 14px; line-height: 1.5; max-width: 280px; }
+
+  #input-row { display: flex; gap: 10px; padding: 14px 16px; border-top: 1px solid rgba(255,255,255,0.08); flex-shrink: 0; }
+  #msg-input {
+    flex: 1; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.14);
+    border-radius: 20px; padding: 12px 16px; color: #fff; font-family: inherit; font-size: 14px;
+    resize: none; max-height: 100px;
+  }
+  #mic-btn, #send-btn {
+    width: 44px; height: 44px; border-radius: 50%; border: none; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; font-size: 18px; cursor: pointer;
+  }
+  #mic-btn { background: rgba(255,255,255,0.08); color: #fff; }
+  #mic-btn.listening { background: #E86A5C; }
+  #send-btn { background: #D0AAEE; color: #0A0D14; }
+  #send-btn:disabled { opacity: 0.4; }
+</style>
+</head>
+<body>
+
+  <div id="top-bar">
+    <button id="back-btn" onclick="window.location.href='scores.html'">‹</button>
+    <div>
+      <h1>Lotus</h1>
+      <div class="sub">Someone to actually talk to \u2014 not a therapist, just present</div>
+    </div>
+  </div>
+
+  <div id="messages"></div>
+
+  <div id="input-row">
+    <button id="mic-btn">🎤</button>
+    <textarea id="msg-input" rows="1" placeholder="Talk to Lotus\u2026"></textarea>
+    <button id="send-btn" disabled>➤</button>
+  </div>
+
+<script>
+/* ─────────────────────────────────────────────────────────
+   Lotus's extended conversation. Deliberately NOT called a
+   "counselor" anywhere in her framing \u2014 that word implies
+   licensed clinical practice, and this is a coach, not therapy.
+   Willing to go long and sit with someone through what's
+   actually going on, but the system prompt keeps her in
+   coach/companion register: no diagnosis, no clinical claims,
+   no pretending to be a replacement for real mental health care.
+
+   SAFETY NET: runs independent of the AI model. Every message
+   the person sends is checked against a real, deterministic
+   crisis-language list BEFORE anything else happens. If it
+   matches, real crisis resources are shown immediately \u2014
+   this does not depend on qwen recognizing the moment or
+   responding well. That's the actual floor here, not a prompt
+   instruction asking the model to be careful.
+   ───────────────────────────────────────────────────────── */
+
+const LotusChat = {
+  HISTORY_KEY: 'sh_lotus_conversation',
+
+  // Deliberately errs toward over-triggering, not under \u2014 a
+  // false positive just shows resources alongside the normal
+  // conversation continuing; a false negative in this specific
+  // context is the failure mode that actually matters.
+  CRISIS_PATTERNS: [
+    /kill myself/i, /kill me\b/i, /want(ed)? to die/i, /wanna die/i,
+    /end(ing)? my life/i, /ending it all/i, /not worth living/i,
+    /better off dead/i, /no reason to live/i, /can'?t go on/i,
+    /give up on life/i, /\bsuicid/i, /hurt(ing)? myself/i,
+    /harm(ing)? myself/i, /self[\s-]?harm/i, /cutting myself/i,
+    /take my own life/i, /don'?t want to (be here|exist)/i,
+  ],
+
+  checkForCrisisLanguage(text) {
+    return LotusChat.CRISIS_PATTERNS.some(function(re) { return re.test(text); });
+  },
+
+  loadHistory() {
+    try { return JSON.parse(localStorage.getItem(LotusChat.HISTORY_KEY) || '[]'); }
+    catch (e) { return []; }
+  },
+
+  saveHistory(history) {
+    try { localStorage.setItem(LotusChat.HISTORY_KEY, JSON.stringify(history.slice(-40))); }
+    catch (e) { /* non-critical */ }
+  },
+
+  render() {
+    const container = document.getElementById('messages');
+    const history = LotusChat.loadHistory();
+    if (!history.length) {
+      container.innerHTML = `
+        <div id="empty-state">
+          <div class="av"></div>
+          <p>I'm here if you want to talk \u2014 about stress, what's going on, whatever's actually on your mind. Take your time.</p>
+        </div>`;
+      return;
+    }
+    container.innerHTML = history.map(function(m) {
+      if (m.role === 'crisis') {
+        return `<div class="msg crisis">
+          <strong>If things feel like too much right now:</strong><br>
+          988 Suicide & Crisis Lifeline \u2014 call or text <strong>988</strong>, available 24/7<br>
+          Crisis Text Line \u2014 text <strong>HOME</strong> to <strong>741741</strong><br>
+          You don't have to go through this alone, and reaching out to one of these is a good next step, not a bigger deal than what you're going through.
+        </div>`;
+      }
+      return `<div class="msg ${m.role === 'user' ? 'user' : 'lotus'}">${m.content}</div>`;
+    }).join('');
+    container.scrollTop = container.scrollHeight;
+  },
+
+  async send() {
+    const input = document.getElementById('msg-input');
+    const text = input.value.trim();
+    if (!text) return;
+    input.value = '';
+    document.getElementById('send-btn').disabled = true;
+
+    const history = LotusChat.loadHistory();
+    history.push({ role: 'user', content: text });
+    LotusChat.saveHistory(history);
+    LotusChat.render();
+
+    // The real safety net \u2014 checked here, independent of
+    // whatever the AI is about to say, and shown regardless.
+    if (LotusChat.checkForCrisisLanguage(text)) {
+      const withCrisis = LotusChat.loadHistory();
+      withCrisis.push({ role: 'crisis', content: '' });
+      LotusChat.saveHistory(withCrisis);
+      LotusChat.render();
+    }
+
+    try {
+      const messages = LotusChat.loadHistory()
+        .filter(function(m) { return m.role === 'user' || m.role === 'lotus'; })
+        .map(function(m) { return { role: m.role === 'lotus' ? 'assistant' : 'user', content: m.content }; });
+
+      const res = await fetch('/.netlify/functions/claude', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system: 'You are Lotus, a mindfulness coach and active yoga practitioner \u2014 warm, patient, and genuinely willing to sit with someone through a long conversation about what\u2019s actually going on for them, not just quick tips. You are NOT a therapist, counselor, or psychologist, and you never imply otherwise \u2014 you are a caring, present coach, not a clinician. You NEVER diagnose a mental health condition, NEVER claim to treat one, and NEVER position yourself as a replacement for real mental health care. Ask real follow-up questions, reflect back what you hear, and let the conversation actually breathe \u2014 don\u2019t rush to advice. If someone expresses thoughts of self-harm, suicide, or being in crisis, do not continue as a normal conversation \u2014 gently, calmly acknowledge what they shared, avoid asking probing questions that might pull them deeper, and clearly encourage them to reach out to a crisis line or someone they trust right now. Respond with plain text only, natural conversational length \u2014 not a bulleted list, not JSON.',
+          messages: messages,
+          max_tokens: 400,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Request failed');
+      const reply = (data.content && data.content[0] && data.content[0].text || '').trim();
+
+      const finalHistory = LotusChat.loadHistory();
+      finalHistory.push({ role: 'lotus', content: reply || "I'm having trouble finding words right now \u2014 still here, try me again?" });
+      LotusChat.saveHistory(finalHistory);
+      LotusChat.render();
+    } catch (e) {
+      const errHistory = LotusChat.loadHistory();
+      errHistory.push({ role: 'lotus', content: "I'm not able to respond right now \u2014 try again in a moment." });
+      LotusChat.saveHistory(errHistory);
+      LotusChat.render();
+    }
+  },
+
+  init() {
+    LotusChat.render();
+    const input = document.getElementById('msg-input');
+    const sendBtn = document.getElementById('send-btn');
+    input.addEventListener('input', function() { sendBtn.disabled = !input.value.trim(); });
+    input.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); if (input.value.trim()) LotusChat.send(); }
+    });
+    sendBtn.addEventListener('click', LotusChat.send);
+
+    const micBtn = document.getElementById('mic-btn');
+    const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRec) {
+      micBtn.addEventListener('click', function() {
+        micBtn.classList.add('listening');
+        const rec = new SpeechRec();
+        rec.continuous = false; rec.interimResults = false; rec.lang = 'en-US';
+        rec.onresult = function(e) {
+          input.value = e.results[0][0].transcript;
+          sendBtn.disabled = false;
+          micBtn.classList.remove('listening');
+        };
+        rec.onerror = function() { micBtn.classList.remove('listening'); };
+        rec.start();
+      });
+    } else {
+      micBtn.disabled = true;
+      micBtn.style.opacity = '0.4';
+    }
+  },
+};
+
+LotusChat.init();
+</script>
+</body>
+</html>
