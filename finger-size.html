@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<title>Find Your Ring Size</title>
+<meta name="theme-color" content="#0A0D14">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #0A0D14; color: #F4F5F7; padding: 0 0 40px;
+  }
+  #top-bar { display: flex; align-items: center; gap: 10px; padding: 18px 20px; }
+  #back-btn {
+    width: 36px; height: 36px; border-radius: 10px; border: 1px solid #2A3B5E;
+    background: transparent; color: #fff; font-size: 18px; display: flex;
+    align-items: center; justify-content: center;
+  }
+  #top-bar h1 { font-size: 18px; font-weight: 700; }
+  #content { padding: 0 20px; }
+
+  .instructions {
+    background: #131B2E; border: 1px solid rgba(255,255,255,0.08); border-radius: 16px;
+    padding: 18px; margin-bottom: 18px; font-size: 13.5px; line-height: 1.6; color: #E4E6EA;
+  }
+  .instructions ol { padding-left: 18px; margin-top: 8px; }
+  .instructions li { margin-bottom: 6px; }
+
+  label { font-size: 12px; color: #9CA3AF; text-transform: uppercase; letter-spacing: 0.04em; }
+  select {
+    width: 100%; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 10px; padding: 12px; color: #fff; font-family: inherit; font-size: 14px;
+    margin: 8px 0 18px;
+  }
+
+  .attempt-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    background: #131B2E; border: 1px solid rgba(255,255,255,0.08); border-radius: 12px;
+    padding: 12px 14px; margin-bottom: 8px; font-size: 13.5px;
+  }
+  .attempt-row .size { font-weight: 700; color: #7FC4C9; }
+
+  #capture-btn {
+    width: 100%; padding: 16px; border-radius: 14px; border: none;
+    background: #7FC4C9; color: #0A0D14; font-size: 15px; font-weight: 700;
+    font-family: inherit; cursor: pointer; margin-bottom: 8px;
+  }
+  #capture-btn:disabled { opacity: 0.5; }
+  #photo-input { display: none; }
+
+  #status { font-size: 12.5px; color: #9CA3AF; text-align: center; margin: 8px 0; display: none; }
+  #error-note { color: #E86A5C; font-size: 13px; margin: 8px 0; display: none; }
+
+  #result-card {
+    display: none; margin-top: 20px; background: linear-gradient(145deg, rgba(127,196,201,0.16), rgba(127,196,201,0.04));
+    border: 1px solid rgba(127,196,201,0.3); border-radius: 18px; padding: 22px; text-align: center;
+  }
+  #result-size { font-size: 42px; font-weight: 700; color: #7FC4C9; }
+  #result-sub { font-size: 13px; color: #9CA3AF; margin-top: 4px; }
+  #consistency-warning {
+    display: none; margin-top: 14px; background: rgba(232,106,92,0.14); border: 1px solid rgba(232,106,92,0.4);
+    border-radius: 10px; padding: 12px; font-size: 12.5px; color: #F2A579; text-align: left; line-height: 1.5;
+  }
+
+  .fallback {
+    margin-top: 20px; font-size: 12.5px; color: #6B7280; line-height: 1.6;
+    background: rgba(255,255,255,0.04); border-radius: 12px; padding: 14px;
+  }
+</style>
+</head>
+<body>
+
+  <div id="top-bar">
+    <button id="back-btn" onclick="window.location.href='scores.html'">‹</button>
+    <h1>Find Your Ring Size</h1>
+  </div>
+
+  <div id="content">
+    <div class="instructions">
+      <strong>A photo won't be perfectly precise on its own</strong> \u2014 that's why we ask for 3 photos, not one, and compare them.
+      <ol>
+        <li>Place a real coin flat on a table, right next to your finger \u2014 same surface, same distance from the camera</li>
+        <li>Relax your hand, don't spread your finger wide</li>
+        <li>Take the photo straight down, not at an angle</li>
+        <li>Repeat 3 times \u2014 slightly different position each time is fine, that's the point</li>
+      </ol>
+    </div>
+
+    <label for="coin-select">Which coin are you using?</label>
+    <select id="coin-select">
+      <option value="quarter">US Quarter</option>
+      <option value="nickel">US Nickel</option>
+      <option value="dime">US Dime</option>
+      <option value="penny">US Penny</option>
+    </select>
+
+    <div id="attempts-list"></div>
+
+    <input type="file" id="photo-input" accept="image/*" capture="environment">
+    <button id="capture-btn">📷 Take Photo 1 of 3</button>
+    <div id="status"></div>
+    <div id="error-note"></div>
+
+    <div id="result-card">
+      <div id="result-size"></div>
+      <div id="result-sub"></div>
+      <div id="consistency-warning"></div>
+    </div>
+
+    <div class="fallback">
+      Not confident in this result? A photo estimate is a convenience, not a guarantee. Measure with a string or strip of paper around your finger and compare to a printed ring sizing chart, or visit any local jeweler \u2014 they'll size you for free in under a minute.
+    </div>
+  </div>
+
+<script>
+/* ─────────────────────────────────────────────────────────
+   Finger sizing via photo. The core constraint: a single 2D
+   photo has no inherent scale \u2014 a close-up finger and a
+   far-away bigger finger look identical to any vision model
+   without something of KNOWN size in frame to compare against.
+   A coin solves this (precisely government-standardized, and
+   unlike a credit card, carries no personal/financial data
+   someone might worry about a photo capturing).
+
+   Real-world reliability of photo-based sizing is genuinely
+   mixed even in apps built specifically for this \u2014 competing
+   ring-sizer apps recommend repeat measurements, and at least
+   one direct smart-ring competitor skips photo sizing entirely
+   in favor of a mailed physical kit. This is built accordingly:
+   3 photos required, not 1; a real consistency check that flags
+   disagreement rather than silently averaging it away; a
+   genuine non-photo fallback always visible, not hidden in a
+   settings menu.
+
+   The AI is asked for one number \u2014 a raw mm measurement \u2014 and
+   nothing else. The mm-to-US-size conversion is a deterministic
+   lookup table in code, not something trusted to the model's
+   own arithmetic.
+   ───────────────────────────────────────────────────────── */
+
+const FingerSize = {
+  COIN_DIAMETERS_MM: { quarter: 24.26, nickel: 21.21, dime: 17.91, penny: 19.05 },
+
+  // Standard US ring size -> inner diameter (mm). Real, published
+  // sizing chart values, used for a real deterministic lookup
+  // rather than asking the AI to convert units itself.
+  SIZE_TABLE: [
+    { size: 3, mm: 14.1 }, { size: 3.5, mm: 14.5 }, { size: 4, mm: 14.9 },
+    { size: 4.5, mm: 15.3 }, { size: 5, mm: 15.7 }, { size: 5.5, mm: 16.1 },
+    { size: 6, mm: 16.5 }, { size: 6.5, mm: 16.9 }, { size: 7, mm: 17.3 },
+    { size: 7.5, mm: 17.7 }, { size: 8, mm: 18.1 }, { size: 8.5, mm: 18.5 },
+    { size: 9, mm: 18.9 }, { size: 9.5, mm: 19.3 }, { size: 10, mm: 19.8 },
+    { size: 10.5, mm: 20.2 }, { size: 11, mm: 20.6 }, { size: 11.5, mm: 21.0 },
+    { size: 12, mm: 21.4 }, { size: 12.5, mm: 21.8 }, { size: 13, mm: 22.2 },
+  ],
+
+  mmToUSSize(mm) {
+    const table = FingerSize.SIZE_TABLE;
+    if (mm <= table[0].mm) return table[0].size;
+    if (mm >= table[table.length - 1].mm) return table[table.length - 1].size;
+    for (let i = 0; i < table.length - 1; i++) {
+      const a = table[i], b = table[i + 1];
+      if (mm >= a.mm && mm <= b.mm) {
+        const t = (mm - a.mm) / (b.mm - a.mm);
+        return Math.round((a.size + t * (b.size - a.size)) * 2) / 2; // nearest half size
+      }
+    }
+    return null;
+  },
+
+  attempts: [], // { mm, size }
+
+  resizeImageFile(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const maxDim = 1000; // slightly higher than the food-photo case — fine detail matters more here
+          const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.round(img.width * scale);
+          canvas.height = Math.round(img.height * scale);
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          resolve(canvas.toDataURL('image/jpeg', 0.85).split(',')[1]);
+        };
+        img.onerror = reject;
+        img.src = e.target.result;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  },
+
+  async estimateFromPhoto(base64Image, coinKey) {
+    const coinDiameter = FingerSize.COIN_DIAMETERS_MM[coinKey];
+    const res = await fetch('/.netlify/functions/claude', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        system: 'You measure finger diameter from a photo using a coin of known size as a scale reference. You are given the coin\u2019s exact real diameter in millimeters \u2014 use it to judge the proportional size of the finger next to it. Give your honest best estimate; do not default to a "safe average" number if the photo suggests otherwise. Respond ONLY with valid JSON, no markdown.',
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'text', text: `The coin in this photo is exactly ${coinDiameter}mm in diameter. Using it as your scale reference, estimate the diameter of the finger in the photo, in millimeters, at the point where a ring would sit. Respond ONLY with JSON: {"fingerDiameterMm": 0}` },
+            { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${base64Image}` } },
+          ],
+        }],
+        max_tokens: 100,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Request failed');
+    const text = (data.content?.[0]?.text || '').replace(/```json\s*|```\s*/g, '').trim();
+    const parsed = JSON.parse(text);
+    if (typeof parsed.fingerDiameterMm !== 'number' || parsed.fingerDiameterMm <= 0 || parsed.fingerDiameterMm > 40) {
+      throw new Error('Unclear reading');
+    }
+    return parsed.fingerDiameterMm;
+  },
+
+  renderAttempts() {
+    const list = document.getElementById('attempts-list');
+    list.innerHTML = FingerSize.attempts.map((a, i) => `
+      <div class="attempt-row">
+        <span>Photo ${i + 1}</span>
+        <span class="size">Size ${a.size} <span style="color:#6B7280; font-weight:400;">(${a.mm.toFixed(1)}mm)</span></span>
+      </div>
+    `).join('');
+  },
+
+  renderResult() {
+    const attempts = FingerSize.attempts;
+    const avgMm = attempts.reduce((s, a) => s + a.mm, 0) / attempts.length;
+    const finalSize = FingerSize.mmToUSSize(avgMm);
+
+    document.getElementById('result-card').style.display = 'block';
+    document.getElementById('result-size').textContent = `Size ${finalSize}`;
+    document.getElementById('result-sub').textContent = `Averaged from ${attempts.length} photos \u2014 ${avgMm.toFixed(1)}mm`;
+
+    const sizes = attempts.map(a => a.size);
+    const spread = Math.max(...sizes) - Math.min(...sizes);
+    const warningEl = document.getElementById('consistency-warning');
+    if (spread > 1) {
+      warningEl.style.display = 'block';
+      warningEl.textContent = `Your 3 photos disagreed by more than a full size (${Math.min(...sizes)} to ${Math.max(...sizes)}) \u2014 this result isn't reliable. Try again with more consistent lighting and the same flat surface, or use the string-and-chart method below instead.`;
+    } else {
+      warningEl.style.display = 'none';
+    }
+  },
+
+  async handleCapture(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const statusEl = document.getElementById('status');
+    const errorEl = document.getElementById('error-note');
+    const captureBtn = document.getElementById('capture-btn');
+    errorEl.style.display = 'none';
+    statusEl.textContent = 'Reading the photo\u2026';
+    statusEl.style.display = 'block';
+    captureBtn.disabled = true;
+
+    try {
+      const base64 = await FingerSize.resizeImageFile(file);
+      const coinKey = document.getElementById('coin-select').value;
+      const mm = await FingerSize.estimateFromPhoto(base64, coinKey);
+      const size = FingerSize.mmToUSSize(mm);
+      FingerSize.attempts.push({ mm, size });
+      FingerSize.renderAttempts();
+
+      if (FingerSize.attempts.length < 3) {
+        captureBtn.textContent = `📷 Take Photo ${FingerSize.attempts.length + 1} of 3`;
+      } else {
+        captureBtn.style.display = 'none';
+        FingerSize.renderResult();
+      }
+    } catch (e) {
+      errorEl.textContent = 'Couldn\u2019t get a clear reading from that photo \u2014 make sure the coin and finger are both clearly visible on the same flat surface, then try again.';
+      errorEl.style.display = 'block';
+    }
+    statusEl.style.display = 'none';
+    captureBtn.disabled = false;
+    event.target.value = '';
+  },
+
+  init() {
+    document.getElementById('capture-btn').addEventListener('click', () => document.getElementById('photo-input').click());
+    document.getElementById('photo-input').addEventListener('change', FingerSize.handleCapture);
+  },
+};
+
+FingerSize.init();
+</script>
+</body>
+</html>
