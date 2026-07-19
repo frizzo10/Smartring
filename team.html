@@ -369,6 +369,7 @@ const Team = {
       const ta = document.getElementById('text-input');
       ta.addEventListener('input', function() {
         Team.currentTranscript = ta.value;
+        Team.saveAnswer(step.key, q.key, ta.value);
         document.getElementById('next-btn').disabled = q.optional ? false : !ta.value.trim();
       });
       document.getElementById('next-btn').disabled = q.optional ? false : !existing;
