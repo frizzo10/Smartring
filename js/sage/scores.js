@@ -222,6 +222,40 @@ const Scores = {
   },
 
   // ── SLEEP HISTORY (multi-night) ───────────────────────────
+  // ── BEDTIME CONSISTENCY (closes a real gap: Willow's whole
+  // pitch is "consistency matters more than raw hours," but until
+  // now nothing measured consistency itself — only duration and
+  // efficiency. startMins already exists on every sleepPeriods
+  // entry (real ring data, minutes since midnight) and was simply
+  // never read for this purpose. Handles the midnight-wraparound
+  // case (e.g. 11:30pm vs 12:15am are 45 min apart, not ~23 hrs)
+  // by shifting early-morning times onto the same continuous
+  // evening timeline before computing spread \u2014 a reasonable
+  // heuristic for real bedtimes, not full circular statistics,
+  // since nobody's real bedtime is anywhere near noon.
+  computeBedtimeConsistency(snapshot) {
+    const periods = (snapshot?.sleepPeriods || []).filter(p => p.startMins != null);
+    if (periods.length < 3) return { ok: false, have: periods.length };
+
+    const adjusted = periods.map(p => (p.startMins < 720 ? p.startMins + 1440 : p.startMins));
+    const mean = adjusted.reduce((a, b) => a + b, 0) / adjusted.length;
+    const variance = adjusted.reduce((sum, v) => sum + Math.pow(v - mean, 2), 0) / adjusted.length;
+    const stdDevMin = Math.round(Math.sqrt(variance));
+
+    const meanClock = Math.round(mean) % 1440;
+    const hh = Math.floor(meanClock / 60) % 24;
+    const mm = meanClock % 60;
+    const avgBedtime = `${hh % 12 === 0 ? 12 : hh % 12}:${String(mm).padStart(2, '0')} ${hh < 12 ? 'AM' : 'PM'}`;
+
+    let label;
+    if (stdDevMin <= 30) label = 'Very consistent';
+    else if (stdDevMin <= 60) label = 'Fairly consistent';
+    else if (stdDevMin <= 90) label = 'Somewhat variable';
+    else label = 'Highly variable';
+
+    return { ok: true, avgBedtime, stdDevMin, label, nights: periods.length };
+  },
+
   // Built from sleepPeriods — real data the ring already returns
   // (confirmed multiple nights in a single sleepLog read) and
   // dashboard.js already saves to the snapshot, but nothing has
@@ -274,6 +308,10 @@ const Scores = {
     document.getElementById('sleep-score-total').textContent = `${result.totalHrs} hrs`;
     document.getElementById('sleep-score-eff').textContent = `${result.efficiency}%`;
     document.getElementById('sleep-score-wake').textContent = result.wakeEvents;
+    const consistency = Scores.computeBedtimeConsistency(snapshot);
+    document.getElementById('sleep-score-consistency').textContent = consistency.ok
+      ? `${consistency.label} (avg ${consistency.avgBedtime})`
+      : `Need ${3 - consistency.have} more night${3 - consistency.have === 1 ? '' : 's'} synced`;
   },
 
   // ── STRESS SCORE ──────────────────────────────────────────
@@ -619,13 +657,40 @@ const Scores = {
     return { ok: true, ...entry, date: Scores.todayKey() };
   },
 
+  // Real multi-day trend, not just today's snapshot. The data
+  // was always there \u2014 sh_nutrition_log has been a dated object
+  // since the day it was built \u2014 nothing ever aggregated across
+  // days until now. This is what lets Basil actually say "your
+  // protein's been consistent this week" instead of only ever
+  // commenting on one meal in isolation.
+  buildNutritionHistory(log) {
+    log = log || Scores.loadNutritionLog();
+    const dates = Object.keys(log).sort().slice(-7); // last 7 logged days
+    const days = dates.map(d => ({ date: d, ...log[d] })).filter(d => d.calories != null);
+    if (!days.length) return { ok: false, days: [] };
+
+    const avg = (key) => Math.round(days.reduce((sum, d) => sum + (d[key] || 0), 0) / days.length);
+    return {
+      ok: true,
+      days,
+      avgCalories: avg('calories'),
+      avgProtein: avg('protein'),
+      avgCarbs: avg('carbs'),
+      avgFat: avg('fat'),
+      loggedDays: days.length,
+    };
+  },
+
   renderNutritionSection() {
     const today = Scores.computeNutritionToday();
     const resultEl = document.getElementById('nutrition-result');
     const subEl = document.getElementById('nutrition-status-sub');
     if (!resultEl) return;
     if (today.ok) {
-      resultEl.innerHTML = `<strong>~${today.calories} cal</strong> \u00b7 ${today.protein}g protein \u00b7 ${today.carbs}g carbs \u00b7 ${today.fat}g fat${today.highlight ? `<br><span style="opacity:0.8">${today.highlight}</span>` : ''}`;
+      const history = Scores.buildNutritionHistory();
+      const trendLine = history.ok && history.loggedDays > 1
+        ? `<br><span style="opacity:0.7; font-size:12px;">${history.loggedDays}-day avg: ~${history.avgCalories} cal, ${history.avgProtein}g protein</span>` : '';
+      resultEl.innerHTML = `<strong>~${today.calories} cal</strong> \u00b7 ${today.protein}g protein \u00b7 ${today.carbs}g carbs \u00b7 ${today.fat}g fat${today.highlight ? `<br><span style="opacity:0.8">${today.highlight}</span>` : ''}${trendLine}`;
       resultEl.style.display = 'block';
       if (subEl) subEl.textContent = 'Today\u2019s estimate \u2014 log again to update it.';
     } else {
@@ -662,6 +727,89 @@ const Scores = {
   // 0-100 "Activity Score" gauge (that's a separate future card,
   // not asked for yet) — just a real, honest trend summary,
   // grounded entirely in real logged steps.
+  // ── HAWTHORN'S STRUCTURED REGIMEN ──────────────────────────
+  // Closes the real gap between what Hawthorn promises ("I will
+  // build a plan regardless of athlete or novice") and what
+  // existed before this: one vague weekly action. This generates
+  // an actual multi-day structure with named exercises, honestly
+  // grounded in only two real inputs \u2014 the person's own stated
+  // experience/goal from onboarding, and real step-count trend.
+  // Deliberately does NOT claim to use workout-intensity data,
+  // since that requires real accelerometer-based classification
+  // (Strain) which does not exist yet \u2014 no pretending otherwise.
+  REGIMEN_KEY: 'sh_hawthorn_regimen',
+
+  loadRegimen() {
+    try { return JSON.parse(localStorage.getItem(Scores.REGIMEN_KEY) || 'null'); }
+    catch (e) { return null; }
+  },
+
+  saveRegimen(regimen) {
+    try { localStorage.setItem(Scores.REGIMEN_KEY, JSON.stringify(regimen)); }
+    catch (e) { /* non-critical */ }
+  },
+
+  parseRegimenResponse(text) {
+    if (!text) return null;
+    const cleaned = text.replace(/```json\s*|```\s*/g, '').trim();
+    try {
+      const parsed = JSON.parse(cleaned);
+      if (!parsed.weekGoal || !Array.isArray(parsed.days) || !parsed.days.length) return null;
+      const days = parsed.days.slice(0, 5).map(d => ({
+        day: String(d.day || '').slice(0, 40),
+        focus: String(d.focus || '').slice(0, 100),
+        exercises: Array.isArray(d.exercises) ? d.exercises.slice(0, 5).map(e => ({
+          name: String(e.name || '').slice(0, 80),
+          detail: String(e.detail || '').slice(0, 100),
+        })).filter(e => e.name) : [],
+      })).filter(d => d.day && d.exercises.length);
+      if (!days.length) return null;
+      return { weekGoal: String(parsed.weekGoal).slice(0, 300), days };
+    } catch (e) {
+      return null;
+    }
+  },
+
+  async generateHawthornRegimen(onDone) {
+    const snapshot = Scores.loadSnapshot() || {};
+    const profile = Scores.loadTeamProfile();
+    const activityProfile = profile?.activity;
+    if (!activityProfile || (!activityProfile.current && !activityProfile.goal)) {
+      onDone({ error: 'Hawthorn needs to know your starting point first \u2014 answer his questions in Meet the Team.' });
+      return;
+    }
+
+    const trend = Scores.computeActivityTrend(snapshot);
+    const trendText = trend.ok
+      ? `Real recent step data: ${trend.latestSteps} steps most recent day, averaging ${trend.avgPriorSteps}/day prior.`
+      : 'No real step trend synced yet \u2014 base this on their stated starting point only, and say so.';
+
+    const userMessage = `This person told you, when you first met: "${activityProfile.current || 'not specified'}" is what exercise currently looks like for them, and their goal is: "${activityProfile.goal || 'not specified'}".\n\n${trendText}\n\nBuild a real, structured 3-day-this-week regimen appropriate to their actual stated experience \u2014 genuinely different for a novice than an athlete, not the same plan with adjusted labels. Use real, named, honest bodyweight or simple-equipment exercises \u2014 nothing requiring gear you have no evidence they own. Respond ONLY with valid JSON, no markdown: {"weekGoal": "1-2 sentences on the focus for this week and why, given what they told you", "days": [{"day": "Day 1", "focus": "e.g. Full body", "exercises": [{"name": "exercise name", "detail": "sets/reps or duration, appropriate to their level"}]}, ...2-3 days]}`;
+
+    try {
+      const res = await fetch('/.netlify/functions/claude', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system: 'You are Hawthorn, an exercise coach who builds real training regimens from real data. You are NOT a licensed doctor or physical therapist \u2014 you are a coach. You NEVER diagnose, NEVER claim certainty about outcomes, and you scale difficulty honestly to what the person actually told you about their experience \u2014 a stated novice never gets an athlete\u2019s program with easier-sounding labels slapped on it. You NEVER invent data you weren\u2019t given. Respond with ONLY the requested JSON, nothing else.',
+          messages: [{ role: 'user', content: userMessage }],
+          max_tokens: 500,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Request failed');
+      const text = data.content?.[0]?.text || '';
+      const parsed = Scores.parseRegimenResponse(text);
+      if (!parsed) { onDone({ error: 'Couldn\u2019t build a valid regimen from that \u2014 try again.' }); return; }
+
+      const regimen = { ...parsed, createdDate: Scores.todayKey() };
+      Scores.saveRegimen(regimen);
+      onDone({ regimen });
+    } catch (e) {
+      onDone({ error: 'Hawthorn is unavailable right now: ' + e.message });
+    }
+  },
+
   computeActivityTrend(snapshot) {
     const history = (snapshot?.activityHistory || []).filter(a => a.totalSteps != null);
     if (history.length < 2) return { ok: false };
@@ -695,7 +843,11 @@ const Scores = {
     // — it still shows its own standalone score.
 
     const sleep = Scores.computeSleepScore(snapshot);
-    if (sleep.ok) domains.sleep = { label: 'Sleep', score: sleep.score, detail: `${sleep.totalHrs} hrs, ${sleep.efficiency}% efficiency, ${sleep.wakeEvents} wake events` };
+    if (sleep.ok) {
+      const consistency = Scores.computeBedtimeConsistency(snapshot);
+      const consistencyPart = consistency.ok ? `, bedtime consistency: ${consistency.label} (avg ${consistency.avgBedtime}, \u00b1${consistency.stdDevMin} min across ${consistency.nights} nights)` : '';
+      domains.sleep = { label: 'Sleep', score: sleep.score, detail: `${sleep.totalHrs} hrs, ${sleep.efficiency}% efficiency, ${sleep.wakeEvents} wake events${consistencyPart}` };
+    }
 
     const stress = Scores.computeStress(snapshot);
     if (stress.ok) domains.stress = { label: 'Stress', score: stress.score, detail: `${stress.baselinePct > 0 ? '+' : ''}${stress.baselinePct}% HRV vs baseline` };
@@ -704,7 +856,11 @@ const Scores = {
     if (activity.ok) domains.activity = { label: 'Activity', score: null, detail: `${activity.latestSteps} steps on ${activity.latestDate}, avg ${activity.avgPriorSteps}/day prior${activity.pctVsAvg != null ? ` (${activity.pctVsAvg > 0 ? '+' : ''}${activity.pctVsAvg}% vs that average)` : ''}` };
 
     const nutrition = Scores.computeNutritionToday(snapshot);
-    if (nutrition.ok) domains.nutrition = { label: 'Nutrition', score: null, detail: `~${nutrition.calories} cal, ${nutrition.protein}g protein, ${nutrition.carbs}g carbs, ${nutrition.fat}g fat (self-reported, AI-estimated)` };
+    if (nutrition.ok) {
+      const history = Scores.buildNutritionHistory();
+      const trendPart = history.ok && history.loggedDays > 1 ? ` \u2014 ${history.loggedDays}-day average: ~${history.avgCalories} cal, ${history.avgProtein}g protein, ${history.avgCarbs}g carbs, ${history.avgFat}g fat` : '';
+      domains.nutrition = { label: 'Nutrition', score: null, detail: `~${nutrition.calories} cal, ${nutrition.protein}g protein, ${nutrition.carbs}g carbs, ${nutrition.fat}g fat today (self-reported, AI-estimated)${trendPart}` };
+    }
 
     const journal = Scores.loadJournal();
     const journalDays = Object.keys(journal).sort().slice(-7);
@@ -1413,11 +1569,45 @@ const Scores = {
     );
   },
 
+  // ── LAST VISIT CHECK ────────────────────────────────────────
+  // Honest, partial answer to Dr. Sage's "I'll be checking in"
+  // promise. This is NOT proactive \u2014 the app cannot reach anyone
+  // while closed without a service worker, push subscriptions, a
+  // permission flow, and a server-side trigger, none of which
+  // exist yet. What this genuinely does: when someone actually
+  // opens the app after a real gap, Dr. Sage acknowledges it in
+  // his own voice, honestly, rather than acting like no time
+  // passed. Reactive, not proactive \u2014 said plainly, not implied.
+  LAST_VISIT_KEY: 'sh_last_visit',
+
+  checkLastVisit() {
+    let lastVisit;
+    try { lastVisit = localStorage.getItem(Scores.LAST_VISIT_KEY); } catch (e) { lastVisit = null; }
+    const now = Date.now();
+    try { localStorage.setItem(Scores.LAST_VISIT_KEY, String(now)); } catch (e) { /* non-critical */ }
+
+    if (!lastVisit) return null; // first visit ever, nothing to welcome back from
+    const daysSince = Math.floor((now - Number(lastVisit)) / 86400000);
+    if (daysSince < 3) return null; // not a meaningful gap
+    return { daysSince };
+  },
+
   init() {
     const snapshot = Scores.loadSnapshot() || {};
     const recovery = Scores.computeRecovery(snapshot);
     const sleep = Scores.computeSleepScore(snapshot);
     const stress = Scores.computeStress(snapshot);
+
+    const visitGap = Scores.checkLastVisit();
+    const welcomeEl = document.getElementById('welcome-back-note');
+    if (welcomeEl) {
+      if (visitGap) {
+        welcomeEl.textContent = `Dr. Sage: It's been ${visitGap.daysSince} days \u2014 good to have you back. Let's see where things stand.`;
+        welcomeEl.style.display = 'block';
+      } else {
+        welcomeEl.style.display = 'none';
+      }
+    }
 
     Scores.renderRecovery(snapshot);
     Scores.renderSleepScore(snapshot);
