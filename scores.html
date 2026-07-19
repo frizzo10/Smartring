@@ -251,6 +251,21 @@
     <div class="score-sub" id="nutrition-status-sub">What did you eat today? A quick description is enough \u2014 estimates are AI-generated, not measured.</div>
     <textarea id="nutrition-input" placeholder="e.g. oatmeal with banana for breakfast, chicken salad for lunch, salmon and rice for dinner" style="width:100%; margin-top:12px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.18); border-radius:10px; padding:10px; color:#fff; font-family:inherit; font-size:13px; min-height:60px; resize:vertical;"></textarea>
     <button id="nutrition-estimate-btn" class="trend-btn">Estimate nutrition</button>
+    <input type="file" id="nutrition-photo-input" accept="image/*" capture="environment" style="display:none;">
+    <button id="nutrition-photo-btn" class="trend-btn" style="margin-top:8px;">📷 Snap a photo instead</button>
+    <div id="nutrition-photo-status" style="display:none; font-size:12px; color:#9CA3AF; margin-top:8px;"></div>
+    <div id="nutrition-photo-draft" style="display:none; margin-top:12px; background:rgba(0,0,0,0.2); border-radius:12px; padding:14px;">
+      <div style="font-size:11px; color:#9CA3AF; margin-bottom:8px; text-transform:uppercase; letter-spacing:0.04em;">Basil's estimate \u2014 check it looks right, then save</div>
+      <textarea id="draft-description" style="width:100%; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.18); border-radius:8px; padding:8px; color:#fff; font-family:inherit; font-size:13px; min-height:44px; margin-bottom:10px;"></textarea>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px;">
+        <div><label style="font-size:11px; color:#9CA3AF;">Calories</label><input id="draft-calories" type="number" style="width:100%; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.18); border-radius:8px; padding:8px; color:#fff; font-family:inherit; font-size:13px;"></div>
+        <div><label style="font-size:11px; color:#9CA3AF;">Protein (g)</label><input id="draft-protein" type="number" style="width:100%; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.18); border-radius:8px; padding:8px; color:#fff; font-family:inherit; font-size:13px;"></div>
+        <div><label style="font-size:11px; color:#9CA3AF;">Carbs (g)</label><input id="draft-carbs" type="number" style="width:100%; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.18); border-radius:8px; padding:8px; color:#fff; font-family:inherit; font-size:13px;"></div>
+        <div><label style="font-size:11px; color:#9CA3AF;">Fat (g)</label><input id="draft-fat" type="number" style="width:100%; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.18); border-radius:8px; padding:8px; color:#fff; font-family:inherit; font-size:13px;"></div>
+      </div>
+      <button id="draft-save-btn" class="trend-btn">Looks good, save it</button>
+      <button id="draft-cancel-btn" class="trend-btn" style="margin-top:6px; background:transparent; border:1px solid rgba(255,255,255,0.18);">Discard</button>
+    </div>
     <button class="trend-btn" onclick="window.location.href='meals.html';" style="margin-top:8px;">🥗 Meal ideas from Basil</button>
     <div class="empty-note" id="nutrition-error" style="display:none;"></div>
     <div id="nutrition-result" style="display:none; margin-top:12px; background:rgba(0,0,0,0.18); border-radius:10px; padding:12px; font-size:13px; line-height:1.5;"></div>
