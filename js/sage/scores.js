@@ -810,6 +810,22 @@ const Scores = {
     }
   },
 
+  // Real regimen adherence, matching the same fix already applied
+  // to Basil's nutrition history \u2014 uses the same sh_hawthorn_regimens
+  // array regimen.html now maintains, so his background notes can
+  // reference actual follow-through, not just step trend.
+  summarizeRegimenAdherence() {
+    let history;
+    try { history = JSON.parse(localStorage.getItem('sh_hawthorn_regimens') || '[]'); }
+    catch (e) { return null; }
+    if (!history.length) return null;
+    const current = history[history.length - 1];
+    let total = 0, done = 0;
+    current.days.forEach(d => d.exercises.forEach(e => { total++; if (e.done) done++; }));
+    if (!total) return null;
+    return { weekGoal: current.weekGoal, done, total, pct: Math.round((done / total) * 100) };
+  },
+
   computeActivityTrend(snapshot) {
     const history = (snapshot?.activityHistory || []).filter(a => a.totalSteps != null);
     if (history.length < 2) return { ok: false };
@@ -853,7 +869,11 @@ const Scores = {
     if (stress.ok) domains.stress = { label: 'Stress', score: stress.score, detail: `${stress.baselinePct > 0 ? '+' : ''}${stress.baselinePct}% HRV vs baseline` };
 
     const activity = Scores.computeActivityTrend(snapshot);
-    if (activity.ok) domains.activity = { label: 'Activity', score: null, detail: `${activity.latestSteps} steps on ${activity.latestDate}, avg ${activity.avgPriorSteps}/day prior${activity.pctVsAvg != null ? ` (${activity.pctVsAvg > 0 ? '+' : ''}${activity.pctVsAvg}% vs that average)` : ''}` };
+    if (activity.ok) {
+      const adherence = Scores.summarizeRegimenAdherence();
+      const adherencePart = adherence ? `, current regimen: ${adherence.done}/${adherence.total} exercises done (${adherence.pct}%)` : '';
+      domains.activity = { label: 'Activity', score: null, detail: `${activity.latestSteps} steps on ${activity.latestDate}, avg ${activity.avgPriorSteps}/day prior${activity.pctVsAvg != null ? ` (${activity.pctVsAvg > 0 ? '+' : ''}${activity.pctVsAvg}% vs that average)` : ''}${adherencePart}` };
+    }
 
     const nutrition = Scores.computeNutritionToday(snapshot);
     if (nutrition.ok) {
