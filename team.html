@@ -101,6 +101,10 @@
 const Team = {
   PROFILE_KEY: 'sh_team_profile',
 
+  todayKey() {
+    return new Date().toISOString().slice(0, 10);
+  },
+
   STEPS: [
     {
       key: 'drSage', name: 'Dr. Sage', title: 'Holistic Wellness Doctor',
@@ -445,6 +449,20 @@ const Team = {
     // flow if it fails \u2014 falls back to the original order.
     if (Team.stepIndex === 0) {
       await Team.reorderSpecialistsByGoal();
+    } else {
+      // Hawthorn and Basil each need to walk away from their own
+      // step with a real, immediately usable deliverable \u2014 not
+      // wait for a separate page visit. Built from what's
+      // independent of ring data (stated preferences and goals);
+      // real ring data arriving later VALIDATES and refines these
+      // plans (see regimen.html/meals.html's real-adherence and
+      // real-nutrition-trend logic) rather than gating them.
+      // Checked by KEY, not a fixed step index, since the team
+      // order is now dynamic \u2014 Hawthorn or Basil could be in any
+      // position depending on the person's stated goal.
+      const leavingKey = Team.currentStep().key;
+      if (leavingKey === 'activity') await Team.buildInitialRegimen();
+      if (leavingKey === 'nutrition') await Team.buildInitialMealPlan();
     }
     Team.stepIndex++;
     Team.typedMode = false;
@@ -501,6 +519,93 @@ const Team = {
   },
 
   skip() { return Team.advance(); },
+
+  // ── INITIAL PLANS (independent of ring data) ───────────────
+  // Hawthorn and Basil each need something real and executable
+  // the moment onboarding finishes \u2014 not a placeholder, not a
+  // wait-for-later-page-visit. Built purely from what they just
+  // told these specialists (current level/preferences + goal).
+  // Real ring data arriving afterward VALIDATES and refines these
+  // (regimen.html factors in real adherence + readiness on later
+  // rebuilds; meals.html factors in real logged nutrition trend)
+  // \u2014 the ring is the feedback loop, not the prerequisite to
+  // having a real plan on day one. Both are non-fatal on failure:
+  // the person can always build one manually later from
+  // regimen.html or meals.html if this doesn't succeed.
+
+  async buildInitialRegimen() {
+    const existing = JSON.parse(localStorage.getItem('sh_hawthorn_regimens') || '[]');
+    if (existing.length) return; // never silently overwrite a plan that already exists
+
+    const profile = Team.loadProfile();
+    const activityProfile = profile.activity;
+    if (!activityProfile || (!activityProfile.current && !activityProfile.goal)) return; // nothing real to build from
+
+    document.getElementById('next-btn').textContent = 'Hawthorn is building your plan\u2026';
+
+    const userMessage = `This person told you, when you first met: "${activityProfile.current || 'not specified'}" is what exercise currently looks like for them, and their goal is: "${activityProfile.goal || 'not specified'}".\n\nNo ring data exists yet \u2014 this is day one. Build a real, structured 3-day regimen for this week based purely on what they've just told you. Once real activity data starts coming in, you'll refine this week to week \u2014 but they need something real and executable starting today, not a placeholder. Say it directly. Use real, named, honest bodyweight or simple-equipment exercises \u2014 nothing requiring gear you have no evidence they own. Respond ONLY with valid JSON, no markdown: {"weekGoal": "1-2 sentences on this week's focus, stated directly and confidently", "days": [{"day": "Day 1", "focus": "e.g. Full body", "exercises": [{"name": "exercise name", "detail": "sets/reps or duration, appropriate to their level"}]}, ...2-3 days]}`;
+
+    try {
+      const res = await fetch('/.netlify/functions/claude', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system: 'You are Hawthorn, an exercise coach who builds real training regimens from real data. Be direct and confident \u2014 tell them what to do, don\u2019t hedge on the plan itself. You are NOT a licensed doctor or physical therapist \u2014 you are a coach. You NEVER diagnose, NEVER claim certainty about outcomes, and you scale difficulty honestly to what the person actually told you about their experience \u2014 a stated novice never gets an athlete\u2019s program with easier-sounding labels slapped on it. You NEVER invent data you weren\u2019t given. Respond with ONLY the requested JSON, nothing else.',
+          messages: [{ role: 'user', content: userMessage }],
+          max_tokens: 500,
+        }),
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      const text = (data.content && data.content[0] && data.content[0].text || '').replace(/```json\s*|```\s*/g, '').trim();
+      const parsed = JSON.parse(text);
+      if (!parsed.weekGoal || !Array.isArray(parsed.days) || !parsed.days.length) return;
+
+      const newRegimen = {
+        weekGoal: parsed.weekGoal,
+        days: parsed.days.map(function(d) {
+          return { day: d.day, focus: d.focus, exercises: (d.exercises || []).map(function(e) { return { name: e.name, detail: e.detail, done: false }; }) };
+        }),
+        createdDate: Team.todayKey(),
+      };
+      localStorage.setItem('sh_hawthorn_regimens', JSON.stringify([newRegimen]));
+    } catch (e) {
+      // Non-fatal \u2014 they can build one manually from regimen.html later.
+    }
+  },
+
+  async buildInitialMealPlan() {
+    const existing = JSON.parse(localStorage.getItem('sh_meal_ideas') || 'null');
+    if (existing) return; // never silently overwrite
+
+    const profile = Team.loadProfile();
+    const restrictions = profile.nutrition?.restrictions || 'none specified';
+
+    document.getElementById('next-btn').textContent = 'Basil is building your plan\u2026';
+
+    const userMessage = `This person's stated dietary preferences/restrictions: ${restrictions}.\n\nNo real nutrition trend exists yet \u2014 this is day one. Suggest 3 real, specific meals that genuinely support what they're working on, based purely on what they've just told you. Respect their stated restrictions exactly. Once they start logging real meals, you'll refine these suggestions \u2014 but they need something real and usable today, not a placeholder. Respond ONLY with valid JSON, no markdown: {"intro": "1 sentence tying these choices to what's actually going on for them", "meals": [{"name": "specific dish name", "ingredients": ["real ingredient", "..."], "note": "one short line"}, ...3 meals]}`;
+
+    try {
+      const res = await fetch('/.netlify/functions/claude', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system: 'You are Basil, a nutrition coach focused on helping people eat better. Be direct and specific \u2014 real dish names and real ingredients, not vague categories. You are NOT a licensed dietitian \u2014 you are a coach. You NEVER diagnose, NEVER claim a meal will produce a specific health outcome, and you ALWAYS respect stated dietary restrictions exactly. You NEVER invent data you weren\u2019t given. Respond with ONLY the requested JSON, nothing else.',
+          messages: [{ role: 'user', content: userMessage }],
+          max_tokens: 500,
+        }),
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      const text = (data.content && data.content[0] && data.content[0].text || '').replace(/```json\s*|```\s*/g, '').trim();
+      const parsed = JSON.parse(text);
+      if (!Array.isArray(parsed.meals) || !parsed.meals.length) return;
+
+      localStorage.setItem('sh_meal_ideas', JSON.stringify({ intro: parsed.intro || '', meals: parsed.meals, createdDate: Team.todayKey() }));
+    } catch (e) {
+      // Non-fatal \u2014 they can build one manually from meals.html later.
+    }
+  },
 
   renderDone() {
     document.getElementById('card-area').style.display = 'none';
