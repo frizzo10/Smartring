@@ -107,6 +107,7 @@ const Team = {
       color: 'linear-gradient(145deg,#5FA5AA,#2F5C60)', accent: '#7FC4C9', voiceKey: 'drSage',
       intro: "I'm Dr. Sage. I will be your team leader, but rest assured I have a team of specialists monitoring every facet of your health. Let's take a couple of minutes to get acquainted, and then I want you to meet the team \u2014 I'll chat with you again once you're through.",
       questions: [
+        { key: 'preferredName', label: 'What would you like to be called?', type: 'text' },
         { key: 'goal', label: "What's the main thing you're hoping to get out of this?", type: 'text' },
         { key: 'medicalHistory', label: 'Any diagnosed health conditions I should know about?', type: 'text', optional: true,
           sensitiveNote: 'Totally optional. This helps me know what to pay closer attention to \u2014 it\u2019s never used to diagnose anything.' },
@@ -117,7 +118,7 @@ const Team = {
     {
       key: 'sleep', name: 'Willow', title: 'Sleep Coach',
       color: 'linear-gradient(145deg,#6B7DC4,#45559A)', accent: '#9AACE8', voiceKey: 'sleep',
-      intro: "I'm Willow, your sleep coach. Getting a good night's rest is my only job, and most of the time, the most important one.",
+      intro: "{greeting}I'm Willow, your sleep coach. Getting a good night's rest is my only job, and most of the time, the most important one.",
       questions: [
         { key: 'bedtime', label: 'What time do you usually try to go to bed?', type: 'text' },
         { key: 'struggle', label: "What's your biggest sleep struggle?", type: 'options',
@@ -127,7 +128,7 @@ const Team = {
     {
       key: 'stress', name: 'Lotus', title: 'Mindfulness Coach',
       color: 'linear-gradient(145deg,#B692D0,#8560A8)', accent: '#D0AAEE', voiceKey: 'stress',
-      intro: "I'm Lotus, a true practitioner of yoga. Think of me as a spiritual guide through the everyday stresses of life. I promise to help take the edge off.",
+      intro: "{greeting}I'm Lotus, a true practitioner of yoga. Think of me as a spiritual guide through the everyday stresses of life. I promise to help take the edge off.",
       questions: [
         { key: 'experience', label: 'Any experience with meditation or yoga?', type: 'options',
           options: ['None', 'A little', 'Regular practice', 'Very experienced'] },
@@ -137,7 +138,7 @@ const Team = {
     {
       key: 'activity', name: 'Hawthorn', title: 'Exercise Coach',
       color: 'linear-gradient(145deg,#EC8E56,#C4622A)', accent: '#F2A579', voiceKey: 'activity',
-      intro: "I'm Hawthorn, your exercise guru. I will build a plan regardless of whether you are an athlete or novice. No matter your age, I will get you moving and improving.",
+      intro: "{greeting}I'm Hawthorn, your exercise guru. I will build a plan regardless of whether you are an athlete or novice. No matter your age, I will get you moving and improving.",
       questions: [
         { key: 'current', label: 'What does exercise currently look like for you?', type: 'text' },
         { key: 'goal', label: "What's one fitness goal you have right now?", type: 'text' },
@@ -146,7 +147,7 @@ const Team = {
     {
       key: 'nutrition', name: 'Basil', title: 'Nutrition Coach',
       color: 'linear-gradient(145deg,#82BD82,#558A55)', accent: '#9FD49F', voiceKey: 'nutrition',
-      intro: "I'm Basil. I am all about food and nutrition. I know what you put in your body counts as much as anything. I will help along the way to a healthier you.",
+      intro: "{greeting}I'm Basil. I am all about food and nutrition. I know what you put in your body counts as much as anything. I will help along the way to a healthier you.",
       questions: [
         { key: 'restrictions', label: 'Any dietary preferences or restrictions?', type: 'text' },
         { key: 'hardest', label: "What's the hardest part of eating well for you?", type: 'text' },
@@ -159,7 +160,7 @@ const Team = {
       // voiceKey stays 'drSage' so TTS still uses his real voice.
       key: 'drSageClosing', name: 'Dr. Sage', title: 'Holistic Wellness Doctor',
       color: 'linear-gradient(145deg,#5FA5AA,#2F5C60)', accent: '#7FC4C9', voiceKey: 'drSage',
-      intro: "That's the team. Willow, Lotus, Hawthorn, and Basil are all watching now, and everything you just shared is already helping them do their job. I'll be checking in as your reports come together \u2014 talk soon.",
+      intro: "{greeting}That's the team. Willow, Lotus, Hawthorn, and Basil are all watching now, and everything you just shared is already helping them do their job. I'll be checking in as your reports come together \u2014 talk soon.",
       questions: [],
     },
   ],
@@ -291,15 +292,27 @@ const Team = {
     Team.questionIndexInStep = -1;
 
     const initials = step.name[0];
+    const personalizedIntro = Team.personalize(step.intro);
     document.getElementById('card-area').innerHTML =
       '<div class="avatar-lg" id="speaking-avatar" style="background:' + step.color + ';">' + initials + '</div>' +
       '<div class="member-name">' + step.name + '</div>' +
       '<div class="member-title">' + step.title + '</div>' +
-      '<div class="intro-text">' + step.intro + '</div>';
+      '<div class="intro-text">' + personalizedIntro + '</div>';
     document.getElementById('next-btn').textContent = 'Continue';
     document.getElementById('next-btn').disabled = false;
 
-    Team.speak(step.intro, step.voiceKey, document.getElementById('speaking-avatar'));
+    Team.speak(personalizedIntro, step.voiceKey, document.getElementById('speaking-avatar'));
+  },
+
+  // Every specialist after Dr. Sage's own step can genuinely
+  // greet by name, since he collects it first. Dr. Sage's own
+  // OPENING line can't use this \u2014 the name isn't known yet when
+  // it plays, since asking for it IS his first question.
+  personalize(text) {
+    const profile = Team.loadProfile();
+    const name = profile?.drSage?.preferredName;
+    const greeting = name && name.trim() ? name.trim() + ', ' : '';
+    return text.replace('{greeting}', greeting);
   },
 
   renderQuestion() {
