@@ -321,6 +321,20 @@ const Scores = {
   // elevated stress. Explicitly requires 3+ HRV readings before
   // showing anything, since a "baseline" from fewer than that
   // is closer to noise than signal.
+  // ── CALIBRATION FRESHNESS GATE ─────────────────────────────
+  // General, reusable protocol: some metrics need a genuinely
+  // CURRENT reading, not just a reading that existed at some
+  // point. This is Dr. Sage's protocol, enforced directly \u2014 a
+  // stale estimate presented as current isn't a soft imperfection,
+  // it's actively misleading, so it doesn't get shown at all.
+  // Built generally so any future metric requiring periodic
+  // recalibration (not just Stress) can use the same gate.
+  checkCalibrationFreshness(recordedAt, maxAgeHours = 48) {
+    if (!recordedAt) return { fresh: false, hoursOld: null };
+    const hoursOld = (Date.now() - new Date(recordedAt).getTime()) / 3600000;
+    return { fresh: hoursOld <= maxAgeHours, hoursOld: Math.round(hoursOld) };
+  },
+
   computeStress(snapshot) {
     const hrvHistory = (snapshot?.hrvHistory || []).filter(h => h.rmssd != null);
     if (hrvHistory.length < 3) {
@@ -328,6 +342,16 @@ const Scores = {
     }
 
     const latest = hrvHistory[hrvHistory.length - 1];
+
+    // Enough history existing isn't enough \u2014 the most recent
+    // reading itself has to be genuinely recent, or the score
+    // doesn't show. This is the gate; renderStress() surfaces it
+    // in Dr. Sage's own voice, not a generic empty-state.
+    const freshness = Scores.checkCalibrationFreshness(latest.recordedAt, 48);
+    if (!freshness.fresh) {
+      return { ok: false, stale: true, hoursOld: freshness.hoursOld };
+    }
+
     const prior = hrvHistory.slice(0, -1).map(h => h.rmssd);
     const sorted = [...prior].sort((a, b) => a - b);
     const mid = Math.floor(sorted.length / 2);
@@ -366,7 +390,15 @@ const Scores = {
     const dateEl = document.getElementById('stress-date');
 
     if (!result.ok) {
-      emptyEl.textContent = `Needs a few resting checks over time to learn your personal baseline before Stress can be scored (you have ${result.have}).`;
+      if (result.stale) {
+        // Dr. Sage's protocol, in his voice \u2014 firm, direct, and
+        // clear about WHY, not just that access is paused. Not
+        // punitive, not a generic error \u2014 he's the one drawing
+        // this line, and he says so.
+        emptyEl.innerHTML = `<strong>Dr. Sage:</strong> Your last resting check was ${result.hoursOld} hours ago \u2014 that's too stale to trust. I don't show you a number I can't stand behind. Take a fresh resting check and this comes right back.`;
+      } else {
+        emptyEl.textContent = `Needs a few resting checks over time to learn your personal baseline before Stress can be scored (you have ${result.have}).`;
+      }
       emptyEl.style.display = 'block';
       bodyEl.style.display = 'none';
       dateEl.textContent = '--';
@@ -619,6 +651,91 @@ const Scores = {
       };
     } catch (e) {
       return null; // never fabricate an estimate if the model's JSON is bad
+    }
+  },
+
+  // ── BASIL'S MEAL IDEAS (mini-Fern) ─────────────────────────
+  // Real meal suggestions, not just macro estimation of what
+  // was already eaten. Deliberately lighter than Fern AI's full
+  // meal planner \u2014 no shopping lists, no multi-step cook mode,
+  // no weekly grid. Just real, named meals matching what's
+  // actually true about this person: their stated preferences,
+  // their real logged nutrition trend, and \u2014 the genuine team
+  // moment \u2014 what Hawthorn's regimen is asking of them this
+  // week, if one exists. Full meal planning still belongs to
+  // Fern; the referral link out stays for that.
+  MEALS_KEY: 'sh_meal_ideas',
+
+  loadMealIdeas() {
+    try { return JSON.parse(localStorage.getItem(Scores.MEALS_KEY) || 'null'); }
+    catch (e) { return null; }
+  },
+
+  saveMealIdeas(ideas) {
+    try { localStorage.setItem(Scores.MEALS_KEY, JSON.stringify(ideas)); }
+    catch (e) { /* non-critical */ }
+  },
+
+  parseMealIdeasResponse(text) {
+    if (!text) return null;
+    const cleaned = text.replace(/```json\s*|```\s*/g, '').trim();
+    try {
+      const parsed = JSON.parse(cleaned);
+      if (!Array.isArray(parsed.meals) || !parsed.meals.length) return null;
+      const meals = parsed.meals.slice(0, 4).map(m => ({
+        name: String(m.name || '').slice(0, 80),
+        ingredients: Array.isArray(m.ingredients) ? m.ingredients.slice(0, 8).map(i => String(i).slice(0, 60)) : [],
+        note: String(m.note || '').slice(0, 150),
+      })).filter(m => m.name && m.ingredients.length);
+      if (!meals.length) return null;
+      return { intro: String(parsed.intro || '').slice(0, 200), meals };
+    } catch (e) {
+      return null;
+    }
+  },
+
+  async generateMealIdeas(onDone) {
+    const profile = Scores.loadTeamProfile();
+    const nutritionProfile = profile?.nutrition;
+    const restrictions = nutritionProfile?.restrictions || 'none specified';
+
+    const history = Scores.buildNutritionHistory();
+    const trendText = history.ok && history.loggedDays > 1
+      ? `Their real logged average: ~${history.avgCalories} cal, ${history.avgProtein}g protein, ${history.avgCarbs}g carbs, ${history.avgFat}g fat per day.`
+      : 'No real nutrition trend logged yet \u2014 base this on their stated preferences only.';
+
+    // The real team-coordination moment: if Hawthorn has a
+    // current regimen, Basil's suggestions genuinely reference
+    // what it's actually asking of them this week.
+    let regimenText = 'No current exercise regimen from Hawthorn to coordinate with.';
+    try {
+      const regimens = JSON.parse(localStorage.getItem('sh_hawthorn_regimens') || '[]');
+      if (regimens.length) regimenText = `Hawthorn's regimen this week: "${regimens[regimens.length - 1].weekGoal}"`;
+    } catch (e) { /* non-critical */ }
+
+    const userMessage = `This person's stated dietary preferences/restrictions: ${restrictions}.\n\n${trendText}\n\n${regimenText}\n\nSuggest 3 real, specific meals that genuinely support what they're working on \u2014 not generic "eat healthy" ideas. Respect their stated restrictions exactly. If Hawthorn's regimen is real, let it inform your choices (e.g. more protein around a strength-focused week). Respond ONLY with valid JSON, no markdown: {"intro": "1 sentence tying these choices to what's actually going on for them", "meals": [{"name": "specific dish name", "ingredients": ["real ingredient", "..."], "note": "one short line \u2014 why this one, or a quick prep note"}, ...3 meals]}`;
+
+    try {
+      const res = await fetch('/.netlify/functions/claude', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system: 'You are Basil, a nutrition coach focused on helping people eat better. Be direct and specific \u2014 real dish names and real ingredients, not vague categories. You are NOT a licensed dietitian \u2014 you are a coach. You NEVER diagnose, NEVER claim a meal will produce a specific health outcome, and you ALWAYS respect stated dietary restrictions exactly, never suggesting something that conflicts with them. You NEVER invent data you weren\u2019t given. Respond with ONLY the requested JSON, nothing else.',
+          messages: [{ role: 'user', content: userMessage }],
+          max_tokens: 500,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Request failed');
+      const text = data.content?.[0]?.text || '';
+      const parsed = Scores.parseMealIdeasResponse(text);
+      if (!parsed) { onDone({ error: 'Couldn\u2019t come up with meal ideas from that \u2014 try again.' }); return; }
+
+      const result = { ...parsed, createdDate: Scores.todayKey() };
+      Scores.saveMealIdeas(result);
+      onDone({ ideas: result });
+    } catch (e) {
+      onDone({ error: 'Basil is unavailable right now: ' + e.message });
     }
   },
 
