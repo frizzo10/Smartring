@@ -121,7 +121,9 @@ const Meals = {
       if (regimens.length) regimenText = `Hawthorn's regimen this week: "${regimens[regimens.length - 1].weekGoal}"`;
     } catch (e) { /* non-critical */ }
 
-    const userMessage = `This person's stated dietary preferences/restrictions: ${restrictions}.\n\n${trendText}\n\n${regimenText}\n\nSuggest 3 real, specific meals that genuinely support what they're working on \u2014 not generic "eat healthy" ideas. Respect their stated restrictions exactly. If Hawthorn's regimen is real, let it inform your choices. Respond ONLY with valid JSON, no markdown: {"intro": "1 sentence tying these choices to what's actually going on for them", "meals": [{"name": "specific dish name", "ingredients": ["real ingredient", "..."], "note": "one short line"}, ...3 meals]}`;
+    const preferredName = profile.drSage?.preferredName;
+    const nameBlock = preferredName && preferredName.trim() ? `\n\nCall them ${preferredName.trim()} \u2014 that's what they asked to be called.` : '';
+    const userMessage = `This person's stated dietary preferences/restrictions: ${restrictions}.${nameBlock}\n\n${trendText}\n\n${regimenText}\n\nSuggest 3 real, specific meals that genuinely support what they're working on \u2014 not generic "eat healthy" ideas. Respect their stated restrictions exactly. If Hawthorn's regimen is real, let it inform your choices. Respond ONLY with valid JSON, no markdown: {"intro": "1 sentence tying these choices to what's actually going on for them", "meals": [{"name": "specific dish name", "ingredients": ["real ingredient", "..."], "note": "one short line"}, ...3 meals]}`;
 
     try {
       const res = await fetch('/.netlify/functions/claude', {
