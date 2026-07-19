@@ -1879,6 +1879,155 @@ const Scores = {
     return { daysSince };
   },
 
+  // ── WEEKLY REPORT ────────────────────────────────────────────
+  // Real report, combining both real inputs the user gave (goal,
+  // journal, regimen adherence, meal plan engagement, calibration
+  // follow-through) and real ring data (Recovery/Sleep/Stress/
+  // Activity trends over the week). Explicit deficiency callouts
+  // use real counted numbers, never vague language \u2014 "you logged
+  // 2 of 7 days," not "you could be more consistent." Delivered
+  // in Dr. Sage's voice, read aloud via the same real TTS
+  // pipeline used everywhere else.
+  //
+  // Cadence is REACTIVE, not proactive, same honest distinction
+  // already established for the welcome-back note: this fires the
+  // next time someone actually opens the app after 7+ days since
+  // their last report, not on a schedule while the app is closed.
+  // A genuine push notification \u2014 reaching someone while the app
+  // isn't open \u2014 needs real infrastructure that doesn't exist yet:
+  // a service worker, a permission flow, push subscriptions stored
+  // server-side (localStorage can't be pushed to from outside the
+  // browser), and a scheduled server-side trigger. That's a real
+  // backend project, not something to fake here.
+  LAST_REPORT_KEY: 'sh_last_weekly_report',
+
+  checkWeeklyReportDue() {
+    let lastReport;
+    try { lastReport = localStorage.getItem(Scores.LAST_REPORT_KEY); } catch (e) { lastReport = null; }
+    if (!lastReport) return true; // never had one — due immediately once there's real data
+    const daysSince = (Date.now() - Number(lastReport)) / 86400000;
+    return daysSince >= 7;
+  },
+
+  markWeeklyReportShown() {
+    try { localStorage.setItem(Scores.LAST_REPORT_KEY, String(Date.now())); } catch (e) { /* non-critical */ }
+  },
+
+  // Gathers everything real, with explicit real numbers for every
+  // deficiency \u2014 never a vague "could be better."
+  gatherWeeklyReportData(snapshot) {
+    const profile = Scores.loadTeamProfile();
+    const goal = profile?.drSage?.goal || null;
+
+    const recovery = Scores.computeRecovery(snapshot);
+    const sleep = Scores.computeSleepScore(snapshot);
+    const stress = Scores.computeStress(snapshot);
+    const activity = Scores.computeActivityTrend(snapshot);
+    const nutritionHistory = Scores.buildNutritionHistory();
+
+    // Journal: real count of the last 7 calendar days that have
+    // ANY entry logged, out of 7.
+    const journal = Scores.loadJournal();
+    const today = new Date();
+    let journalDaysLogged = 0;
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      const key = d.toISOString().slice(0, 10);
+      const entries = journal[key];
+      if (entries && Object.values(entries).some(function(v) { return v; })) journalDaysLogged++;
+    }
+
+    // Calibration: real strikes within the last 7 days specifically
+    // (STRIKES_KEY holds all-time dates, filter to the real window).
+    const allStrikes = Scores.loadStrikes();
+    const sevenDaysAgo = new Date(today);
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const strikesThisWeek = allStrikes.filter(function(d) { return new Date(d) >= sevenDaysAgo; }).length;
+
+    const regimenAdherence = Scores.summarizeRegimenAdherence();
+
+    let mealPlanStatus = 'never built one';
+    const mealIdeas = Scores.loadMealIdeas();
+    if (mealIdeas && mealIdeas.createdDate) {
+      const daysOld = Math.floor((Date.now() - new Date(mealIdeas.createdDate).getTime()) / 86400000);
+      mealPlanStatus = daysOld === 0 ? 'built today' : `last built ${daysOld} day${daysOld === 1 ? '' : 's'} ago`;
+    }
+
+    return {
+      goal,
+      recovery: recovery.ok ? recovery.score : null,
+      sleep: sleep.ok ? sleep.score : null,
+      stress: stress.ok ? stress.score : null,
+      activityTrend: activity.ok ? `${activity.latestSteps} steps most recent day, avg ${activity.avgPriorSteps}/day prior` : null,
+      nutritionAvg: nutritionHistory.ok && nutritionHistory.loggedDays > 1 ? `~${nutritionHistory.avgCalories} cal/day avg, ${nutritionHistory.avgProtein}g protein` : null,
+      journalDaysLogged,
+      strikesThisWeek,
+      regimenAdherence: regimenAdherence ? `${regimenAdherence.done}/${regimenAdherence.total} exercises done (${regimenAdherence.pct}%)` : 'no active regimen',
+      mealPlanStatus,
+    };
+  },
+
+  async generateWeeklyReport(snapshot, onDone) {
+    const data = Scores.gatherWeeklyReportData(snapshot);
+    const preferredName = Scores.getPreferredName();
+
+    const lines = [];
+    lines.push(`Stated goal: ${data.goal || 'not specified during onboarding'}`);
+    lines.push(`Recovery: ${data.recovery != null ? data.recovery + '/100' : 'not enough real data yet'}`);
+    lines.push(`Sleep: ${data.sleep != null ? data.sleep + '/100' : 'not enough real data yet'}`);
+    lines.push(`Stress: ${data.stress != null ? data.stress + '/100' : 'not enough real data yet'}`);
+    lines.push(`Activity: ${data.activityTrend || 'no real step trend yet'}`);
+    lines.push(`Nutrition: ${data.nutritionAvg || 'no real logging trend yet'}`);
+    lines.push(`Journal logged ${data.journalDaysLogged} of the last 7 days`);
+    lines.push(`Calibration misses this week: ${data.strikesThisWeek}`);
+    lines.push(`Exercise regimen: ${data.regimenAdherence}`);
+    lines.push(`Meal plan: ${data.mealPlanStatus}`);
+
+    const userMessage = `Here is this person's real week \u2014 both what they logged themselves and what the ring recorded:\n\n${lines.join('\n')}\n\nWrite their weekly report. Cover three things directly: (1) real progress toward their stated goal, or honestly say there isn't enough data to judge yet if that's true \u2014 never invent progress that isn't supported by the numbers above; (2) name any real deficiencies plainly, using the actual numbers given (e.g. "you logged 2 of 7 days"), stated as fact, never as a judgment of their character or effort; (3) one clear, direct focus for the coming week. Keep it to 5-6 sentences, spoken naturally \u2014 this will be read aloud. Respond with plain text only, no JSON, no markdown.`;
+
+    try {
+      const res = await fetch('/.netlify/functions/claude', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system: `You are Dr. Sage, delivering this person's weekly report${preferredName ? ` (call them ${preferredName})` : ''}. Be direct and honest about both real progress and real gaps \u2014 state facts plainly, never shame or judge character ("you're not serious," "you failed") even when the numbers are genuinely poor. The honesty is in the real numbers themselves, not in a harsh tone. You are NOT a medical doctor \u2014 you monitor and coordinate, you don't diagnose or treat. You NEVER invent a number not given to you, and NEVER claim certainty about outcomes. Respond with plain text only, 5-6 sentences.`,
+          messages: [{ role: 'user', content: userMessage }],
+          max_tokens: 350,
+        }),
+      });
+      const res2 = await res.json();
+      if (!res.ok) throw new Error(res2.error || 'Request failed');
+      const reportText = (res2.content?.[0]?.text || '').trim();
+      if (!reportText) { onDone({ error: 'Couldn\u2019t generate your report right now.' }); return; }
+      Scores.markWeeklyReportShown();
+      onDone({ report: reportText, data });
+    } catch (e) {
+      onDone({ error: 'Weekly report unavailable right now: ' + e.message });
+    }
+  },
+
+  async handleWeeklyReportClick(snapshot) {
+    const btn = document.getElementById('weekly-report-btn');
+    const resultEl = document.getElementById('weekly-report-result');
+    btn.disabled = true;
+    btn.textContent = 'Dr. Sage is putting it together\u2026';
+
+    await Scores.generateWeeklyReport(snapshot, async (result) => {
+      if (result.error) {
+        resultEl.textContent = result.error;
+        resultEl.style.display = 'block';
+        btn.disabled = false;
+        btn.textContent = 'Hear it now';
+        return;
+      }
+      document.getElementById('weekly-report-banner').style.display = 'none';
+      resultEl.innerHTML = `<strong>Dr. Sage:</strong> ${result.report}`;
+      resultEl.style.display = 'block';
+      await Scores.speakText(result.report, 'drSage', () => {});
+    });
+  },
+
   init() {
     const snapshot = Scores.loadSnapshot() || {};
     const recovery = Scores.computeRecovery(snapshot);
@@ -1894,6 +2043,21 @@ const Scores = {
         welcomeEl.style.display = 'block';
       } else {
         welcomeEl.style.display = 'none';
+      }
+    }
+
+    // Weekly report: only worth offering once onboarding is
+    // actually done (a real goal exists) \u2014 otherwise there's
+    // nothing real yet to report on. Generation itself is lazy,
+    // same pattern as referral consults \u2014 a banner offers it,
+    // tapping it is what actually spends an AI call.
+    const reportProfile = Scores.loadTeamProfile();
+    const reportBanner = document.getElementById('weekly-report-banner');
+    if (reportBanner) {
+      if (reportProfile?.drSage?.goal && Scores.checkWeeklyReportDue()) {
+        reportBanner.style.display = 'block';
+      } else {
+        reportBanner.style.display = 'none';
       }
     }
 
@@ -1937,6 +2101,9 @@ const Scores = {
     Scores.renderNutritionSection();
     const nutriBtn = document.getElementById('nutrition-estimate-btn');
     if (nutriBtn) nutriBtn.addEventListener('click', Scores.handleEstimateNutritionClick);
+
+    const reportBtn = document.getElementById('weekly-report-btn');
+    if (reportBtn) reportBtn.addEventListener('click', () => Scores.handleWeeklyReportClick(snapshot));
   },
 };
 
