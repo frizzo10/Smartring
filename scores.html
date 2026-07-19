@@ -151,6 +151,7 @@
     <button id="team-btn" onclick="window.location.href='team.html'" style="margin-left:auto; background:transparent; border:1px solid #2A3B5E; border-radius:10px; color:#fff; font-size:12px; font-weight:600; padding:8px 12px;">Meet the Team</button>
   </div>
   <div id="top-sub">Computed from what your ring has actually logged — no score shows unless the underlying data is real.</div>
+  <div id="welcome-back-note" style="display:none; background:rgba(127,196,201,0.14); border:1px solid rgba(127,196,201,0.3); border-radius:12px; padding:12px 14px; margin:0 20px 16px; font-size:13px; color:#7FC4C9;"></div>
 
   <!-- RECOVERY -->
   <div id="card-recovery" class="score-card" onclick="window.location.href='hrv-detail.html'">
@@ -194,6 +195,7 @@
         <div class="score-detail-row"><span class="lbl">Time asleep</span><span id="sleep-score-total">--</span></div>
         <div class="score-detail-row"><span class="lbl">Efficiency</span><span id="sleep-score-eff">--</span></div>
         <div class="score-detail-row"><span class="lbl">Wake events</span><span id="sleep-score-wake">--</span></div>
+        <div class="score-detail-row"><span class="lbl">Bedtime consistency</span><span id="sleep-score-consistency">--</span></div>
       </div>
     </div>
     <div class="empty-note" id="sleep-score-empty">No sleep log synced yet — connect the ring to pull last night's sleep.</div>
@@ -224,6 +226,7 @@
     <div class="status-line" id="stress-status" style="display:none;"></div>
     <button class="trend-btn" id="stress-trend-btn" style="display:none;">Is this normal for me?</button>
     <div class="trend-response" id="stress-trend-response" style="display:none;"></div>
+    <button class="trend-btn" onclick="event.stopPropagation(); window.location.href='practice.html';" style="margin-top:10px;">🧘 Guided practice with Lotus</button>
   </div>
 
   <!-- STRAIN (placeholder — not yet built, honest state) -->
@@ -231,6 +234,7 @@
     <div class="score-title">🔥 Strain</div>
     <div class="score-sub">Not built yet</div>
     <div class="empty-note">Strain scoring needs workout/activity-type classification from the accelerometer stream — this is a separate, larger build than Recovery/Sleep/Stress. Steps and calories already sync; intensity classification doesn't exist yet.</div>
+    <button class="trend-btn" onclick="event.stopPropagation(); window.location.href='regimen.html';" style="margin-top:12px;">🔥 Your regimen from Hawthorn</button>
   </div>
 
   <div class="section-label">Nutrition</div>
