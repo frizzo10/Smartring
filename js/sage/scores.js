@@ -864,6 +864,164 @@ const Scores = {
     }
   },
 
+  // ── PHOTO-BASED NUTRITION LOGGING ──────────────────────────
+  // Same model already used everywhere (qwen/qwen3.6-27b) natively
+  // handles image input on Groq \u2014 no new model, no new provider,
+  // no backend changes (the proxy already forwards whatever
+  // message content it's given).
+  //
+  // Deliberately honest about what this is and isn't: real
+  // research on AI food-photo estimation (even from apps built
+  // specifically for this, not a general vision model like this
+  // one) shows roughly 13-25% mean error on portion/calorie
+  // estimates from an ordinary 2D photo, and real-world photos
+  // perform WORSE than curated test images. This is a genuine
+  // speed improvement over typing a description \u2014 not a claim
+  // of precision. That's why this returns a DRAFT for the person
+  // to confirm or adjust, never auto-saves \u2014 the actual research
+  // finding is that AI plus a quick human correction beats either
+  // alone.
+  async estimateNutritionFromPhoto(base64Image, mimeType, onDone) {
+    if (!base64Image) { onDone({ error: 'No photo to analyze.' }); return; }
+    try {
+      const res = await fetch('/.netlify/functions/claude', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system: 'You are Basil, a nutrition coach. Look at this real photo of a meal, identify what\u2019s actually in it as specifically as you can, and give your real best-estimate of its nutrition. Be direct and confident in your estimate \u2014 don\u2019t hedge with vague language \u2014 but the numbers themselves should be your genuine best read, not artificially precise. You are NOT a licensed dietitian. You NEVER invent an ingredient you can\u2019t actually see. Respond ONLY with valid JSON, no markdown.',
+          messages: [{
+            role: 'user',
+            content: [
+              { type: 'text', text: 'What is this meal, and what\u2019s your real nutrition estimate for it? Respond ONLY with valid JSON, no markdown: {"description": "what you actually see in the photo, specific dish/ingredients", "calories": 0, "protein": 0, "carbs": 0, "fat": 0, "highlight": "one short plain-language note about this meal"}' },
+              { type: 'image_url', image_url: { url: `data:${mimeType || 'image/jpeg'};base64,${base64Image}` } },
+            ],
+          }],
+          max_tokens: 250,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Request failed');
+      const text = data.content?.[0]?.text || '';
+      const parsed = Scores.parseNutritionPhotoResponse(text);
+      if (!parsed) { onDone({ error: 'Couldn\u2019t read that photo clearly \u2014 try a clearer shot or type it instead.' }); return; }
+      onDone({ draft: parsed }); // never saved yet \u2014 caller shows this for confirmation/editing first
+    } catch (e) {
+      onDone({ error: 'Photo analysis unavailable right now: ' + e.message });
+    }
+  },
+
+  parseNutritionPhotoResponse(text) {
+    if (!text) return null;
+    const cleaned = text.replace(/```json\s*|```\s*/g, '').trim();
+    try {
+      const parsed = JSON.parse(cleaned);
+      if (typeof parsed.calories !== 'number') return null;
+      return {
+        description: String(parsed.description || '').slice(0, 300),
+        calories: Math.round(parsed.calories) || 0,
+        protein: Math.round(parsed.protein) || 0,
+        carbs: Math.round(parsed.carbs) || 0,
+        fat: Math.round(parsed.fat) || 0,
+        highlight: String(parsed.highlight || '').slice(0, 200),
+      };
+    } catch (e) {
+      return null;
+    }
+  },
+
+  // Called only after the person has confirmed (and possibly
+  // edited) the draft \u2014 saves using the exact same format and
+  // key as the existing typed-description flow, so photo-logged
+  // meals feed the same real history/trend system, not a
+  // separate parallel one.
+  saveConfirmedNutrition(entry) {
+    const today = Scores.todayKey();
+    const log = Scores.loadNutritionLog();
+    log[today] = { mealsText: entry.description, calories: entry.calories, protein: entry.protein, carbs: entry.carbs, fat: entry.fat, highlight: entry.highlight, loggedAt: new Date().toISOString(), source: 'photo' };
+    Scores.saveNutritionLog(log);
+    return log[today];
+  },
+
+  // Resizes/compresses a photo client-side before sending \u2014 phone
+  // camera photos are often several MB; a food photo doesn't need
+  // more than ~800px on the long edge for a vision model to read
+  // it, and this keeps the request fast and the token cost sane.
+  resizeImageFile(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const maxDim = 800;
+          const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.round(img.width * scale);
+          canvas.height = Math.round(img.height * scale);
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+          resolve(dataUrl.split(',')[1]); // strip the data: prefix, keep raw base64
+        };
+        img.onerror = reject;
+        img.src = e.target.result;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  },
+
+  async handleNutritionPhotoSelected(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const statusEl = document.getElementById('nutrition-photo-status');
+    const errorEl = document.getElementById('nutrition-error');
+    errorEl.style.display = 'none';
+    statusEl.textContent = 'Basil is looking at your photo\u2026';
+    statusEl.style.display = 'block';
+
+    try {
+      const base64 = await Scores.resizeImageFile(file);
+      await Scores.estimateNutritionFromPhoto(base64, 'image/jpeg', (result) => {
+        statusEl.style.display = 'none';
+        if (result.error) {
+          errorEl.textContent = result.error;
+          errorEl.style.display = 'block';
+          return;
+        }
+        document.getElementById('draft-description').value = result.draft.description;
+        document.getElementById('draft-calories').value = result.draft.calories;
+        document.getElementById('draft-protein').value = result.draft.protein;
+        document.getElementById('draft-carbs').value = result.draft.carbs;
+        document.getElementById('draft-fat').value = result.draft.fat;
+        document.getElementById('nutrition-photo-draft').dataset.highlight = result.draft.highlight;
+        document.getElementById('nutrition-photo-draft').style.display = 'block';
+      });
+    } catch (e) {
+      statusEl.style.display = 'none';
+      errorEl.textContent = 'Couldn\u2019t read that photo \u2014 try again.';
+      errorEl.style.display = 'block';
+    }
+    event.target.value = ''; // allow re-selecting the same file next time
+  },
+
+  handleDraftSave() {
+    const entry = {
+      description: document.getElementById('draft-description').value.trim(),
+      calories: Number(document.getElementById('draft-calories').value) || 0,
+      protein: Number(document.getElementById('draft-protein').value) || 0,
+      carbs: Number(document.getElementById('draft-carbs').value) || 0,
+      fat: Number(document.getElementById('draft-fat').value) || 0,
+      highlight: document.getElementById('nutrition-photo-draft').dataset.highlight || '',
+    };
+    Scores.saveConfirmedNutrition(entry);
+    document.getElementById('nutrition-photo-draft').style.display = 'none';
+    Scores.renderNutritionSection();
+  },
+
+  handleDraftCancel() {
+    document.getElementById('nutrition-photo-draft').style.display = 'none';
+  },
+
   async estimateNutrition(mealsText, onDone) {
     if (!mealsText || !mealsText.trim()) { onDone({ error: 'Describe what you ate first.' }); return; }
     try {
@@ -2101,6 +2259,17 @@ const Scores = {
     Scores.renderNutritionSection();
     const nutriBtn = document.getElementById('nutrition-estimate-btn');
     if (nutriBtn) nutriBtn.addEventListener('click', Scores.handleEstimateNutritionClick);
+
+    const photoBtn = document.getElementById('nutrition-photo-btn');
+    const photoInput = document.getElementById('nutrition-photo-input');
+    if (photoBtn && photoInput) {
+      photoBtn.addEventListener('click', () => photoInput.click());
+      photoInput.addEventListener('change', Scores.handleNutritionPhotoSelected);
+    }
+    const draftSaveBtn = document.getElementById('draft-save-btn');
+    if (draftSaveBtn) draftSaveBtn.addEventListener('click', Scores.handleDraftSave);
+    const draftCancelBtn = document.getElementById('draft-cancel-btn');
+    if (draftCancelBtn) draftCancelBtn.addEventListener('click', Scores.handleDraftCancel);
 
     const reportBtn = document.getElementById('weekly-report-btn');
     if (reportBtn) reportBtn.addEventListener('click', () => Scores.handleWeeklyReportClick(snapshot));
