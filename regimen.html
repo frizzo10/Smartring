@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<title>Your Regimen — Hawthorn</title>
+<meta name="theme-color" content="#0A0D14">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #0A0D14; color: #F4F5F7; padding: 0 0 40px;
+  }
+  #top-bar { display: flex; align-items: center; gap: 10px; padding: 18px 20px 0; }
+  #back-btn {
+    width: 36px; height: 36px; border-radius: 10px; border: 1px solid #2A3B5E;
+    background: transparent; color: #fff; font-size: 18px; display: flex;
+    align-items: center; justify-content: center;
+  }
+  #top-bar h1 { font-size: 19px; font-weight: 700; }
+  #content { padding: 20px; }
+
+  .empty-state { background: #131B2E; border: 1px solid rgba(255,255,255,0.08); border-radius: 18px; padding: 22px; text-align: center; }
+  .empty-state p { color: #9CA3AF; font-size: 14px; line-height: 1.5; margin-bottom: 16px; }
+
+  #build-btn {
+    width: 100%; padding: 15px; border-radius: 14px; border: none;
+    background: #F2A579; color: #0A0D14; font-size: 15px; font-weight: 700;
+    font-family: inherit; cursor: pointer;
+  }
+  #build-btn:disabled { opacity: 0.5; }
+  #error-note { color: #E86A5C; font-size: 13px; margin-top: 12px; display: none; }
+
+  .week-goal {
+    background: linear-gradient(145deg, rgba(224,121,60,0.16), rgba(224,121,60,0.04));
+    border: 1px solid rgba(224,121,60,0.3); border-radius: 18px; padding: 20px; margin-bottom: 16px;
+    font-size: 15.5px; line-height: 1.5;
+  }
+  .day-card { background: #131B2E; border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 18px; margin-bottom: 12px; }
+  .day-title { font-weight: 700; font-size: 15px; color: #F2A579; }
+  .day-focus { font-size: 12.5px; color: #9CA3AF; margin-bottom: 12px; }
+  .exercise-row { display: flex; justify-content: space-between; padding: 8px 0; border-top: 1px solid rgba(255,255,255,0.06); font-size: 13.5px; }
+  .exercise-row:first-of-type { border-top: none; }
+  .exercise-detail { color: #9CA3AF; }
+</style>
+</head>
+<body>
+
+  <div id="top-bar">
+    <button id="back-btn" onclick="window.location.href='scores.html'">‹</button>
+    <h1>Your Regimen \u2014 Hawthorn</h1>
+  </div>
+
+  <div id="content"></div>
+
+<script>
+const RegimenPage = {
+  render() {
+    const content = document.getElementById('content');
+    let regimen;
+    try { regimen = JSON.parse(localStorage.getItem('sh_hawthorn_regimen') || 'null'); }
+    catch (e) { regimen = null; }
+
+    if (!regimen) {
+      content.innerHTML = `
+        <div class="empty-state">
+          <p>Hawthorn builds a real, structured plan from what you told him during Meet the Team \u2014 not a generic template. Genuinely different for a novice than an athlete.</p>
+          <button id="build-btn">Build my regimen</button>
+          <div id="error-note"></div>
+        </div>`;
+      document.getElementById('build-btn').addEventListener('click', RegimenPage.build);
+      return;
+    }
+
+    const daysHtml = regimen.days.map(d => `
+      <div class="day-card">
+        <div class="day-title">${d.day}</div>
+        <div class="day-focus">${d.focus}</div>
+        ${d.exercises.map(e => `<div class="exercise-row"><span>${e.name}</span><span class="exercise-detail">${e.detail}</span></div>`).join('')}
+      </div>`).join('');
+
+    content.innerHTML = `
+      <div class="week-goal">${regimen.weekGoal}</div>
+      ${daysHtml}
+      <button id="build-btn" style="margin-top:8px;">Build a new one</button>
+      <div id="error-note"></div>`;
+    document.getElementById('build-btn').addEventListener('click', () => {
+      localStorage.removeItem('sh_hawthorn_regimen');
+      RegimenPage.render();
+    });
+  },
+
+  async build() {
+    const btn = document.getElementById('build-btn');
+    const err = document.getElementById('error-note');
+    btn.disabled = true;
+    btn.textContent = 'Hawthorn is building it\u2026';
+    err.style.display = 'none';
+
+    let profile;
+    try { profile = JSON.parse(localStorage.getItem('sh_team_profile') || '{}'); }
+    catch (e) { profile = {}; }
+    const activityProfile = profile.activity;
+
+    if (!activityProfile || (!activityProfile.current && !activityProfile.goal)) {
+      err.textContent = 'Hawthorn needs to know your starting point first \u2014 answer his questions in Meet the Team.';
+      err.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = 'Build my regimen';
+      return;
+    }
+
+    let snapshot;
+    try { snapshot = JSON.parse(localStorage.getItem('sh_ring_latest') || '{}'); }
+    catch (e) { snapshot = {}; }
+
+    // Mirrors Scores.computeActivityTrend exactly, kept local so
+    // this page has no dependency on scores.js loading first.
+    const history = (snapshot.activityHistory || []).filter(a => a.totalSteps != null);
+    let trendText = 'No real step trend synced yet \u2014 base this on their stated starting point only, and say so.';
+    if (history.length >= 2) {
+      const sorted = [...history].sort((a, b) => a.date.localeCompare(b.date));
+      const latest = sorted[sorted.length - 1];
+      const prior = sorted.slice(0, -1);
+      const avgPrior = Math.round(prior.reduce((s, a) => s + a.totalSteps, 0) / prior.length);
+      trendText = `Real recent step data: ${latest.totalSteps} steps most recent day, averaging ${avgPrior}/day prior.`;
+    }
+
+    const userMessage = `This person told you, when you first met: "${activityProfile.current || 'not specified'}" is what exercise currently looks like for them, and their goal is: "${activityProfile.goal || 'not specified'}".\n\n${trendText}\n\nBuild a real, structured 3-day-this-week regimen appropriate to their actual stated experience \u2014 genuinely different for a novice than an athlete, not the same plan with adjusted labels. Use real, named, honest bodyweight or simple-equipment exercises \u2014 nothing requiring gear you have no evidence they own. Respond ONLY with valid JSON, no markdown: {"weekGoal": "1-2 sentences on the focus for this week and why, given what they told you", "days": [{"day": "Day 1", "focus": "e.g. Full body", "exercises": [{"name": "exercise name", "detail": "sets/reps or duration, appropriate to their level"}]}, ...2-3 days]}`;
+
+    try {
+      const res = await fetch('/.netlify/functions/claude', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system: 'You are Hawthorn, an exercise coach who builds real training regimens from real data. You are NOT a licensed doctor or physical therapist \u2014 you are a coach. You NEVER diagnose, NEVER claim certainty about outcomes, and you scale difficulty honestly to what the person actually told you about their experience \u2014 a stated novice never gets an athlete\u2019s program with easier-sounding labels slapped on it. You NEVER invent data you weren\u2019t given. Respond with ONLY the requested JSON, nothing else.',
+          messages: [{ role: 'user', content: userMessage }],
+          max_tokens: 500,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Request failed');
+      const text = (data.content?.[0]?.text || '').replace(/```json\s*|```\s*/g, '').trim();
+      const parsed = JSON.parse(text);
+      if (!parsed.weekGoal || !Array.isArray(parsed.days) || !parsed.days.length) throw new Error('Invalid response shape');
+
+      localStorage.setItem('sh_hawthorn_regimen', JSON.stringify({ ...parsed, createdDate: new Date().toISOString().slice(0, 10) }));
+      RegimenPage.render();
+    } catch (e) {
+      err.textContent = 'Couldn\u2019t build a valid regimen right now \u2014 try again.';
+      err.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = 'Build my regimen';
+    }
+  },
+};
+
+RegimenPage.render();
+</script>
+</body>
+</html>
