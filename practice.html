@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<title>Guided Practice with Lotus — myDrSage</title>
+<meta name="theme-color" content="#0A0D14">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #0A0D14; color: #F4F5F7;
+    min-height: 100vh; display: flex; flex-direction: column;
+  }
+  #top-bar { display: flex; align-items: center; gap: 10px; padding: 18px 20px 0; }
+  #back-btn {
+    width: 36px; height: 36px; border-radius: 10px; border: 1px solid #2A3B5E;
+    background: transparent; color: #fff; font-size: 18px; display: flex;
+    align-items: center; justify-content: center;
+  }
+  #top-bar h1 { font-size: 19px; font-weight: 700; }
+
+  #stage { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 30px; text-align: center; }
+
+  #breath-circle {
+    width: 160px; height: 160px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(166,127,196,0.35), rgba(166,127,196,0.08));
+    border: 2px solid rgba(166,127,196,0.5);
+    display: flex; align-items: center; justify-content: center;
+    transition: transform 4s ease-in-out;
+    margin-bottom: 36px;
+  }
+  #breath-circle.inhale { transform: scale(1.35); }
+  #breath-circle.exhale { transform: scale(0.85); }
+  #breath-circle.hold { transform: scale(1.1); }
+
+  #phase-label { font-size: 22px; font-weight: 700; color: #D0AAEE; }
+  #cycle-count { font-size: 13px; color: #6B7280; margin-top: 6px; }
+
+  #instruction-text {
+    font-family: 'Georgia', serif; font-size: 17px; line-height: 1.5; color: #E4E6EA;
+    max-width: 340px; margin-top: 30px; min-height: 60px;
+  }
+
+  #start-btn {
+    width: 100%; max-width: 320px; padding: 16px; border-radius: 14px; border: none;
+    background: #D0AAEE; color: #0A0D14; font-size: 16px; font-weight: 700;
+    font-family: inherit; cursor: pointer; margin-top: 20px;
+  }
+  #start-btn:disabled { opacity: 0.5; }
+
+  #done-note {
+    display: none; font-size: 14px; color: #9CA3AF; margin-top: 24px; max-width: 320px; line-height: 1.5;
+  }
+</style>
+</head>
+<body>
+
+  <div id="top-bar">
+    <button id="back-btn" onclick="window.location.href='scores.html'">‹</button>
+    <h1>Guided Practice \u2014 Lotus</h1>
+  </div>
+
+  <div id="stage">
+    <div id="breath-circle"><div id="phase-inner">
+      <div id="phase-label">Ready</div>
+      <div id="cycle-count"></div>
+    </div></div>
+    <div id="instruction-text">A short box-breathing practice, four counts in, four held, four out, four held. Four rounds, about two minutes. Real-time, led by Lotus.</div>
+    <button id="start-btn">Begin with Lotus</button>
+    <div id="done-note"></div>
+  </div>
+
+<script>
+/* ─────────────────────────────────────────────────────────
+   Real guided practice, not a text suggestion. Box breathing:
+   4s inhale, 4s hold, 4s exhale, 4s hold, x4 cycles. Each phase
+   is narrated live in Lotus's real voice (same TTS pipeline as
+   everywhere else in the app) and synced to the visual circle's
+   CSS transition, which also runs on a 4s timer.
+
+   Deliberately NOT one long pre-rendered audio file \u2014 phases
+   are spoken individually so the visual and audio pacing stay
+   under real, adjustable control rather than hoping a single
+   clip's length happens to match the animation.
+   ───────────────────────────────────────────────────────── */
+
+const Practice = {
+  CYCLES: 4,
+
+  SCRIPT: [
+    { phase: 'intro', label: 'Ready', text: "Let's do this together. Find a comfortable position, and when you're ready, we'll begin.", holdMs: null },
+    { phase: 'inhale', label: 'Breathe in', text: 'Breathe in, slowly, for four.', holdMs: 4000 },
+    { phase: 'hold', label: 'Hold', text: 'Hold.', holdMs: 4000 },
+    { phase: 'exhale', label: 'Breathe out', text: 'And out, for four.', holdMs: 4000 },
+    { phase: 'hold', label: 'Hold', text: 'Hold.', holdMs: 4000 },
+  ],
+
+  CLOSING: "Good. Notice how you feel right now, compared to when we started. That's the whole practice \u2014 small, and repeatable, whenever you need it.",
+
+  running: false,
+
+  async speak(text) {
+    try {
+      const res = await fetch('/.netlify/functions/tts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, voiceKey: 'stress' }), // Lotus's real voice
+      });
+      if (!res.ok) return;
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      audio.addEventListener('ended', () => URL.revokeObjectURL(url));
+      await audio.play();
+    } catch (e) { /* audio is a companion to the visual, never a blocker */ }
+  },
+
+  wait(ms) { return new Promise(resolve => setTimeout(resolve, ms)); },
+
+  setPhase(phase, label) {
+    const circle = document.getElementById('breath-circle');
+    circle.classList.remove('inhale', 'exhale', 'hold');
+    if (phase === 'inhale' || phase === 'exhale' || phase === 'hold') circle.classList.add(phase);
+    document.getElementById('phase-label').textContent = label;
+  },
+
+  async runCycle(cycleNum) {
+    document.getElementById('cycle-count').textContent = `Round ${cycleNum} of ${Practice.CYCLES}`;
+    for (const step of Practice.SCRIPT.slice(1)) { // skip intro, already spoken once
+      if (!Practice.running) return;
+      Practice.setPhase(step.phase, step.label);
+      document.getElementById('instruction-text').textContent = step.text;
+      // Speak and hold run concurrently — the visual timing is the
+      // real pacer; voice is a companion, not a blocking gate, so a
+      // slow network response never desyncs the breathing rhythm.
+      Practice.speak(step.text);
+      await Practice.wait(step.holdMs);
+    }
+  },
+
+  async start() {
+    if (Practice.running) return;
+    Practice.running = true;
+    document.getElementById('start-btn').disabled = true;
+    document.getElementById('start-btn').textContent = 'In progress\u2026';
+    document.getElementById('done-note').style.display = 'none';
+
+    const intro = Practice.SCRIPT[0];
+    document.getElementById('instruction-text').textContent = intro.text;
+    await Practice.speak(intro.text);
+    await Practice.wait(1500);
+
+    for (let i = 1; i <= Practice.CYCLES; i++) {
+      if (!Practice.running) break;
+      await Practice.runCycle(i);
+    }
+
+    if (Practice.running) {
+      Practice.setPhase('intro', 'Done');
+      document.getElementById('instruction-text').textContent = Practice.CLOSING;
+      document.getElementById('cycle-count').textContent = '';
+      await Practice.speak(Practice.CLOSING);
+      document.getElementById('done-note').textContent = 'Come back anytime \u2014 this works best as a repeatable habit, not a one-time fix.';
+      document.getElementById('done-note').style.display = 'block';
+    }
+
+    Practice.running = false;
+    document.getElementById('start-btn').disabled = false;
+    document.getElementById('start-btn').textContent = 'Begin with Lotus';
+  },
+
+  init() {
+    document.getElementById('start-btn').addEventListener('click', Practice.start);
+  },
+};
+
+Practice.init();
+</script>
+</body>
+</html>
