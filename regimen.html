@@ -182,12 +182,36 @@ const Regimen = {
       trendText = `Real recent step data: ${latest.totalSteps} steps most recent day, averaging ${avgPrior}/day prior.`;
     }
 
+    // Real TODAY readiness, not just activity history \u2014 the gap
+    // this closes. A low-recovery week and a high-recovery week
+    // should not produce the same regimen. Uses the same real HRV
+    // and sleep data scores.js already computes from, just read
+    // directly here since this page has no dependency on scores.js
+    // loading first.
+    let readinessText = 'No real recovery/sleep signal available yet \u2014 do not assume either direction.';
+    const hrvHistory = (snapshot.hrvHistory || []).filter(h => h.rmssd != null);
+    const sleep = snapshot.sleep;
+    const readinessParts = [];
+    if (hrvHistory.length >= 2) {
+      const latest = hrvHistory[hrvHistory.length - 1];
+      const prior = hrvHistory.slice(0, -1).map(h => h.rmssd);
+      const avgPrior = prior.reduce((a, b) => a + b, 0) / prior.length;
+      const pctVsBaseline = Math.round(((latest.rmssd - avgPrior) / avgPrior) * 100);
+      readinessParts.push(`Resting-check trend is ${pctVsBaseline > 0 ? '+' : ''}${pctVsBaseline}% vs their own recent baseline`);
+    }
+    if (sleep && sleep.asleepMin) {
+      readinessParts.push(`slept ${Math.round(sleep.asleepMin / 60 * 10) / 10} hrs last night`);
+    }
+    if (readinessParts.length) {
+      readinessText = `Real readiness signal: ${readinessParts.join(', ')}. If this looks like a genuinely low-recovery or short-sleep state, this week should be lighter, not heavier \u2014 if it looks strong, this is a real chance to push. Don't invent certainty either way beyond what's given here.`;
+    }
+
     const prevSummary = Regimen.summarizePrevious();
     const historyText = prevSummary
       ? `Last week's regimen was: "${prevSummary.weekGoal}" \u2014 they completed ${prevSummary.done} of ${prevSummary.total} exercises (${prevSummary.completionPct}%). ${prevSummary.completionPct >= 70 ? 'They largely followed through \u2014 consider a real progression, not a repeat.' : prevSummary.completionPct <= 30 ? 'They struggled to follow it \u2014 this week should be simpler and more achievable, not more ambitious.' : 'Partial follow-through \u2014 keep this week realistic given that.'}`
       : 'This is their first regimen \u2014 no prior week to build on yet.';
 
-    const userMessage = `This person told you, when you first met: "${activityProfile.current || 'not specified'}" is what exercise currently looks like for them, and their goal is: "${activityProfile.goal || 'not specified'}".\n\n${trendText}\n\n${historyText}\n\nBuild a real, structured 3-day regimen for this week, appropriate to their actual stated experience and genuinely responsive to how last week went if there was one. Say it directly \u2014 tell them what to do, don't hedge. Use real, named, honest bodyweight or simple-equipment exercises \u2014 nothing requiring gear you have no evidence they own. Respond ONLY with valid JSON, no markdown: {"weekGoal": "1-2 sentences on this week's focus, stated directly and confidently, referencing last week's real follow-through if there was any", "days": [{"day": "Day 1", "focus": "e.g. Full body", "exercises": [{"name": "exercise name", "detail": "sets/reps or duration, appropriate to their level"}]}, ...2-3 days]}`;
+    const userMessage = `This person told you, when you first met: "${activityProfile.current || 'not specified'}" is what exercise currently looks like for them, and their goal is: "${activityProfile.goal || 'not specified'}".\n\n${trendText}\n\n${readinessText}\n\n${historyText}\n\nBuild a real, structured 3-day regimen for this week, appropriate to their actual stated experience, genuinely responsive to how last week went if there was one, AND genuinely responsive to their real current readiness \u2014 not the same intensity regardless of how their body is actually doing right now. Say it directly \u2014 tell them what to do, don't hedge. Use real, named, honest bodyweight or simple-equipment exercises \u2014 nothing requiring gear you have no evidence they own. Respond ONLY with valid JSON, no markdown: {"weekGoal": "1-2 sentences on this week's focus, stated directly and confidently, referencing last week's real follow-through and today's real readiness if either is available", "days": [{"day": "Day 1", "focus": "e.g. Full body", "exercises": [{"name": "exercise name", "detail": "sets/reps or duration, appropriate to their level"}]}, ...2-3 days]}`;
 
     try {
       const res = await fetch('/.netlify/functions/claude', {
