@@ -418,31 +418,89 @@ const Team = {
     );
   },
 
-  advance() {
+  async advance() {
     const step = Team.currentStep();
     if (!step) return;
 
     if (Team.questionIndexInStep === -1) {
       const next = Team.nextUnansweredQuestionIndex(step, 0);
-      if (next === -1) { Team.nextStep(); return; }
+      if (next === -1) { await Team.nextStep(); return; }
       Team.questionIndexInStep = next;
       Team.renderQuestion();
       return;
     }
 
     const next = Team.nextUnansweredQuestionIndex(step, Team.questionIndexInStep + 1);
-    if (next === -1) { Team.nextStep(); return; }
+    if (next === -1) { await Team.nextStep(); return; }
     Team.questionIndexInStep = next;
     Team.renderQuestion();
   },
 
-  nextStep() {
+  async nextStep() {
+    // Leaving Dr. Sage's opening step is the one moment we know
+    // the real stated goal but haven't yet decided who speaks
+    // next \u2014 reorder the 4 specialists by relevance to it here,
+    // once, before rendering the next intro. Never happens again
+    // for later transitions (stepIndex > 0), and never blocks the
+    // flow if it fails \u2014 falls back to the original order.
+    if (Team.stepIndex === 0) {
+      await Team.reorderSpecialistsByGoal();
+    }
     Team.stepIndex++;
     Team.typedMode = false;
     Team.renderIntro();
   },
 
-  skip() { Team.advance(); },
+  // Real, testable reordering: asks which of the 4 specialists is
+  // most relevant to what this person actually said they want, so
+  // the most relevant voice speaks first instead of a fixed,
+  // goal-blind sequence. Falls back to the original STEPS order
+  // (unchanged) on any failure \u2014 malformed response, missing
+  // goal, network failure \u2014 never leaves the array broken.
+  DEFAULT_SPECIALIST_ORDER: ['sleep', 'stress', 'activity', 'nutrition'],
+
+  async reorderSpecialistsByGoal() {
+    const profile = Team.loadProfile();
+    const goalText = profile?.drSage?.goal;
+    if (!goalText || !goalText.trim()) return; // no goal given, keep default order
+
+    const specialistSteps = Team.STEPS.slice(1, 5);
+    document.getElementById('next-btn').textContent = 'Building your team\u2026';
+
+    try {
+      const res = await fetch('/.netlify/functions/claude', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system: 'You rank which health specialists are most relevant to what someone said they want, so the most relevant voice speaks to them first instead of a random order. Respond with ONLY valid JSON, no markdown.',
+          messages: [{ role: 'user', content: `This person's stated goal: "${goalText.trim()}"\n\nRank these four specialists from most to least relevant to THIS specific goal: sleep (Sleep Coach), stress (Mindfulness Coach), activity (Exercise Coach), nutrition (Nutrition Coach). Respond ONLY with JSON: {"order": ["key1","key2","key3","key4"]} using each of these exact keys exactly once: sleep, stress, activity, nutrition.` }],
+          max_tokens: 100,
+        }),
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      const text = (data.content && data.content[0] && data.content[0].text || '').replace(/```json\s*|```\s*/g, '').trim();
+      const parsed = JSON.parse(text);
+      const validKeys = new Set(Team.DEFAULT_SPECIALIST_ORDER);
+      const order = Array.isArray(parsed.order) ? parsed.order.filter(function(k) { return validKeys.has(k); }) : [];
+      const uniqueOrder = order.filter(function(k, i) { return order.indexOf(k) === i; });
+
+      // Must be a genuine, complete permutation of all 4 \u2014 anything
+      // else (missing a key, duplicates, garbage) is treated as a
+      // failure and the original order is kept, not guessed at.
+      if (uniqueOrder.length !== 4) return;
+
+      const stepsByKey = {};
+      specialistSteps.forEach(function(s) { stepsByKey[s.key] = s; });
+      const reordered = uniqueOrder.map(function(k) { return stepsByKey[k]; });
+      Team.STEPS.splice(1, 4, reordered[0], reordered[1], reordered[2], reordered[3]);
+    } catch (e) {
+      // AI unavailable or malformed response \u2014 keep the original
+      // order, never crash the onboarding flow over this.
+    }
+  },
+
+  skip() { return Team.advance(); },
 
   renderDone() {
     document.getElementById('card-area').style.display = 'none';
