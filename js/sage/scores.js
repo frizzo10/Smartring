@@ -397,7 +397,7 @@ const Scores = {
       : `You never told me what you were here for when we first met \u2014 let's fix that now.`;
 
     container.innerHTML = `
-      <div style="font-size:13.5px; line-height:1.5; margin-bottom:14px;"><strong>Dr. Sage:</strong> Three times now, the resting checks haven't kept up. That's a real pattern, not bad luck. Before this comes back, I want to hear it from you again.</div>
+      <div style="font-size:13.5px; line-height:1.5; margin-bottom:14px;"><strong>Dr. Sage:</strong> ${Scores.getPreferredName() ? Scores.getPreferredName() + ', three' : 'Three'} times now, the resting checks haven't kept up. That's a real pattern, not bad luck. Before this comes back, I want to hear it from you again.</div>
       <div style="font-size:14px; font-style:italic; color:#D0AAEE; margin-bottom:16px; padding:12px; background:rgba(255,255,255,0.05); border-radius:10px;">${reflection}</div>
       <div style="font-size:13px; font-weight:600; margin-bottom:10px;">Is this still true? Say it again, in your own words.</div>
       <button id="affirm-mic-btn" style="width:64px; height:64px; border-radius:50%; border:none; background:#7FC4C9; font-size:22px; margin-bottom:10px; cursor:pointer;">\u{1F3A4}</button>
@@ -518,7 +518,7 @@ const Scores = {
         // clear about WHY, not just that access is paused. Not
         // punitive, not a generic error \u2014 he's the one drawing
         // this line, and he says so.
-        emptyEl.innerHTML = `<strong>Dr. Sage:</strong> Your last resting check was ${result.hoursOld} hours ago \u2014 that's too stale to trust. I don't show you a number I can't stand behind. Take a fresh resting check and this comes right back.`;
+        emptyEl.innerHTML = `<strong>Dr. Sage:</strong> ${Scores.getPreferredName() ? Scores.getPreferredName() + ', your' : 'Your'} last resting check was ${result.hoursOld} hours ago \u2014 that's too stale to trust. I don't show you a number I can't stand behind. Take a fresh resting check and this comes right back.`;
       } else {
         emptyEl.textContent = `Needs a few resting checks over time to learn your personal baseline before Stress can be scored (you have ${result.have}).`;
       }
@@ -838,7 +838,7 @@ const Scores = {
       if (regimens.length) regimenText = `Hawthorn's regimen this week: "${regimens[regimens.length - 1].weekGoal}"`;
     } catch (e) { /* non-critical */ }
 
-    const userMessage = `This person's stated dietary preferences/restrictions: ${restrictions}.\n\n${trendText}\n\n${regimenText}\n\nSuggest 3 real, specific meals that genuinely support what they're working on \u2014 not generic "eat healthy" ideas. Respect their stated restrictions exactly. If Hawthorn's regimen is real, let it inform your choices (e.g. more protein around a strength-focused week). Respond ONLY with valid JSON, no markdown: {"intro": "1 sentence tying these choices to what's actually going on for them", "meals": [{"name": "specific dish name", "ingredients": ["real ingredient", "..."], "note": "one short line \u2014 why this one, or a quick prep note"}, ...3 meals]}`;
+    const userMessage = `This person's stated dietary preferences/restrictions: ${restrictions}.${Scores.getPreferredName(profile) ? `\n\nCall them ${Scores.getPreferredName(profile)} \u2014 that's what they asked to be called.` : ''}\n\n${trendText}\n\n${regimenText}\n\nSuggest 3 real, specific meals that genuinely support what they're working on \u2014 not generic "eat healthy" ideas. Respect their stated restrictions exactly. If Hawthorn's regimen is real, let it inform your choices (e.g. more protein around a strength-focused week). Respond ONLY with valid JSON, no markdown: {"intro": "1 sentence tying these choices to what's actually going on for them", "meals": [{"name": "specific dish name", "ingredients": ["real ingredient", "..."], "note": "one short line \u2014 why this one, or a quick prep note"}, ...3 meals]}`;
 
     try {
       const res = await fetch('/.netlify/functions/claude', {
@@ -1213,6 +1213,15 @@ const Scores = {
     catch (e) { return {}; }
   },
 
+  // Shared across every specialist \u2014 collected once, by Dr. Sage,
+  // during his first onboarding question. Returns null (never a
+  // fabricated default) if it was never answered.
+  getPreferredName(profile) {
+    profile = profile || Scores.loadTeamProfile();
+    const name = profile?.drSage?.preferredName;
+    return (name && name.trim()) ? name.trim() : null;
+  },
+
   // scores.js has only ever READ the team profile until now \u2014
   // completeAffirmation() is the first place it needs to write
   // back, since re-affirming a goal genuinely updates it. Uses
@@ -1255,11 +1264,13 @@ const Scores = {
     const role = Scores.SPECIALIST_ROLES[domain];
     if (!role) return null;
     const profile = Scores.loadTeamProfile();
+    const preferredName = Scores.getPreferredName(profile);
+    const nameBlock = preferredName ? `\n\nCall them ${preferredName} \u2014 that's what they asked to be called.` : '';
     const profileText = Scores.formatProfileAnswers(domain, profile);
     const profileBlock = profileText ? `\n\nWhat they told you about themselves when you first met:\n${profileText}` : '';
     const medicalText = Scores.formatMedicalContext(profile);
     const medicalBlock = medicalText ? `\n\nContext they've shared with Dr. Sage (for awareness only \u2014 use this to inform how careful or attentive your suggestion should be, NEVER to state or imply a diagnosis, risk assessment, or medical conclusion):\n${medicalText}` : '';
-    const userMessage = `Here is this person's real ${role.title.toLowerCase()} data:\n${domainInfo.score != null ? domainInfo.score + '/100 \u2014 ' : ''}${domainInfo.detail}${profileBlock}${medicalBlock}\n\nTheir recent self-logged daily habits:\n${journalBlock}\n\nBased on the real data (and what they've told you about themselves, if anything above), give ONE short specialist observation and ONE small, concrete action for them to do this week. Say it directly \u2014 "do X" or "try X this week," not "you might want to consider." Respond ONLY with valid JSON, no markdown: {"note": "1-2 sentence observation in your voice, referencing the real number(s) above", "suggestedAction": "one small concrete daily action, stated directly"}`;
+    const userMessage = `Here is this person's real ${role.title.toLowerCase()} data:\n${domainInfo.score != null ? domainInfo.score + '/100 \u2014 ' : ''}${domainInfo.detail}${nameBlock}${profileBlock}${medicalBlock}\n\nTheir recent self-logged daily habits:\n${journalBlock}\n\nBased on the real data (and what they've told you about themselves, if anything above), give ONE short specialist observation and ONE small, concrete action for them to do this week. Say it directly \u2014 "do X" or "try X this week," not "you might want to consider." Respond ONLY with valid JSON, no markdown: {"note": "1-2 sentence observation in your voice, referencing the real number(s) above", "suggestedAction": "one small concrete daily action, stated directly"}`;
 
     try {
       const res = await fetch('/.netlify/functions/claude', {
@@ -1325,9 +1336,12 @@ const Scores = {
     const notesBlock = specialistResults.map(s => `${s.role} (${s.domain}): "${s.note}" \u2014 suggests: "${s.suggestedAction}"`).join('\n');
     const validKeys = 'alcohol, caffeine, meditation, lateMeal, screenLate, stressfulDay';
     const validDomains = specialistResults.map(s => s.domain).join(', ');
-    const stated = Scores.formatProfileAnswers('drSage', Scores.loadTeamProfile());
+    const profile = Scores.loadTeamProfile();
+    const preferredName = Scores.getPreferredName(profile);
+    const nameBlock = preferredName ? `\n\nCall them ${preferredName} \u2014 that's what they asked to be called.` : '';
+    const stated = Scores.formatProfileAnswers('drSage', profile);
     const goalBlock = stated ? `\n\nWhat this person told Dr. Sage when they first met (their goal, and any medical or family health context they chose to share \u2014 use the latter only to calibrate attentiveness and referral judgment, NEVER to state a diagnosis or risk assessment):\n${stated}\n` : '';
-    return `Here is real input from this person's specialist care team, each reviewing only their own area of focus:\n\n${notesBlock}\n\nTheir recent self-logged habits:\n${journalBlock}${goalBlock}\n\nAs the coordinating advisor synthesizing this team's input, weave 2-5 of their suggested actions into ONE cohesive 7-day plan (you may lightly adapt wording, but stay true to what each specialist actually suggested \u2014 do not invent a new action for an area not covered above). State each action directly and confidently \u2014 "do X," not "you might try X." Also decide if any area is worth a real referral \u2014 a fuller one-on-one consult with that specialist \u2014 based on your own judgment of what you're seeing, not just a fixed rule. Respond ONLY with valid JSON, no markdown: {"goalText": "1-2 plain sentences tying the team's observations together, stated directly and confidently", "actions": [{"text": "one small concrete daily action, stated directly", "domain": "one of: ${validDomains}", "journalKey": "one of: ${validKeys}, or null"}, ...2-5 actions], "referrals": [{"domain": "one of: ${validDomains}", "reason": "one short sentence on why this specialist is worth a fuller consult"}, ...0-2 referrals, empty array if none warranted]}`;
+    return `Here is real input from this person's specialist care team, each reviewing only their own area of focus:\n\n${notesBlock}\n\nTheir recent self-logged habits:\n${journalBlock}${nameBlock}${goalBlock}\n\nAs the coordinating advisor synthesizing this team's input, weave 2-5 of their suggested actions into ONE cohesive 7-day plan (you may lightly adapt wording, but stay true to what each specialist actually suggested \u2014 do not invent a new action for an area not covered above). State each action directly and confidently \u2014 "do X," not "you might try X." Also decide if any area is worth a real referral \u2014 a fuller one-on-one consult with that specialist \u2014 based on your own judgment of what you're seeing, not just a fixed rule. Respond ONLY with valid JSON, no markdown: {"goalText": "1-2 plain sentences tying the team's observations together, stated directly and confidently", "actions": [{"text": "one small concrete daily action, stated directly", "domain": "one of: ${validDomains}", "journalKey": "one of: ${validKeys}, or null"}, ...2-5 actions], "referrals": [{"domain": "one of: ${validDomains}", "reason": "one short sentence on why this specialist is worth a fuller consult"}, ...0-2 referrals, empty array if none warranted]}`;
   },
 
   parsePlanResponse(text) {
@@ -1549,7 +1563,9 @@ const Scores = {
     const profileBlock = profileText ? `\n\nWhat they told you about themselves when you first met:\n${profileText}` : '';
     const medicalText = Scores.formatMedicalContext(profile);
     const medicalBlock = medicalText ? `\n\nContext they've shared with Dr. Sage (for awareness only \u2014 use only to calibrate how careful your suggestion should be, NEVER to state a diagnosis or risk assessment):\n${medicalText}` : '';
-    const userMessage = `Dr. Sage has referred this person to you for a fuller consult. Your earlier brief note was: "${note.note}" (you'd suggested: "${note.suggestedAction}"). Dr. Sage's reason for referring: ${referral.reasons.join('; ')}${profileBlock}${medicalBlock}\n\nWrite a short, warm, first-person consult (3-5 sentences) as ${role.name}, this person's ${role.title.toLowerCase()} \u2014 more detail and personality than your earlier brief note, but still grounded only in what's already been said above. Be direct about what you want them to do \u2014 say it plainly, don't hedge on the recommendation itself. Do not diagnose. Do not name a medical condition. Do not order any test. Do not claim certainty about the outcome. Respond with plain text only, no JSON, no markdown.`;
+    const preferredName = Scores.getPreferredName(profile);
+    const nameBlock = preferredName ? `\n\nCall them ${preferredName} \u2014 that's what they asked to be called.` : '';
+    const userMessage = `Dr. Sage has referred this person to you for a fuller consult. Your earlier brief note was: "${note.note}" (you'd suggested: "${note.suggestedAction}"). Dr. Sage's reason for referring: ${referral.reasons.join('; ')}${nameBlock}${profileBlock}${medicalBlock}\n\nWrite a short, warm, first-person consult (3-5 sentences) as ${role.name}, this person's ${role.title.toLowerCase()} \u2014 more detail and personality than your earlier brief note, but still grounded only in what's already been said above. Be direct about what you want them to do \u2014 say it plainly, don't hedge on the recommendation itself. Do not diagnose. Do not name a medical condition. Do not order any test. Do not claim certainty about the outcome. Respond with plain text only, no JSON, no markdown.`;
 
     try {
       const res = await fetch('/.netlify/functions/claude', {
@@ -1873,7 +1889,8 @@ const Scores = {
     const welcomeEl = document.getElementById('welcome-back-note');
     if (welcomeEl) {
       if (visitGap) {
-        welcomeEl.textContent = `Dr. Sage: It's been ${visitGap.daysSince} days \u2014 good to have you back. Let's see where things stand.`;
+        const name = Scores.getPreferredName();
+        welcomeEl.textContent = `Dr. Sage: It's been ${visitGap.daysSince} days${name ? ', ' + name : ''} \u2014 good to have you back. Let's see where things stand.`;
         welcomeEl.style.display = 'block';
       } else {
         welcomeEl.style.display = 'none';
