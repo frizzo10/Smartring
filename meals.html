@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<title>Meal Ideas — Basil</title>
+<meta name="theme-color" content="#0A0D14">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #0A0D14; color: #F4F5F7; padding: 0 0 40px;
+  }
+  #top-bar { display: flex; align-items: center; gap: 10px; padding: 18px 20px 0; }
+  #back-btn {
+    width: 36px; height: 36px; border-radius: 10px; border: 1px solid #2A3B5E;
+    background: transparent; color: #fff; font-size: 18px; display: flex;
+    align-items: center; justify-content: center;
+  }
+  #top-bar h1 { font-size: 19px; font-weight: 700; }
+  #content { padding: 20px; }
+
+  .empty-state { background: #131B2E; border: 1px solid rgba(255,255,255,0.08); border-radius: 18px; padding: 22px; text-align: center; }
+  .empty-state p { color: #9CA3AF; font-size: 14px; line-height: 1.5; margin-bottom: 16px; }
+
+  #build-btn {
+    width: 100%; padding: 15px; border-radius: 14px; border: none;
+    background: #9FD49F; color: #0A0D14; font-size: 15px; font-weight: 700;
+    font-family: inherit; cursor: pointer;
+  }
+  #build-btn:disabled { opacity: 0.5; }
+  #error-note { color: #E86A5C; font-size: 13px; margin-top: 12px; display: none; }
+
+  .intro-line {
+    background: linear-gradient(145deg, rgba(111,168,111,0.16), rgba(111,168,111,0.04));
+    border: 1px solid rgba(111,168,111,0.3); border-radius: 18px; padding: 20px; margin-bottom: 16px;
+    font-size: 15px; line-height: 1.5;
+  }
+  .meal-card { background: #131B2E; border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 18px; margin-bottom: 12px; }
+  .meal-name { font-weight: 700; font-size: 15.5px; color: #9FD49F; margin-bottom: 8px; }
+  .meal-ingredients { font-size: 13px; color: #E4E6EA; margin-bottom: 8px; }
+  .meal-note { font-size: 12.5px; color: #9CA3AF; font-style: italic; }
+
+  .fern-link {
+    display: block; text-align: center; margin-top: 18px; padding: 13px;
+    border-radius: 12px; border: 1px solid rgba(255,255,255,0.18);
+    color: #fff; text-decoration: none; font-size: 13.5px; font-weight: 600;
+  }
+</style>
+</head>
+<body>
+
+  <div id="top-bar">
+    <button id="back-btn" onclick="window.location.href='scores.html'">‹</button>
+    <h1>Meal Ideas \u2014 Basil</h1>
+  </div>
+
+  <div id="content"></div>
+
+<script>
+const Meals = {
+  render() {
+    const content = document.getElementById('content');
+    let ideas;
+    try { ideas = JSON.parse(localStorage.getItem('sh_meal_ideas') || 'null'); }
+    catch (e) { ideas = null; }
+
+    if (!ideas) {
+      content.innerHTML = `
+        <div class="empty-state">
+          <p>Real meal ideas from Basil \u2014 tailored to what you told him you eat, your real logged nutrition trend, and what Hawthorn's regimen is asking of you this week, if you have one. Not a full meal plan \u2014 for that, Fern AI does the whole job.</p>
+          <button id="build-btn">Get meal ideas</button>
+          <div id="error-note"></div>
+        </div>
+        <a class="fern-link" href="https://app.clickpickandcook.com" target="_blank" rel="noopener">Plan your full week in Fern AI \u2192</a>`;
+      document.getElementById('build-btn').addEventListener('click', Meals.build);
+      return;
+    }
+
+    const mealsHtml = ideas.meals.map(m => `
+      <div class="meal-card">
+        <div class="meal-name">${m.name}</div>
+        <div class="meal-ingredients">${m.ingredients.join(', ')}</div>
+        <div class="meal-note">${m.note}</div>
+      </div>`).join('');
+
+    content.innerHTML = `
+      <div class="intro-line">${ideas.intro}</div>
+      ${mealsHtml}
+      <button id="build-btn" style="margin-top:8px;">Get new ideas</button>
+      <div id="error-note"></div>
+      <a class="fern-link" href="https://app.clickpickandcook.com" target="_blank" rel="noopener">Plan your full week in Fern AI \u2192</a>`;
+    document.getElementById('build-btn').addEventListener('click', Meals.build);
+  },
+
+  async build() {
+    const btn = document.getElementById('build-btn');
+    const err = document.getElementById('error-note');
+    btn.disabled = true;
+    btn.textContent = 'Basil is thinking\u2026';
+    err.style.display = 'none';
+
+    let profile;
+    try { profile = JSON.parse(localStorage.getItem('sh_team_profile') || '{}'); }
+    catch (e) { profile = {}; }
+    const restrictions = profile.nutrition?.restrictions || 'none specified';
+
+    let nutritionLog;
+    try { nutritionLog = JSON.parse(localStorage.getItem('sh_nutrition_log') || '{}'); }
+    catch (e) { nutritionLog = {}; }
+    const days = Object.keys(nutritionLog).sort().slice(-7).map(d => nutritionLog[d]).filter(d => d.calories != null);
+    let trendText = 'No real nutrition trend logged yet \u2014 base this on their stated preferences only.';
+    if (days.length > 1) {
+      const avg = (key) => Math.round(days.reduce((s, d) => s + (d[key] || 0), 0) / days.length);
+      trendText = `Their real logged average: ~${avg('calories')} cal, ${avg('protein')}g protein, ${avg('carbs')}g carbs, ${avg('fat')}g fat per day.`;
+    }
+
+    let regimenText = 'No current exercise regimen from Hawthorn to coordinate with.';
+    try {
+      const regimens = JSON.parse(localStorage.getItem('sh_hawthorn_regimens') || '[]');
+      if (regimens.length) regimenText = `Hawthorn's regimen this week: "${regimens[regimens.length - 1].weekGoal}"`;
+    } catch (e) { /* non-critical */ }
+
+    const userMessage = `This person's stated dietary preferences/restrictions: ${restrictions}.\n\n${trendText}\n\n${regimenText}\n\nSuggest 3 real, specific meals that genuinely support what they're working on \u2014 not generic "eat healthy" ideas. Respect their stated restrictions exactly. If Hawthorn's regimen is real, let it inform your choices. Respond ONLY with valid JSON, no markdown: {"intro": "1 sentence tying these choices to what's actually going on for them", "meals": [{"name": "specific dish name", "ingredients": ["real ingredient", "..."], "note": "one short line"}, ...3 meals]}`;
+
+    try {
+      const res = await fetch('/.netlify/functions/claude', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system: 'You are Basil, a nutrition coach focused on helping people eat better. Be direct and specific \u2014 real dish names and real ingredients, not vague categories. You are NOT a licensed dietitian \u2014 you are a coach. You NEVER diagnose, NEVER claim a meal will produce a specific health outcome, and you ALWAYS respect stated dietary restrictions exactly. You NEVER invent data you weren\u2019t given. Respond with ONLY the requested JSON, nothing else.',
+          messages: [{ role: 'user', content: userMessage }],
+          max_tokens: 500,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Request failed');
+      const text = (data.content?.[0]?.text || '').replace(/```json\s*|```\s*/g, '').trim();
+      const parsed = JSON.parse(text);
+      if (!Array.isArray(parsed.meals) || !parsed.meals.length) throw new Error('Invalid response shape');
+
+      localStorage.setItem('sh_meal_ideas', JSON.stringify({ ...parsed, createdDate: new Date().toISOString().slice(0, 10) }));
+      Meals.render();
+    } catch (e) {
+      err.textContent = 'Couldn\u2019t come up with meal ideas right now \u2014 try again.';
+      err.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = 'Get meal ideas';
+    }
+  },
+};
+
+Meals.render();
+</script>
+</body>
+</html>
