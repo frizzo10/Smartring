@@ -39,9 +39,21 @@
   .day-card { background: #131B2E; border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 18px; margin-bottom: 12px; }
   .day-title { font-weight: 700; font-size: 15px; color: #F2A579; }
   .day-focus { font-size: 12.5px; color: #9CA3AF; margin-bottom: 12px; }
-  .exercise-row { display: flex; justify-content: space-between; padding: 8px 0; border-top: 1px solid rgba(255,255,255,0.06); font-size: 13.5px; }
+  .exercise-row {
+    display: flex; align-items: center; gap: 10px; padding: 10px 0;
+    border-top: 1px solid rgba(255,255,255,0.06); font-size: 13.5px; cursor: pointer;
+  }
   .exercise-row:first-of-type { border-top: none; }
+  .exercise-check {
+    width: 20px; height: 20px; border-radius: 6px; border: 1.5px solid rgba(255,255,255,0.35);
+    flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 12px;
+  }
+  .exercise-row.done .exercise-check { background: #6FCF97; border-color: #6FCF97; color: #0A0D14; }
+  .exercise-row.done .exercise-name { text-decoration: line-through; opacity: 0.6; }
+  .exercise-name { flex: 1; }
   .exercise-detail { color: #9CA3AF; }
+
+  .completion-banner { text-align: center; font-size: 13px; color: #9CA3AF; margin: 4px 0 16px; }
 </style>
 </head>
 <body>
@@ -54,12 +66,48 @@
   <div id="content"></div>
 
 <script>
-const RegimenPage = {
+const Regimen = {
+  KEY: 'sh_hawthorn_regimens',
+
+  loadHistory() {
+    try { return JSON.parse(localStorage.getItem(Regimen.KEY) || '[]'); }
+    catch (e) { return []; }
+  },
+
+  saveHistory(history) {
+    try { localStorage.setItem(Regimen.KEY, JSON.stringify(history)); }
+    catch (e) { /* non-critical */ }
+  },
+
+  current() {
+    const history = Regimen.loadHistory();
+    return history.length ? history[history.length - 1] : null;
+  },
+
+  summarizePrevious() {
+    const history = Regimen.loadHistory();
+    if (!history.length) return null;
+    const prev = history[history.length - 1];
+    let total = 0, done = 0;
+    prev.days.forEach(d => d.exercises.forEach(e => { total++; if (e.done) done++; }));
+    const pct = total ? Math.round((done / total) * 100) : 0;
+    return { weekGoal: prev.weekGoal, completionPct: pct, done, total, createdDate: prev.createdDate };
+  },
+
+  toggleExercise(dayIdx, exIdx) {
+    const history = Regimen.loadHistory();
+    if (!history.length) return;
+    const current = history[history.length - 1];
+    const ex = current.days[dayIdx]?.exercises[exIdx];
+    if (!ex) return;
+    ex.done = !ex.done;
+    Regimen.saveHistory(history);
+    Regimen.render();
+  },
+
   render() {
     const content = document.getElementById('content');
-    let regimen;
-    try { regimen = JSON.parse(localStorage.getItem('sh_hawthorn_regimen') || 'null'); }
-    catch (e) { regimen = null; }
+    const regimen = Regimen.current();
 
     if (!regimen) {
       content.innerHTML = `
@@ -68,26 +116,36 @@ const RegimenPage = {
           <button id="build-btn">Build my regimen</button>
           <div id="error-note"></div>
         </div>`;
-      document.getElementById('build-btn').addEventListener('click', RegimenPage.build);
+      document.getElementById('build-btn').addEventListener('click', Regimen.build);
       return;
     }
 
-    const daysHtml = regimen.days.map(d => `
+    let total = 0, done = 0;
+    regimen.days.forEach(d => d.exercises.forEach(e => { total++; if (e.done) done++; }));
+
+    const daysHtml = regimen.days.map((d, dayIdx) => `
       <div class="day-card">
         <div class="day-title">${d.day}</div>
         <div class="day-focus">${d.focus}</div>
-        ${d.exercises.map(e => `<div class="exercise-row"><span>${e.name}</span><span class="exercise-detail">${e.detail}</span></div>`).join('')}
+        ${d.exercises.map((e, exIdx) => `
+          <div class="exercise-row ${e.done ? 'done' : ''}" data-day="${dayIdx}" data-ex="${exIdx}">
+            <span class="exercise-check">${e.done ? '\u2713' : ''}</span>
+            <span class="exercise-name">${e.name}</span>
+            <span class="exercise-detail">${e.detail}</span>
+          </div>`).join('')}
       </div>`).join('');
 
     content.innerHTML = `
       <div class="week-goal">${regimen.weekGoal}</div>
+      <div class="completion-banner">${done} of ${total} done this week</div>
       ${daysHtml}
-      <button id="build-btn" style="margin-top:8px;">Build a new one</button>
+      <button id="build-btn" style="margin-top:8px;">Build next week's regimen</button>
       <div id="error-note"></div>`;
-    document.getElementById('build-btn').addEventListener('click', () => {
-      localStorage.removeItem('sh_hawthorn_regimen');
-      RegimenPage.render();
+
+    content.querySelectorAll('.exercise-row').forEach(el => {
+      el.addEventListener('click', () => Regimen.toggleExercise(Number(el.dataset.day), Number(el.dataset.ex)));
     });
+    document.getElementById('build-btn').addEventListener('click', Regimen.build);
   },
 
   async build() {
@@ -114,26 +172,29 @@ const RegimenPage = {
     try { snapshot = JSON.parse(localStorage.getItem('sh_ring_latest') || '{}'); }
     catch (e) { snapshot = {}; }
 
-    // Mirrors Scores.computeActivityTrend exactly, kept local so
-    // this page has no dependency on scores.js loading first.
-    const history = (snapshot.activityHistory || []).filter(a => a.totalSteps != null);
+    const activityHist = (snapshot.activityHistory || []).filter(a => a.totalSteps != null);
     let trendText = 'No real step trend synced yet \u2014 base this on their stated starting point only, and say so.';
-    if (history.length >= 2) {
-      const sorted = [...history].sort((a, b) => a.date.localeCompare(b.date));
+    if (activityHist.length >= 2) {
+      const sorted = [...activityHist].sort((a, b) => a.date.localeCompare(b.date));
       const latest = sorted[sorted.length - 1];
       const prior = sorted.slice(0, -1);
       const avgPrior = Math.round(prior.reduce((s, a) => s + a.totalSteps, 0) / prior.length);
       trendText = `Real recent step data: ${latest.totalSteps} steps most recent day, averaging ${avgPrior}/day prior.`;
     }
 
-    const userMessage = `This person told you, when you first met: "${activityProfile.current || 'not specified'}" is what exercise currently looks like for them, and their goal is: "${activityProfile.goal || 'not specified'}".\n\n${trendText}\n\nBuild a real, structured 3-day-this-week regimen appropriate to their actual stated experience \u2014 genuinely different for a novice than an athlete, not the same plan with adjusted labels. Use real, named, honest bodyweight or simple-equipment exercises \u2014 nothing requiring gear you have no evidence they own. Respond ONLY with valid JSON, no markdown: {"weekGoal": "1-2 sentences on the focus for this week and why, given what they told you", "days": [{"day": "Day 1", "focus": "e.g. Full body", "exercises": [{"name": "exercise name", "detail": "sets/reps or duration, appropriate to their level"}]}, ...2-3 days]}`;
+    const prevSummary = Regimen.summarizePrevious();
+    const historyText = prevSummary
+      ? `Last week's regimen was: "${prevSummary.weekGoal}" \u2014 they completed ${prevSummary.done} of ${prevSummary.total} exercises (${prevSummary.completionPct}%). ${prevSummary.completionPct >= 70 ? 'They largely followed through \u2014 consider a real progression, not a repeat.' : prevSummary.completionPct <= 30 ? 'They struggled to follow it \u2014 this week should be simpler and more achievable, not more ambitious.' : 'Partial follow-through \u2014 keep this week realistic given that.'}`
+      : 'This is their first regimen \u2014 no prior week to build on yet.';
+
+    const userMessage = `This person told you, when you first met: "${activityProfile.current || 'not specified'}" is what exercise currently looks like for them, and their goal is: "${activityProfile.goal || 'not specified'}".\n\n${trendText}\n\n${historyText}\n\nBuild a real, structured 3-day regimen for this week, appropriate to their actual stated experience and genuinely responsive to how last week went if there was one. Say it directly \u2014 tell them what to do, don't hedge. Use real, named, honest bodyweight or simple-equipment exercises \u2014 nothing requiring gear you have no evidence they own. Respond ONLY with valid JSON, no markdown: {"weekGoal": "1-2 sentences on this week's focus, stated directly and confidently, referencing last week's real follow-through if there was any", "days": [{"day": "Day 1", "focus": "e.g. Full body", "exercises": [{"name": "exercise name", "detail": "sets/reps or duration, appropriate to their level"}]}, ...2-3 days]}`;
 
     try {
       const res = await fetch('/.netlify/functions/claude', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          system: 'You are Hawthorn, an exercise coach who builds real training regimens from real data. Be direct and confident \u2014 tell them what to do, don\u2019t hedge on the plan itself. You are NOT a licensed doctor or physical therapist \u2014 you are a coach. You NEVER diagnose, NEVER claim certainty about outcomes, and you scale difficulty honestly to what the person actually told you about their experience \u2014 a stated novice never gets an athlete\u2019s program with easier-sounding labels slapped on it. You NEVER invent data you weren\u2019t given. Respond with ONLY the requested JSON, nothing else.',
+          system: 'You are Hawthorn, an exercise coach who builds real training regimens from real data. Be direct and confident \u2014 tell them what to do, don\u2019t hedge on the plan itself. You are NOT a licensed doctor or physical therapist \u2014 you are a coach. You NEVER diagnose, NEVER claim certainty about outcomes, and you scale difficulty honestly to what the person actually told you about their experience \u2014 a stated novice never gets an athlete\u2019s program with easier-sounding labels slapped on it. If given real data about how last week went, you genuinely adjust \u2014 progress it if they followed through, simplify it if they didn\u2019t, rather than repeating the same plan regardless. You NEVER invent data you weren\u2019t given. Respond with ONLY the requested JSON, nothing else.',
           messages: [{ role: 'user', content: userMessage }],
           max_tokens: 500,
         }),
@@ -144,8 +205,18 @@ const RegimenPage = {
       const parsed = JSON.parse(text);
       if (!parsed.weekGoal || !Array.isArray(parsed.days) || !parsed.days.length) throw new Error('Invalid response shape');
 
-      localStorage.setItem('sh_hawthorn_regimen', JSON.stringify({ ...parsed, createdDate: new Date().toISOString().slice(0, 10) }));
-      RegimenPage.render();
+      const newRegimen = {
+        weekGoal: parsed.weekGoal,
+        days: parsed.days.map(d => ({
+          day: d.day, focus: d.focus,
+          exercises: (d.exercises || []).map(e => ({ name: e.name, detail: e.detail, done: false })),
+        })),
+        createdDate: new Date().toISOString().slice(0, 10),
+      };
+      const history = Regimen.loadHistory();
+      history.push(newRegimen);
+      Regimen.saveHistory(history.slice(-10));
+      Regimen.render();
     } catch (e) {
       err.textContent = 'Couldn\u2019t build a valid regimen right now \u2014 try again.';
       err.style.display = 'block';
@@ -155,7 +226,7 @@ const RegimenPage = {
   },
 };
 
-RegimenPage.render();
+Regimen.render();
 </script>
 </body>
 </html>
