@@ -89,7 +89,7 @@ const Practice = {
   CYCLES: 4,
 
   SCRIPT: [
-    { phase: 'intro', label: 'Ready', text: "Let's do this together. Find a comfortable position, and when you're ready, we'll begin.", holdMs: null },
+    { phase: 'intro', label: 'Ready', text: "{greeting}Let's do this together. Find a comfortable position, and when you're ready, we'll begin.", holdMs: null },
     { phase: 'inhale', label: 'Breathe in', text: 'Breathe in, slowly, for four.', holdMs: 4000 },
     { phase: 'hold', label: 'Hold', text: 'Hold.', holdMs: 4000 },
     { phase: 'exhale', label: 'Breathe out', text: 'And out, for four.', holdMs: 4000 },
@@ -139,6 +139,15 @@ const Practice = {
     }
   },
 
+  personalize(text) {
+    let profile;
+    try { profile = JSON.parse(localStorage.getItem('sh_team_profile') || '{}'); }
+    catch (e) { profile = {}; }
+    const name = profile?.drSage?.preferredName;
+    const greeting = name && name.trim() ? name.trim() + ', ' : '';
+    return text.replace('{greeting}', greeting);
+  },
+
   async start() {
     if (Practice.running) return;
     Practice.running = true;
@@ -147,8 +156,9 @@ const Practice = {
     document.getElementById('done-note').style.display = 'none';
 
     const intro = Practice.SCRIPT[0];
-    document.getElementById('instruction-text').textContent = intro.text;
-    await Practice.speak(intro.text);
+    const personalizedIntro = Practice.personalize(intro.text);
+    document.getElementById('instruction-text').textContent = personalizedIntro;
+    await Practice.speak(personalizedIntro);
     await Practice.wait(1500);
 
     for (let i = 1; i <= Practice.CYCLES; i++) {
