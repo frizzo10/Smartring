@@ -329,6 +329,120 @@ const Scores = {
   // it's actively misleading, so it doesn't get shown at all.
   // Built generally so any future metric requiring periodic
   // recalibration (not just Stress) can use the same gate.
+  // ── STRIKES & THE AFFIRMATION GATE ─────────────────────────
+  // Three real misses is a genuine signal the current rhythm
+  // isn't working \u2014 that deserves something different from the
+  // same nudge repeated a fourth time. Deliberately NOT a verdict
+  // on the person ("you're not serious") \u2014 shame-based
+  // accountability measurably reduces follow-through in real
+  // behavior-change research, which matters directly for a
+  // product whose users have often already been burned by exactly
+  // that kind of framing elsewhere. Instead: Dr. Sage reflects
+  // their own original stated goal back and asks them to affirm
+  // it again \u2014 a real recommitment, not a punitive hurdle.
+  STRIKES_KEY: 'sh_calibration_strikes',
+
+  loadStrikes() {
+    try { return JSON.parse(localStorage.getItem(Scores.STRIKES_KEY) || '[]'); }
+    catch (e) { return []; }
+  },
+
+  saveStrikes(strikes) {
+    try { localStorage.setItem(Scores.STRIKES_KEY, JSON.stringify(strikes)); }
+    catch (e) { /* non-critical */ }
+  },
+
+  // Deduped per calendar day \u2014 viewing a stale card five times
+  // in one day is one strike, not five. Returns the updated count.
+  recordCalibrationStrike() {
+    const strikes = Scores.loadStrikes();
+    const today = Scores.todayKey();
+    if (!strikes.includes(today)) {
+      strikes.push(today);
+      Scores.saveStrikes(strikes);
+    }
+    return strikes.length;
+  },
+
+  isLocked() {
+    return Scores.loadStrikes().length >= 3;
+  },
+
+  // The real reset \u2014 clears strikes and updates their stored
+  // goal with whatever they just affirmed (their own words, not
+  // Dr. Sage's), so the affirmation is genuinely fresh, not
+  // decorative.
+  completeAffirmation(newGoalText) {
+    const profile = Scores.loadTeamProfile();
+    profile.drSage = profile.drSage || {};
+    profile.drSage.goal = newGoalText;
+    Scores.saveTeamProfile(profile);
+    Scores.saveStrikes([]);
+  },
+
+  // Builds and wires the actual affirmation UI. Reflects the
+  // person's own original words back \u2014 not a fresh question,
+  // not Dr. Sage's words \u2014 theirs. Voice-first with a typed
+  // fallback, matching the same pattern established in Meet the
+  // Team, since this is meant to feel like a real moment, not a
+  // form field.
+  renderAffirmationGate() {
+    const container = document.getElementById('stress-locked-block');
+    if (!container) return;
+    const profile = Scores.loadTeamProfile();
+    const originalGoal = profile?.drSage?.goal;
+
+    const reflection = originalGoal
+      ? `When we first met, you told me: "${originalGoal}"`
+      : `You never told me what you were here for when we first met \u2014 let's fix that now.`;
+
+    container.innerHTML = `
+      <div style="font-size:13.5px; line-height:1.5; margin-bottom:14px;"><strong>Dr. Sage:</strong> Three times now, the resting checks haven't kept up. That's a real pattern, not bad luck. Before this comes back, I want to hear it from you again.</div>
+      <div style="font-size:14px; font-style:italic; color:#D0AAEE; margin-bottom:16px; padding:12px; background:rgba(255,255,255,0.05); border-radius:10px;">${reflection}</div>
+      <div style="font-size:13px; font-weight:600; margin-bottom:10px;">Is this still true? Say it again, in your own words.</div>
+      <button id="affirm-mic-btn" style="width:64px; height:64px; border-radius:50%; border:none; background:#7FC4C9; font-size:22px; margin-bottom:10px; cursor:pointer;">\u{1F3A4}</button>
+      <div id="affirm-status" style="font-size:12px; color:#6B7280; margin-bottom:10px;">Tap to speak, or type below</div>
+      <textarea id="affirm-text" placeholder="Type your answer\u2026" style="width:100%; min-height:60px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.14); border-radius:10px; padding:10px; color:#fff; font-family:inherit; font-size:13px; margin-bottom:12px;"></textarea>
+      <button id="affirm-submit-btn" class="trend-btn" disabled>Affirm and continue</button>
+    `;
+
+    const textArea = document.getElementById('affirm-text');
+    const submitBtn = document.getElementById('affirm-submit-btn');
+    textArea.addEventListener('input', () => { submitBtn.disabled = !textArea.value.trim(); });
+
+    const micBtn = document.getElementById('affirm-mic-btn');
+    const statusEl = document.getElementById('affirm-status');
+    const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRec) {
+      micBtn.addEventListener('click', () => {
+        statusEl.textContent = 'Listening\u2026';
+        const rec = new SpeechRec();
+        rec.continuous = false;
+        rec.interimResults = false;
+        rec.lang = 'en-US';
+        rec.onresult = (e) => {
+          const transcript = e.results[0][0].transcript;
+          textArea.value = transcript;
+          submitBtn.disabled = false;
+          statusEl.textContent = 'Got it';
+        };
+        rec.onerror = () => { statusEl.textContent = 'Didn\u2019t catch that \u2014 try typing instead'; };
+        rec.start();
+      });
+    } else {
+      micBtn.disabled = true;
+      statusEl.textContent = 'Voice not available \u2014 type below';
+    }
+
+    submitBtn.addEventListener('click', () => {
+      const value = textArea.value.trim();
+      if (!value) return;
+      Scores.completeAffirmation(value);
+      const snapshot = Scores.loadSnapshot() || {};
+      Scores.renderStress(snapshot);
+    });
+  },
+
   checkCalibrationFreshness(recordedAt, maxAgeHours = 48) {
     if (!recordedAt) return { fresh: false, hoursOld: null };
     const hoursOld = (Date.now() - new Date(recordedAt).getTime()) / 3600000;
@@ -343,13 +457,13 @@ const Scores = {
 
     const latest = hrvHistory[hrvHistory.length - 1];
 
-    // Enough history existing isn't enough \u2014 the most recent
-    // reading itself has to be genuinely recent, or the score
-    // doesn't show. This is the gate; renderStress() surfaces it
-    // in Dr. Sage's own voice, not a generic empty-state.
     const freshness = Scores.checkCalibrationFreshness(latest.recordedAt, 48);
     if (!freshness.fresh) {
-      return { ok: false, stale: true, hoursOld: freshness.hoursOld };
+      const strikeCount = Scores.recordCalibrationStrike();
+      if (strikeCount >= 3) {
+        return { ok: false, stale: true, locked: true, hoursOld: freshness.hoursOld, strikeCount };
+      }
+      return { ok: false, stale: true, hoursOld: freshness.hoursOld, strikeCount };
     }
 
     const prior = hrvHistory.slice(0, -1).map(h => h.rmssd);
@@ -390,6 +504,15 @@ const Scores = {
     const dateEl = document.getElementById('stress-date');
 
     if (!result.ok) {
+      const lockedEl = document.getElementById('stress-locked-block');
+      if (result.locked) {
+        emptyEl.style.display = 'none';
+        bodyEl.style.display = 'none';
+        dateEl.textContent = '--';
+        if (lockedEl) { lockedEl.style.display = 'block'; Scores.renderAffirmationGate(); }
+        return;
+      }
+      if (lockedEl) lockedEl.style.display = 'none';
       if (result.stale) {
         // Dr. Sage's protocol, in his voice \u2014 firm, direct, and
         // clear about WHY, not just that access is paused. Not
@@ -404,6 +527,8 @@ const Scores = {
       dateEl.textContent = '--';
       return;
     }
+    const lockedElOk = document.getElementById('stress-locked-block');
+    if (lockedElOk) lockedElOk.style.display = 'none';
 
     emptyEl.style.display = 'none';
     bodyEl.style.display = 'flex';
@@ -1086,6 +1211,15 @@ const Scores = {
   loadTeamProfile() {
     try { return JSON.parse(localStorage.getItem(Scores.PROFILE_KEY) || '{}'); }
     catch (e) { return {}; }
+  },
+
+  // scores.js has only ever READ the team profile until now \u2014
+  // completeAffirmation() is the first place it needs to write
+  // back, since re-affirming a goal genuinely updates it. Uses
+  // the exact same storage key team.html itself writes to.
+  saveTeamProfile(profile) {
+    try { localStorage.setItem(Scores.PROFILE_KEY, JSON.stringify(profile)); }
+    catch (e) { /* non-critical */ }
   },
 
   // Turns one specialist's saved answers into a short readable
