@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>myDrSage — AI Test Console</title>
+<title>myDrSage — Talk to the Team</title>
 <meta name="theme-color" content="#0A0D14">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -15,307 +15,130 @@
   #top-bar h1 { font-size: 20px; font-weight: 700; }
   #top-bar p { font-size: 13px; color: #9CA3AF; margin-top: 4px; }
 
-  .section { padding: 22px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); }
-  .section h2 { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
-  .section .sub { font-size: 12.5px; color: #6B7280; margin-bottom: 16px; }
+  .row { padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+  .row-head { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+  .avatar { width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px; color: #fff; }
+  .row-head .name { font-size: 15px; font-weight: 700; }
+  .row-head .role { font-size: 12px; color: #6B7280; }
 
-  .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   .btn {
-    background: #131B2E; border: 1px solid rgba(255,255,255,0.14); border-radius: 10px;
-    padding: 12px; color: #fff; font-family: inherit; font-size: 12.5px; font-weight: 600;
-    cursor: pointer; text-align: left;
+    background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.16); border-radius: 10px;
+    padding: 11px 16px; color: #fff; font-family: inherit; font-size: 13px; font-weight: 700;
+    cursor: pointer; margin-left: auto;
   }
-  .btn.accent { background: rgba(127,196,201,0.16); border-color: rgba(127,196,201,0.4); }
-  .btn.danger { background: rgba(232,106,92,0.12); border-color: rgba(232,106,92,0.35); }
-  .btn.wide { grid-column: 1 / -1; }
   .btn:disabled { opacity: 0.5; }
 
-  .strike-row { display: flex; gap: 6px; margin-top: 8px; }
-  .strike-row .btn { flex: 1; text-align: center; }
-
-  #status-bar {
-    position: sticky; top: 0; z-index: 10; background: rgba(10,13,20,0.95); backdrop-filter: blur(10px);
-    padding: 10px 20px; font-size: 12px; color: #7FC4C9; border-bottom: 1px solid rgba(127,196,201,0.2);
-    display: none;
+  .result {
+    display: none; margin-top: 12px; background: rgba(255,255,255,0.04); border-radius: 12px;
+    padding: 14px; font-size: 14px; line-height: 1.6;
   }
-
-  .result-block { margin-top: 12px; background: #0E1420; border-radius: 10px; overflow: hidden; }
-  .result-block summary {
-    padding: 10px 12px; font-size: 12px; font-weight: 700; cursor: pointer;
-    background: rgba(255,255,255,0.04); color: #9CA3AF;
-  }
-  .result-block pre {
-    padding: 12px; font-size: 11.5px; line-height: 1.5; white-space: pre-wrap; word-break: break-word;
-    color: #E4E6EA; max-height: 400px; overflow-y: auto;
-  }
-  .result-block .label { color: #7FC4C9; font-weight: 700; }
-
-  .quick-state { font-size: 12px; color: #9CA3AF; margin-top: 10px; padding: 10px; background: rgba(255,255,255,0.03); border-radius: 8px; }
+  .result .note { margin-bottom: 8px; }
+  .result .action { color: #7FC4C9; font-weight: 600; }
+  .day-block { margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+  .day-block:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+  .day-title { font-weight: 700; font-size: 13px; margin-bottom: 4px; }
+  .ex-row { font-size: 13px; color: #E4E6EA; display: flex; justify-content: space-between; padding: 3px 0; }
+  .ex-row span:last-child { color: #9CA3AF; }
+  .meal-block { margin-bottom: 10px; }
+  .meal-name { font-weight: 700; font-size: 13.5px; color: #9FD49F; }
+  .meal-ing { font-size: 12.5px; color: #9CA3AF; margin-top: 2px; }
 </style>
 </head>
 <body>
 
   <div id="top-bar">
-    <h1>🧪 AI Test Console</h1>
-    <p>Not user-facing. Seed realistic data to unlock every real page instantly, or trigger any AI call directly and see exactly what it sends and gets back.</p>
+    <h1>Talk to the Team</h1>
+    <p>Internal only. Tap a button, get the real thing they'd actually say \u2014 no setup.</p>
   </div>
 
-  <div id="status-bar"></div>
-
-  <div class="section">
-    <h2>1 — Seed a full test identity</h2>
-    <div class="sub">Populates a realistic onboarding profile — name, goal, and every specialist's answers — so every real page (scores.html, regimen.html, meals.html, team.html) behaves as if onboarding actually happened.</div>
-    <div class="btn-grid">
-      <button class="btn accent wide" onclick="Console.seedProfile('weightloss')">Seed: Weight-loss goal (Basil-priority)</button>
-      <button class="btn accent wide" onclick="Console.seedProfile('sleep')">Seed: Sleep goal (Willow-priority)</button>
-      <button class="btn wide" onclick="Console.clearKey('sh_team_profile')">Clear profile</button>
+  <div class="row">
+    <div class="row-head">
+      <div class="avatar" style="background:linear-gradient(145deg,#5FA5AA,#2F5C60);">DS</div>
+      <div><div class="name">Dr. Sage</div><div class="role">Full 7-day plan (runs the whole team first)</div></div>
+      <button class="btn" onclick="Team.runSynthesis(this)">Build my plan</button>
     </div>
+    <div class="result" id="result-synthesis"></div>
   </div>
 
-  <div class="section">
-    <h2>2 — Seed ring data</h2>
-    <div class="sub">Fake but internally-consistent HRV history, sleep, and step data — enough to satisfy every real threshold (Stress needs 3+ readings, etc.) without a real ring.</div>
-    <div class="btn-grid">
-      <button class="btn accent wide" onclick="Console.seedRingData('good')">Seed: Strong week (good recovery, consistent sleep)</button>
-      <button class="btn accent wide" onclick="Console.seedRingData('poor')">Seed: Rough week (low recovery, short sleep)</button>
-      <button class="btn wide" onclick="Console.clearKey('sh_ring_latest')">Clear ring data</button>
+  <div class="row">
+    <div class="row-head">
+      <div class="avatar" style="background:linear-gradient(145deg,#6B7DC4,#45559A);">W</div>
+      <div><div class="name">Willow</div><div class="role">Sleep Coach</div></div>
+      <button class="btn" onclick="Team.runSpecialist('sleep', this)">Talk to Willow</button>
     </div>
+    <div class="result" id="result-sleep"></div>
   </div>
 
-  <div class="section">
-    <h2>3 — Seed behavioral history</h2>
-    <div class="sub">Journal, calibration strikes, regimen adherence, nutrition log — the real inputs behind deficiency reporting and week-to-week adaptation.</div>
-    <div class="btn-grid">
-      <button class="btn wide" onclick="Console.seedJournal()">Seed journal (3 of 7 days logged)</button>
-      <button class="btn wide" onclick="Console.seedRegimenHistory()">Seed regimen (67% completed last week)</button>
-      <button class="btn wide" onclick="Console.seedNutritionLog()">Seed 5-day nutrition log</button>
+  <div class="row">
+    <div class="row-head">
+      <div class="avatar" style="background:linear-gradient(145deg,#B692D0,#8560A8);">L</div>
+      <div><div class="name">Lotus</div><div class="role">Mindfulness Coach</div></div>
+      <button class="btn" onclick="Team.runSpecialist('stress', this)">Talk to Lotus</button>
     </div>
-    <div class="strike-row">
-      <button class="btn" onclick="Console.setStrikes(0)">0 strikes</button>
-      <button class="btn" onclick="Console.setStrikes(1)">1 strike</button>
-      <button class="btn" onclick="Console.setStrikes(2)">2 strikes</button>
-      <button class="btn danger" onclick="Console.setStrikes(3)">3 strikes (lock)</button>
-    </div>
-    <div class="btn-grid" style="margin-top:8px;">
-      <button class="btn" onclick="Console.forceStaleCalibration()">Make latest HRV reading stale (72h)</button>
-      <button class="btn" onclick="Console.forceLastVisitGap()">Force 8-day visit gap</button>
-      <button class="btn" onclick="Console.forceWeeklyReportDue()">Force weekly report due</button>
-    </div>
+    <div class="result" id="result-stress"></div>
   </div>
 
-  <div class="section">
-    <h2>4 — Jump to a real page</h2>
-    <div class="sub">With the above seeded, every one of these behaves exactly as a real user would see it.</div>
-    <div class="btn-grid">
-      <button class="btn" onclick="window.location.href='scores.html'">Scores</button>
-      <button class="btn" onclick="window.location.href='team.html'">Meet the Team</button>
-      <button class="btn" onclick="window.location.href='regimen.html'">Regimen (Hawthorn)</button>
-      <button class="btn" onclick="window.location.href='meals.html'">Meal Ideas (Basil)</button>
-      <button class="btn" onclick="window.location.href='practice.html'">Guided Practice (Lotus)</button>
-      <button class="btn" onclick="window.location.href='lotus-chat.html'">Talk with Lotus</button>
+  <div class="row">
+    <div class="row-head">
+      <div class="avatar" style="background:linear-gradient(145deg,#EC8E56,#C4622A);">H</div>
+      <div><div class="name">Hawthorn</div><div class="role">Exercise Coach</div></div>
+      <button class="btn" onclick="Team.runRegimen(this)">See Hawthorn's plan</button>
     </div>
+    <div class="result" id="result-regimen"></div>
   </div>
 
-  <div class="section">
-    <h2>5 — Trigger an AI call directly</h2>
-    <div class="sub">Uses whatever's currently seeded above. Shows the exact system prompt, user message, and raw response for each.</div>
-    <div class="btn-grid">
-      <button class="btn wide" onclick="Console.testSpecialist('sleep')">Willow — background analysis</button>
-      <button class="btn wide" onclick="Console.testSpecialist('stress')">Lotus — background analysis</button>
-      <button class="btn wide" onclick="Console.testSpecialist('activity')">Hawthorn — background analysis</button>
-      <button class="btn wide" onclick="Console.testSpecialist('nutrition')">Basil — background analysis</button>
-      <button class="btn accent wide" onclick="Console.testSynthesis()">Dr. Sage — full synthesis (runs all 4 specialists first, then synthesizes)</button>
-      <button class="btn accent wide" onclick="Console.testWeeklyReport()">Dr. Sage — weekly report</button>
-      <button class="btn wide" onclick="Console.testMealIdeas()">Basil — meal ideas</button>
-      <button class="btn wide" onclick="Console.testRegimen()">Hawthorn — build regimen</button>
-      <button class="btn wide" onclick="Console.testReorder()">Dr. Sage — team reorder by goal</button>
+  <div class="row">
+    <div class="row-head">
+      <div class="avatar" style="background:linear-gradient(145deg,#82BD82,#558A55);">B</div>
+      <div><div class="name">Basil</div><div class="role">Nutrition Coach</div></div>
+      <button class="btn" onclick="Team.runMeals(this)">See Basil's meal ideas</button>
     </div>
-    <div id="results"></div>
+    <div class="result" id="result-meals"></div>
+  </div>
+
+  <div class="row">
+    <div class="row-head">
+      <div class="avatar" style="background:linear-gradient(145deg,#5FA5AA,#2F5C60);">DS</div>
+      <div><div class="name">Dr. Sage</div><div class="role">Weekly report</div></div>
+      <button class="btn" onclick="Team.runWeeklyReport(this)">Hear this week's report</button>
+    </div>
+    <div class="result" id="result-report"></div>
   </div>
 
 <script>
-/* Not a user-facing page — internal tool only. Deliberately does
-   NOT include js/sage/scores.js as a script tag: that file's own
-   DOMContentLoaded handler calls Scores.init(), which reaches for
-   real page elements (recovery-empty, sleep-score-total, etc.)
-   that don't exist here and would throw immediately. Same
-   duplication pattern already used by regimen.html/meals.html/
-   practice.html/lotus-chat.html/finger-size.html \u2014 this console
-   follows the established convention rather than fighting it. */
+/* Auto-seeds one consistent, realistic test identity behind the
+   scenes the first time any button is pressed — no separate
+   seeding step, matching what was actually asked for: tap once,
+   see the real thing. Same duplication-across-files pattern as
+   every other standalone page in this app. */
 
-const Console = {
-  todayKey() { return new Date().toISOString().slice(0, 10); },
-
-  status(msg) {
-    const el = document.getElementById('status-bar');
-    el.textContent = msg;
-    el.style.display = msg ? 'block' : 'none';
-  },
-
-  clearKey(key) {
-    localStorage.removeItem(key);
-    Console.status(`Cleared ${key}`);
-  },
-
-  seedProfile(kind) {
-    const profiles = {
-      weightloss: {
-        drSage: { preferredName: 'Frank', goal: 'I really want to lose weight and feel good in my clothes again', medicalHistory: 'mild hypertension', familyHistory: 'father had a heart attack at 55' },
-        sleep: { bedtime: '11pm', struggle: 'Waking too early' },
-        stress: { experience: 'A little', stressors: 'work deadlines' },
-        activity: { current: 'I walk sometimes', goal: 'Get stronger overall' },
-        nutrition: { restrictions: 'vegetarian', hardest: 'meal prep time' },
-      },
-      sleep: {
-        drSage: { preferredName: 'Frank', goal: 'I want to finally sleep through the night' },
-        sleep: { bedtime: '1am, inconsistent', struggle: 'Staying asleep' },
-        stress: { experience: 'None', stressors: 'racing thoughts at night' },
-        activity: { current: 'I do not really exercise', goal: 'Just want more energy' },
-        nutrition: { restrictions: 'none', hardest: 'late night snacking' },
-      },
-    };
-    localStorage.setItem('sh_team_profile', JSON.stringify(profiles[kind]));
-    Console.status(`Seeded profile: ${kind}`);
-  },
-
-  seedRingData(kind) {
-    const now = Date.now();
-    const day = 86400000;
-    const good = {
+const Team = {
+  ensureSeeded() {
+    if (localStorage.getItem('sh_team_profile')) return; // already seeded, don't reset progress
+    localStorage.setItem('sh_team_profile', JSON.stringify({
+      drSage: { preferredName: 'Frank', goal: 'I want to lose weight and have more energy' },
+      sleep: { bedtime: '11pm', struggle: 'Waking too early' },
+      stress: { experience: 'A little', stressors: 'work deadlines' },
+      activity: { current: 'I walk sometimes', goal: 'Get stronger overall' },
+      nutrition: { restrictions: 'none', hardest: 'meal prep time' },
+    }));
+    const now = Date.now(), day = 86400000;
+    localStorage.setItem('sh_ring_latest', JSON.stringify({
       hrvHistory: [
-        { rmssd: 38, date: 'd1', recordedAt: new Date(now - 6*day).toISOString() },
-        { rmssd: 40, date: 'd2', recordedAt: new Date(now - 4*day).toISOString() },
-        { rmssd: 42, date: 'd3', recordedAt: new Date(now - 2*day).toISOString() },
-        { rmssd: 47, date: 'd4', recordedAt: new Date(now - 2*3600000).toISOString() },
-      ],
-      sleep: { totalMin: 470, asleepMin: 460, date: Console.todayKey() },
-      sleepDetail: { phases: [
-        { type: 2, durationMin: 180 }, { type: 3, durationMin: 120 }, { type: 5, durationMin: 10 },
-        { type: 2, durationMin: 100 }, { type: 4, durationMin: 60 },
-      ]},
-      sleepPeriods: [
-        { startMins: 22*60+30, daysPrevious: 2 }, { startMins: 22*60+45, daysPrevious: 1 }, { startMins: 23*60, daysPrevious: 0 },
+        { rmssd: 38, recordedAt: new Date(now - 6*day).toISOString() },
+        { rmssd: 40, recordedAt: new Date(now - 4*day).toISOString() },
+        { rmssd: 44, recordedAt: new Date(now - 1*3600000).toISOString() },
       ],
       activityHistory: [
-        { date: new Date(now-4*day).toISOString().slice(0,10), totalSteps: 6200 },
-        { date: new Date(now-3*day).toISOString().slice(0,10), totalSteps: 7100 },
-        { date: new Date(now-2*day).toISOString().slice(0,10), totalSteps: 6800 },
-        { date: new Date(now-1*day).toISOString().slice(0,10), totalSteps: 8400 },
+        { date: new Date(now-3*day).toISOString().slice(0,10), totalSteps: 6200 },
+        { date: new Date(now-2*day).toISOString().slice(0,10), totalSteps: 7100 },
+        { date: new Date(now-1*day).toISOString().slice(0,10), totalSteps: 6800 },
       ],
-    };
-    const poor = {
-      hrvHistory: [
-        { rmssd: 44, date: 'd1', recordedAt: new Date(now - 6*day).toISOString() },
-        { rmssd: 42, date: 'd2', recordedAt: new Date(now - 4*day).toISOString() },
-        { rmssd: 41, date: 'd3', recordedAt: new Date(now - 2*day).toISOString() },
-        { rmssd: 31, date: 'd4', recordedAt: new Date(now - 2*3600000).toISOString() },
-      ],
-      sleep: { totalMin: 285, asleepMin: 240, date: Console.todayKey() },
-      sleepDetail: { phases: [
-        { type: 2, durationMin: 100 }, { type: 5, durationMin: 15 }, { type: 3, durationMin: 60 },
-        { type: 5, durationMin: 20 }, { type: 2, durationMin: 80 }, { type: 5, durationMin: 10 },
-      ]},
-      sleepPeriods: [
-        { startMins: 23*60+30, daysPrevious: 2 }, { startMins: 60, daysPrevious: 1 }, { startMins: 22*60, daysPrevious: 0 },
-      ],
-      activityHistory: [
-        { date: new Date(now-4*day).toISOString().slice(0,10), totalSteps: 3100 },
-        { date: new Date(now-3*day).toISOString().slice(0,10), totalSteps: 2400 },
-        { date: new Date(now-2*day).toISOString().slice(0,10), totalSteps: 2900 },
-        { date: new Date(now-1*day).toISOString().slice(0,10), totalSteps: 1800 },
-      ],
-    };
-    localStorage.setItem('sh_ring_latest', JSON.stringify(kind === 'good' ? good : poor));
-    Console.status(`Seeded ring data: ${kind}`);
+    }));
   },
 
-  seedJournal() {
-    const journal = {};
-    [0, 2, 4].forEach(function(i) {
-      const d = new Date(); d.setDate(d.getDate() - i);
-      journal[d.toISOString().slice(0,10)] = { caffeine: true, meditation: i === 0 };
-    });
-    localStorage.setItem('sh_journal', JSON.stringify(journal));
-    Console.status('Seeded journal: 3 of last 7 days logged');
-  },
-
-  setStrikes(n) {
-    const dates = [];
-    for (let i = 0; i < n; i++) {
-      const d = new Date(); d.setDate(d.getDate() - i - 1);
-      dates.push(d.toISOString().slice(0,10));
-    }
-    localStorage.setItem('sh_calibration_strikes', JSON.stringify(dates));
-    Console.status(`Set calibration strikes to ${n}${n >= 3 ? ' — Stress card will now be LOCKED on scores.html' : ''}`);
-  },
-
-  forceStaleCalibration() {
-    let snap;
-    try { snap = JSON.parse(localStorage.getItem('sh_ring_latest') || '{}'); } catch (e) { snap = {}; }
-    if (!snap.hrvHistory || !snap.hrvHistory.length) { Console.status('Seed ring data first'); return; }
-    snap.hrvHistory[snap.hrvHistory.length - 1].recordedAt = new Date(Date.now() - 72*3600000).toISOString();
-    localStorage.setItem('sh_ring_latest', JSON.stringify(snap));
-    Console.status('Latest HRV reading is now 72 hours old — Stress will show Dr. Sage\u2019s stale-data message');
-  },
-
-  seedRegimenHistory() {
-    const regimen = {
-      weekGoal: 'Building the habit with full-body basics.',
-      days: [
-        { day: 'Day 1', focus: 'Full body', exercises: [
-          { name: 'Bodyweight squats', detail: '3x10', done: true },
-          { name: 'Push-ups', detail: '3x8', done: true },
-        ]},
-        { day: 'Day 3', focus: 'Cardio + core', exercises: [
-          { name: 'Brisk walk', detail: '15 min', done: false },
-        ]},
-      ],
-      createdDate: new Date(Date.now() - 6*86400000).toISOString().slice(0,10),
-    };
-    localStorage.setItem('sh_hawthorn_regimens', JSON.stringify([regimen]));
-    Console.status('Seeded regimen: 2 of 3 exercises done (67%)');
-  },
-
-  seedNutritionLog() {
-    const log = {};
-    for (let i = 0; i < 5; i++) {
-      const d = new Date(); d.setDate(d.getDate() - i);
-      log[d.toISOString().slice(0,10)] = { calories: 1900 + i*40, protein: 90 + i*3, carbs: 200 - i*5, fat: 65, mealsText: 'test meal ' + i, loggedAt: new Date().toISOString() };
-    }
-    localStorage.setItem('sh_nutrition_log', JSON.stringify(log));
-    Console.status('Seeded 5 days of nutrition log');
-  },
-
-  forceLastVisitGap() {
-    localStorage.setItem('sh_last_visit', String(Date.now() - 8*86400000));
-    Console.status('Last visit set to 8 days ago — welcome-back note will show on scores.html');
-  },
-
-  forceWeeklyReportDue() {
-    localStorage.removeItem('sh_last_weekly_report');
-    Console.status('Weekly report reset — will show as due on scores.html (needs a goal seeded too)');
-  },
-
-  // ── AI call wrappers, mirroring the real production prompts ──
   getProfile() { try { return JSON.parse(localStorage.getItem('sh_team_profile') || '{}'); } catch (e) { return {}; } },
-  getSnapshot() { try { return JSON.parse(localStorage.getItem('sh_ring_latest') || '{}'); } catch (e) { return {}; } },
-  getPreferredName() { const n = Console.getProfile()?.drSage?.preferredName; return n && n.trim() ? n.trim() : null; },
-
-  SPECIALIST_ROLES: {
-    sleep: { name: 'Willow', title: 'Sleep Coach', voice: 'Willow, an attentive sleep coach' },
-    stress: { name: 'Lotus', title: 'Mindfulness Coach', voice: 'Lotus, a mindfulness coach and active yoga practitioner' },
-    activity: { name: 'Hawthorn', title: 'Exercise Coach', voice: 'Hawthorn, an exercise coach who builds real training regimens from real data' },
-    nutrition: { name: 'Basil', title: 'Nutrition Coach', voice: 'Basil, a nutrition coach focused on helping people eat better' },
-  },
-
-  renderResult(title, system, userMessage, response) {
-    const container = document.getElementById('results');
-    const block = document.createElement('details');
-    block.className = 'result-block';
-    block.open = true;
-    block.innerHTML = `<summary>${title}</summary><pre><span class="label">SYSTEM:</span>\n${system || '(none)'}\n\n<span class="label">USER MESSAGE:</span>\n${userMessage}\n\n<span class="label">RESPONSE:</span>\n${response}</pre>`;
-    container.prepend(block);
-  },
+  getName() { const n = Team.getProfile()?.drSage?.preferredName; return n && n.trim() ? n.trim() : null; },
 
   async callAI(system, userMessage, maxTokens) {
     const res = await fetch('/.netlify/functions/claude', {
@@ -325,125 +148,156 @@ const Console = {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Request failed');
-    return data.content?.[0]?.text || '(empty response)';
+    return data.content?.[0]?.text || '';
   },
 
-  buildDomainInfo(domain, snapshot) {
-    if (domain === 'sleep') return { score: 74, detail: '7.4 hrs, 88% efficiency, 1 wake event' };
-    if (domain === 'stress') return { score: 58, detail: 'HRV 12% below personal baseline' };
-    if (domain === 'activity') return { score: null, detail: '6800 steps most recent day, avg 6700/day prior' };
-    if (domain === 'nutrition') return { score: null, detail: '~1950 cal, 95g protein, 200g carbs, 65g fat today' };
-    return { score: null, detail: 'no data' };
+  parseJSON(text) {
+    return JSON.parse(text.replace(/```json\s*|```\s*/g, '').trim());
   },
 
-  async testSpecialist(domain) {
-    Console.status(`Calling ${Console.SPECIALIST_ROLES[domain].name}\u2026`);
-    const role = Console.SPECIALIST_ROLES[domain];
-    const profile = Console.getProfile();
-    const name = Console.getPreferredName();
-    const nameBlock = name ? `\n\nCall them ${name} \u2014 that's what they asked to be called.` : '';
-    const domainInfo = Console.buildDomainInfo(domain);
-    const userMessage = `Here is this person's real ${role.title.toLowerCase()} data:\n${domainInfo.score != null ? domainInfo.score + '/100 \u2014 ' : ''}${domainInfo.detail}${nameBlock}\n\nTheir recent self-logged daily habits:\n(no journal entries today)\n\nBased on the real data above, give ONE short specialist observation and ONE small, concrete action for them to do this week. Say it directly \u2014 "do X" or "try X this week." Respond ONLY with valid JSON, no markdown: {"note": "1-2 sentence observation", "suggestedAction": "one small concrete daily action"}`;
-    const system = `You are ${role.voice}. Be direct and confident. You are NOT a licensed doctor, dietitian, or clinician. You NEVER diagnose. Respond with ONLY the requested JSON.`;
+  setLoading(btn, on) {
+    btn.disabled = on;
+    if (on) { btn.dataset.orig = btn.textContent; btn.textContent = 'Thinking\u2026'; }
+    else { btn.textContent = btn.dataset.orig || btn.textContent; }
+  },
+
+  ROLES: {
+    sleep: { name: 'Willow', title: 'sleep coach', voice: 'Willow, an attentive sleep coach', data: '7.4 hrs, 88% efficiency, 1 wake event' },
+    stress: { name: 'Lotus', title: 'mindfulness coach', voice: 'Lotus, a mindfulness coach and active yoga practitioner', data: 'HRV 12% below personal baseline' },
+  },
+
+  async runSpecialist(domain, btn) {
+    Team.ensureSeeded();
+    Team.setLoading(btn, true);
+    const role = Team.ROLES[domain];
+    const name = Team.getName();
+    const nameBlock = name ? `\n\nCall them ${name}.` : '';
+    const userMessage = `Here is this person's real ${role.title} data:\n${role.data}${nameBlock}\n\nGive ONE short specialist observation and ONE small, concrete action for this week. Say it directly. Respond ONLY with valid JSON: {"note": "...", "suggestedAction": "..."}`;
+    const system = `You are ${role.voice}. Be direct and confident. Not a licensed clinician. Never diagnose. Respond with ONLY the requested JSON.`;
     try {
-      const response = await Console.callAI(system, userMessage, 250);
-      Console.renderResult(`${role.name} \u2014 background analysis`, system, userMessage, response);
-      Console.status('Done');
-      return { note: JSON.parse(response.replace(/```json\s*|```\s*/g,'').trim()).note, suggestedAction: JSON.parse(response.replace(/```json\s*|```\s*/g,'').trim()).suggestedAction, role: role.name, domain };
+      const response = await Team.callAI(system, userMessage, 250);
+      const parsed = Team.parseJSON(response);
+      const el = document.getElementById(`result-${domain}`);
+      el.innerHTML = `<div class="note">${parsed.note}</div><div class="action">\u2192 ${parsed.suggestedAction}</div>`;
+      el.style.display = 'block';
     } catch (e) {
-      Console.renderResult(`${role.name} \u2014 ERROR`, system, userMessage, String(e));
-      Console.status('Error \u2014 see result below');
-      return null;
+      const el = document.getElementById(`result-${domain}`);
+      el.innerHTML = `Couldn't reach ${role.name} right now \u2014 try again.`;
+      el.style.display = 'block';
     }
+    Team.setLoading(btn, false);
   },
 
-  async testSynthesis() {
-    Console.status('Running all 4 specialists, then synthesizing\u2026');
-    const results = [];
-    for (const domain of ['sleep', 'stress', 'activity', 'nutrition']) {
-      const r = await Console.testSpecialist(domain);
-      if (r) results.push(r);
-    }
-    if (!results.length) { Console.status('All specialists failed \u2014 cannot synthesize'); return; }
-
-    const notesBlock = results.map(function(s) { return `${s.role} (${s.domain}): "${s.note}" \u2014 suggests: "${s.suggestedAction}"`; }).join('\n');
-    const name = Console.getPreferredName();
-    const nameBlock = name ? `\n\nCall them ${name} \u2014 that's what they asked to be called.` : '';
-    const validDomains = results.map(function(s) { return s.domain; }).join(', ');
-    const userMessage = `Here is real input from this person's specialist care team, each reviewing only their own area of focus:\n\n${notesBlock}\n\nTheir recent self-logged habits:\n(no journal entries today)${nameBlock}\n\nAs the coordinating advisor, weave 2-5 of their suggested actions into ONE cohesive 7-day plan. State each action directly and confidently. Also decide if any area is worth a real referral. Respond ONLY with valid JSON: {"goalText": "1-2 sentences", "actions": [{"text": "...", "domain": "one of: ${validDomains}", "journalKey": null}], "referrals": [{"domain": "...", "reason": "..."}]}`;
-    const system = 'You are Dr. Sage, a holistic wellness doctor. Be direct and confident. You do not treat, prescribe, diagnose. You NEVER claim certainty. Respond with ONLY the requested JSON.';
+  async runRegimen(btn) {
+    Team.ensureSeeded();
+    Team.setLoading(btn, true);
+    const profile = Team.getProfile();
+    const activityProfile = profile.activity || {};
+    const userMessage = `This person told you: "${activityProfile.current}" is what exercise looks like for them, goal: "${activityProfile.goal}".\n\nReal recent step data: 6800 steps most recent day, avg 6700/day prior.\n\nBuild a real, structured 3-day regimen for this week. Respond ONLY with valid JSON: {"weekGoal": "...", "days": [{"day": "Day 1", "focus": "...", "exercises": [{"name": "...", "detail": "..."}]}]}`;
+    const system = 'You are Hawthorn, an exercise coach. Be direct and confident. Scale difficulty honestly. Respond with ONLY the requested JSON.';
     try {
-      const response = await Console.callAI(system, userMessage, 400);
-      Console.renderResult('Dr. Sage \u2014 full synthesis', system, userMessage, response);
-      Console.status('Done');
+      const response = await Team.callAI(system, userMessage, 500);
+      const parsed = Team.parseJSON(response);
+      const daysHtml = parsed.days.map(function(d) {
+        const exHtml = d.exercises.map(function(e) { return `<div class="ex-row"><span>${e.name}</span><span>${e.detail}</span></div>`; }).join('');
+        return `<div class="day-block"><div class="day-title">${d.day} \u2014 ${d.focus}</div>${exHtml}</div>`;
+      }).join('');
+      const el = document.getElementById('result-regimen');
+      el.innerHTML = `<div class="note">${parsed.weekGoal}</div>${daysHtml}`;
+      el.style.display = 'block';
     } catch (e) {
-      Console.renderResult('Dr. Sage synthesis \u2014 ERROR', system, userMessage, String(e));
-      Console.status('Error \u2014 see result below');
+      const el = document.getElementById('result-regimen');
+      el.innerHTML = 'Couldn\u2019t reach Hawthorn right now \u2014 try again.';
+      el.style.display = 'block';
     }
+    Team.setLoading(btn, false);
   },
 
-  async testWeeklyReport() {
-    Console.status('Building weekly report\u2026');
-    const name = Console.getPreferredName();
-    const goal = Console.getProfile()?.drSage?.goal || 'not specified';
-    const userMessage = `Here is this person's real week:\n\nStated goal: ${goal}\nRecovery: 68/100\nSleep: 74/100\nStress: 58/100\nActivity: 6800 steps most recent day, avg 6700/day prior\nJournal logged 3 of the last 7 days\nCalibration misses this week: 1\nExercise regimen: 2/3 exercises done (67%)\nMeal plan: last built 2 days ago\n\nWrite their weekly report. Cover real progress, real deficiencies stated as fact, and one clear focus for the coming week. 5-6 sentences, spoken naturally.`;
+  async runMeals(btn) {
+    Team.ensureSeeded();
+    Team.setLoading(btn, true);
+    const profile = Team.getProfile();
+    const restrictions = profile.nutrition?.restrictions || 'none specified';
+    const userMessage = `This person's stated dietary preferences/restrictions: ${restrictions}.\n\nSuggest 3 real, specific meals that genuinely support what they're working on. Respond ONLY with valid JSON: {"intro": "...", "meals": [{"name": "...", "ingredients": ["..."], "note": "..."}]}`;
+    const system = 'You are Basil, a nutrition coach. Be direct and specific. Always respect stated restrictions. Respond with ONLY the requested JSON.';
+    try {
+      const response = await Team.callAI(system, userMessage, 400);
+      const parsed = Team.parseJSON(response);
+      const mealsHtml = parsed.meals.map(function(m) {
+        return `<div class="meal-block"><div class="meal-name">${m.name}</div><div class="meal-ing">${m.ingredients.join(', ')}</div><div class="meal-ing">${m.note}</div></div>`;
+      }).join('');
+      const el = document.getElementById('result-meals');
+      el.innerHTML = `<div class="note">${parsed.intro}</div>${mealsHtml}`;
+      el.style.display = 'block';
+    } catch (e) {
+      const el = document.getElementById('result-meals');
+      el.innerHTML = 'Couldn\u2019t reach Basil right now \u2014 try again.';
+      el.style.display = 'block';
+    }
+    Team.setLoading(btn, false);
+  },
+
+  async runSynthesis(btn) {
+    Team.ensureSeeded();
+    Team.setLoading(btn, true);
+    const el = document.getElementById('result-synthesis');
+    el.innerHTML = 'Checking in with the whole team first\u2026';
+    el.style.display = 'block';
+
+    try {
+      const notes = [];
+      for (const domain of ['sleep', 'stress']) {
+        const role = Team.ROLES[domain];
+        const userMessage = `Here is this person's real ${role.title} data:\n${role.data}\n\nGive ONE short specialist observation and ONE small, concrete action for this week. Respond ONLY with valid JSON: {"note": "...", "suggestedAction": "..."}`;
+        const system = `You are ${role.voice}. Be direct and confident. Respond with ONLY the requested JSON.`;
+        const response = await Team.callAI(system, userMessage, 250);
+        const parsed = Team.parseJSON(response);
+        notes.push({ role: role.name, domain, note: parsed.note, suggestedAction: parsed.suggestedAction });
+      }
+      // Hawthorn + Basil, same pattern, condensed inline
+      const profile = Team.getProfile();
+      const hawthornMsg = `Here is this person's real activity data:\n6800 steps most recent day, avg 6700/day prior. Their goal: "${profile.activity?.goal}".\n\nGive ONE short specialist observation and ONE small, concrete action. Respond ONLY with valid JSON: {"note": "...", "suggestedAction": "..."}`;
+      const hawthornRes = Team.parseJSON(await Team.callAI('You are Hawthorn, an exercise coach. Be direct. Respond with ONLY the requested JSON.', hawthornMsg, 250));
+      notes.push({ role: 'Hawthorn', domain: 'activity', note: hawthornRes.note, suggestedAction: hawthornRes.suggestedAction });
+
+      const basilMsg = `Here is this person's real nutrition data:\n~1950 cal, 95g protein, 200g carbs, 65g fat today. Restrictions: "${profile.nutrition?.restrictions}".\n\nGive ONE short specialist observation and ONE small, concrete action. Respond ONLY with valid JSON: {"note": "...", "suggestedAction": "..."}`;
+      const basilRes = Team.parseJSON(await Team.callAI('You are Basil, a nutrition coach. Be direct. Respond with ONLY the requested JSON.', basilMsg, 250));
+      notes.push({ role: 'Basil', domain: 'nutrition', note: basilRes.note, suggestedAction: basilRes.suggestedAction });
+
+      const name = Team.getName();
+      const nameBlock = name ? `\n\nCall them ${name}.` : '';
+      const notesBlock = notes.map(function(s) { return `${s.role} (${s.domain}): "${s.note}" \u2014 suggests: "${s.suggestedAction}"`; }).join('\n');
+      const validDomains = notes.map(function(s) { return s.domain; }).join(', ');
+      const synthMsg = `Here is real input from this person's specialist care team:\n\n${notesBlock}${nameBlock}\n\nWeave 2-5 of their suggested actions into ONE cohesive 7-day plan. State each action directly. Respond ONLY with valid JSON: {"goalText": "...", "actions": [{"text": "...", "domain": "one of: ${validDomains}"}]}`;
+      const synthSystem = 'You are Dr. Sage, a holistic wellness doctor. Be direct and confident. You do not diagnose. Respond with ONLY the requested JSON.';
+      const response = await Team.callAI(synthSystem, synthMsg, 400);
+      const plan = Team.parseJSON(response);
+      const actionsHtml = plan.actions.map(function(a) { return `<div class="ex-row"><span>${a.text}</span><span>${a.domain}</span></div>`; }).join('');
+      el.innerHTML = `<div class="note">${plan.goalText}</div>${actionsHtml}`;
+    } catch (e) {
+      el.innerHTML = 'Something failed building the full plan \u2014 try again.';
+    }
+    Team.setLoading(btn, false);
+  },
+
+  async runWeeklyReport(btn) {
+    Team.ensureSeeded();
+    Team.setLoading(btn, true);
+    const name = Team.getName();
+    const goal = Team.getProfile()?.drSage?.goal || 'not specified';
+    const userMessage = `Here is this person's real week:\n\nStated goal: ${goal}\nRecovery: 68/100\nSleep: 74/100\nStress: 58/100\nActivity: 6800 steps most recent day, avg 6700/day prior\nJournal logged 3 of the last 7 days\nCalibration misses this week: 1\nExercise regimen: 2/3 exercises done (67%)\n\nWrite their weekly report: real progress, real deficiencies stated as fact, one clear focus for the coming week. 5-6 sentences, spoken naturally.`;
     const system = `You are Dr. Sage, delivering this person's weekly report${name ? ` (call them ${name})` : ''}. Be direct and honest, never shame or judge character. Respond with plain text only.`;
     try {
-      const response = await Console.callAI(system, userMessage, 350);
-      Console.renderResult('Dr. Sage \u2014 weekly report', system, userMessage, response);
-      Console.status('Done');
+      const response = await Team.callAI(system, userMessage, 350);
+      const el = document.getElementById('result-report');
+      el.innerHTML = `<div class="note">${response}</div>`;
+      el.style.display = 'block';
     } catch (e) {
-      Console.renderResult('Weekly report \u2014 ERROR', system, userMessage, String(e));
-      Console.status('Error \u2014 see result below');
+      const el = document.getElementById('result-report');
+      el.innerHTML = 'Couldn\u2019t build the report right now \u2014 try again.';
+      el.style.display = 'block';
     }
-  },
-
-  async testMealIdeas() {
-    Console.status('Asking Basil for meal ideas\u2026');
-    const profile = Console.getProfile();
-    const restrictions = profile?.nutrition?.restrictions || 'none specified';
-    const userMessage = `This person's stated dietary preferences/restrictions: ${restrictions}.\n\nTheir real logged average: ~1950 cal, 95g protein, 200g carbs, 65g fat per day.\n\nSuggest 3 real, specific meals that genuinely support what they're working on. Respond ONLY with valid JSON: {"intro": "1 sentence", "meals": [{"name": "dish", "ingredients": ["a","b"], "note": "short line"}]}`;
-    const system = 'You are Basil, a nutrition coach. Be direct and specific. You ALWAYS respect stated dietary restrictions exactly. Respond with ONLY the requested JSON.';
-    try {
-      const response = await Console.callAI(system, userMessage, 400);
-      Console.renderResult('Basil \u2014 meal ideas', system, userMessage, response);
-      Console.status('Done');
-    } catch (e) {
-      Console.renderResult('Meal ideas \u2014 ERROR', system, userMessage, String(e));
-      Console.status('Error \u2014 see result below');
-    }
-  },
-
-  async testRegimen() {
-    Console.status('Asking Hawthorn to build a regimen\u2026');
-    const profile = Console.getProfile();
-    const activityProfile = profile?.activity || {};
-    const userMessage = `This person told you: "${activityProfile.current || 'not specified'}" is what exercise looks like for them, goal: "${activityProfile.goal || 'not specified'}".\n\nReal recent step data: 6800 steps most recent day, avg 6700/day prior.\n\nBuild a real, structured 3-day regimen for this week. Respond ONLY with valid JSON: {"weekGoal": "...", "days": [{"day": "Day 1", "focus": "...", "exercises": [{"name": "...", "detail": "..."}]}]}`;
-    const system = 'You are Hawthorn, an exercise coach. Be direct and confident. You scale difficulty honestly. Respond with ONLY the requested JSON.';
-    try {
-      const response = await Console.callAI(system, userMessage, 500);
-      Console.renderResult('Hawthorn \u2014 regimen build', system, userMessage, response);
-      Console.status('Done');
-    } catch (e) {
-      Console.renderResult('Regimen \u2014 ERROR', system, userMessage, String(e));
-      Console.status('Error \u2014 see result below');
-    }
-  },
-
-  async testReorder() {
-    Console.status('Testing team reorder\u2026');
-    const goal = Console.getProfile()?.drSage?.goal;
-    if (!goal) { Console.status('Seed a profile first \u2014 no goal to reorder against'); return; }
-    const userMessage = `This person's stated goal: "${goal}"\n\nRank these four specialists from most to least relevant to THIS specific goal: sleep (Sleep Coach), stress (Mindfulness Coach), activity (Exercise Coach), nutrition (Nutrition Coach). Respond ONLY with JSON: {"order": ["key1","key2","key3","key4"]} using each exact key once: sleep, stress, activity, nutrition.`;
-    const system = 'You rank which health specialists are most relevant to what someone said they want. Respond with ONLY valid JSON.';
-    try {
-      const response = await Console.callAI(system, userMessage, 100);
-      Console.renderResult('Dr. Sage \u2014 team reorder', system, userMessage, response);
-      Console.status('Done');
-    } catch (e) {
-      Console.renderResult('Team reorder \u2014 ERROR', system, userMessage, String(e));
-      Console.status('Error \u2014 see result below');
-    }
+    Team.setLoading(btn, false);
   },
 };
 </script>
