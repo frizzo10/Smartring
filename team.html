@@ -307,7 +307,7 @@ const Team = {
 
   renderIntro() {
     const step = Team.currentStep();
-    if (!step) { Team.renderDone(); return; }
+    if (!step) { Team.renderFinalAffirmation(); return; }
     document.documentElement.style.setProperty('--accent', step.accent);
     Team.renderProgress();
     Team.questionIndexInStep = -1;
@@ -622,6 +622,125 @@ const Team = {
     } catch (e) {
       // Non-fatal \u2014 they can build one manually from meals.html later.
     }
+  },
+
+  // ── FINAL AFFIRMATION ───────────────────────────────────────
+  // Real commitment device, not decoration: research on
+  // behavior-change consistently shows articulating a personal
+  // commitment (spoken or written, in the person's own words)
+  // measurably improves follow-through versus just moving on
+  // silently. Three real phases: (1) Dr. Sage's genuine initial
+  // read on everything actually gathered \u2014 not ring data yet,
+  // just the rich conversational input from onboarding itself;
+  // (2) an explicit confirmation tap, not implied by just
+  // continuing; (3) their own promise, in their own words, same
+  // voice-first/typed-fallback pattern as everywhere else \u2014
+  // deliberately the same "reflect their real words back" idea
+  // already proven in the 3-strike affirmation gate, just at the
+  // start of the relationship instead of a recovery moment.
+
+  gatherOnboardingSummary() {
+    const profile = Team.loadProfile();
+    const lines = [];
+    const d = profile.drSage || {};
+    if (d.goal) lines.push(`Their stated goal: "${d.goal}"`);
+    if (d.pastObstacle) lines.push(`What's gotten in the way before: "${d.pastObstacle}"`);
+    const s = profile.sleep || {};
+    if (s.bedtime || s.struggle) lines.push(`Sleep: bedtime "${s.bedtime || '?'}", biggest struggle "${s.struggle || '?'}"`);
+    const st = profile.stress || {};
+    if (st.stressors || st.manifestation) lines.push(`Stress: mainly from "${st.stressors || '?'}", shows up as "${st.manifestation || '?'}"`);
+    const a = profile.activity || {};
+    if (a.current || a.goal) lines.push(`Activity: currently "${a.current || '?'}", goal "${a.goal || '?'}"`);
+    const n = profile.nutrition || {};
+    if (n.restrictions || n.hardest) lines.push(`Nutrition: restrictions "${n.restrictions || '?'}", hardest part "${n.hardest || '?'}"`);
+    return lines.join('\n');
+  },
+
+  async renderFinalAffirmation() {
+    document.getElementById('progress-track').style.display = 'none';
+    document.getElementById('nav-row').style.display = 'none';
+    const card = document.getElementById('card-area');
+    card.style.display = 'flex';
+    card.innerHTML = '<div class="intro-text">Dr. Sage is putting together what he\u2019s heard\u2026</div>';
+
+    const summary = Team.gatherOnboardingSummary();
+    const profileForName = Team.loadProfile();
+    const rawName = profileForName?.drSage?.preferredName;
+    const name = rawName && rawName.trim() ? rawName.trim() : null;
+
+    let reportText = "Here's what I'm hearing so far \u2014 the real work starts now that the team knows you a little.";
+    try {
+      const res = await fetch('/.netlify/functions/claude', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system: 'You are Dr. Sage, giving this person a short, warm initial read right after onboarding \u2014 not based on ring data yet, just what they actually just told your team. Be direct and confident. Never diagnose, never claim certainty about outcomes, never invent anything they didn\u2019t say. 3-4 sentences, spoken naturally, plain text only.',
+          messages: [{ role: 'user', content: `Here's everything this person actually told the team during onboarding:\n\n${summary || 'They skipped most questions \u2014 acknowledge that honestly, don\u2019t invent detail.'}${name ? `\n\nCall them ${name}.` : ''}\n\nGive your genuine initial read \u2014 what stands out, and one honest sense of where the team will start.` }],
+          max_tokens: 250,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.content?.[0]?.text) reportText = data.content[0].text.trim();
+    } catch (e) { /* fallback text above already covers this */ }
+
+    card.innerHTML = `
+      <div class="avatar-lg" id="report-avatar" style="background:linear-gradient(145deg,#5FA5AA,#2F5C60);">DS</div>
+      <div class="member-name">Dr. Sage</div>
+      <div class="intro-text">${reportText}</div>
+      <div style="font-size:13px; color:#9CA3AF; margin:10px 0 20px;">Is this what you want, and will you actually use it?</div>
+      <button id="confirm-yes-btn" style="width:100%; padding:15px; border-radius:14px; border:none; background:#7FC4C9; color:#0A0D14; font-size:15px; font-weight:700; font-family:inherit; cursor:pointer; margin-bottom:10px;">Yes, this is what I want</button>
+    `;
+    Team.speak(reportText, 'drSage', document.getElementById('report-avatar'));
+    document.getElementById('confirm-yes-btn').addEventListener('click', Team.renderPromiseCapture);
+  },
+
+  renderPromiseCapture() {
+    const card = document.getElementById('card-area');
+    card.innerHTML = `
+      <div class="member-title" style="margin-bottom:16px;">One last thing</div>
+      <div class="intro-text" style="margin-bottom:20px;">In your own words \u2014 what are you actually committing to this week?</div>
+      <button class="mic-btn" id="promise-mic-btn">\u{1F3A4}</button>
+      <div class="mic-status" id="promise-status">Tap to speak, or type below</div>
+      <div class="transcript-preview" id="promise-preview"></div>
+      <textarea id="promise-text" placeholder="Type your promise\u2026" style="width:100%; min-height:60px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.14); border-radius:10px; padding:10px; color:#fff; font-family:inherit; font-size:13px; margin:12px 0;"></textarea>
+      <button id="promise-submit-btn" style="width:100%; padding:15px; border-radius:14px; border:none; background:#7FC4C9; color:#0A0D14; font-size:15px; font-weight:700; font-family:inherit; cursor:pointer;" disabled>I promise</button>
+    `;
+
+    const textArea = document.getElementById('promise-text');
+    const submitBtn = document.getElementById('promise-submit-btn');
+    textArea.addEventListener('input', () => { submitBtn.disabled = !textArea.value.trim(); });
+
+    const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRec) {
+      document.getElementById('promise-mic-btn').addEventListener('click', () => {
+        const status = document.getElementById('promise-status');
+        status.textContent = 'Listening\u2026';
+        const rec = new SpeechRec();
+        rec.continuous = false; rec.interimResults = false; rec.lang = 'en-US';
+        rec.onresult = (e) => {
+          const transcript = e.results[0][0].transcript;
+          document.getElementById('promise-preview').textContent = transcript;
+          textArea.value = transcript;
+          submitBtn.disabled = false;
+          status.textContent = 'Got it';
+        };
+        rec.onerror = () => { status.textContent = 'Didn\u2019t catch that \u2014 try typing'; };
+        rec.start();
+      });
+    } else {
+      document.getElementById('promise-mic-btn').disabled = true;
+      document.getElementById('promise-status').textContent = 'Voice not available \u2014 type below';
+    }
+
+    submitBtn.addEventListener('click', () => {
+      const promiseText = textArea.value.trim();
+      if (!promiseText) return;
+      const profile = Team.loadProfile();
+      profile.drSage = profile.drSage || {};
+      profile.drSage.promise = promiseText;
+      Team.saveProfile(profile);
+      Team.renderDone();
+    });
   },
 
   renderDone() {
