@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<title>Your Meal Plan — Basil</title>
+<meta name="theme-color" content="#0A0D14">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0A0D14; color: #F4F5F7; padding: 0 0 40px; }
+  #top-bar { display: flex; align-items: center; gap: 10px; padding: 18px 20px; }
+  #back-btn { width: 36px; height: 36px; border-radius: 10px; border: 1px solid #2A3B5E; background: transparent; color: #fff; font-size: 18px; display: flex; align-items: center; justify-content: center; }
+  #top-bar h1 { font-size: 19px; font-weight: 700; }
+  #content { padding: 0 20px; }
+  .empty-state { background: #131B2E; border: 1px solid rgba(255,255,255,0.08); border-radius: 18px; padding: 22px; text-align: center; }
+  .empty-state p { color: #9CA3AF; font-size: 14px; line-height: 1.5; margin-bottom: 16px; }
+  #build-btn { width: 100%; padding: 15px; border-radius: 14px; border: none; background: #9FD49F; color: #0A0D14; font-size: 15px; font-weight: 700; font-family: inherit; cursor: pointer; }
+  #build-btn:disabled { opacity: 0.5; }
+  #error-note { color: #E86A5C; font-size: 13px; margin-top: 12px; display: none; }
+  .week-goal { background: linear-gradient(145deg, rgba(159,212,159,0.16), rgba(159,212,159,0.04)); border: 1px solid rgba(159,212,159,0.3); border-radius: 18px; padding: 20px; margin-bottom: 16px; font-size: 15px; line-height: 1.5; }
+  .day-row {
+    display: flex; align-items: flex-start; gap: 12px; padding: 14px; margin-bottom: 8px;
+    background: #131B2E; border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; cursor: pointer;
+  }
+  .check { width: 20px; height: 20px; border-radius: 6px; border: 1.5px solid rgba(255,255,255,0.35); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 12px; margin-top: 2px; }
+  .day-row.done .check { background: #6FCF97; border-color: #6FCF97; color: #0A0D14; }
+  .day-row.done .meal-name { text-decoration: line-through; opacity: 0.6; }
+  .day-body { flex: 1; }
+  .day-label { font-size: 11px; color: #9CA3AF; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 3px; }
+  .meal-name { font-weight: 700; font-size: 13.5px; color: #9FD49F; }
+  .meal-ing { font-size: 12px; color: #9CA3AF; margin-top: 2px; }
+  .completion-banner { text-align: center; font-size: 13px; color: #9CA3AF; margin: 4px 0 16px; }
+  .coord-note { font-size: 11.5px; color: #6B7280; margin-bottom: 14px; padding: 10px 12px; background: rgba(255,255,255,0.04); border-radius: 10px; }
+</style>
+</head>
+<body>
+
+  <div id="top-bar">
+    <button id="back-btn" onclick="window.location.href='scores.html'">‹</button>
+    <h1>Your Meal Plan — Basil</h1>
+  </div>
+
+  <div id="content"></div>
+
+<script>
+/* Same proven pattern as Hawthorn's regimen, Willow's sleep plan,
+   and Lotus's mindfulness plan -- archive-not-overwrite, real
+   tracking, real week-to-week adaptation. Distinct from the
+   existing meals.html, which stays as a lighter "quick ideas"
+   surface with no tracking; this is the real, followed, updated
+   plan version, coordinated with Hawthorn's actual regimen the
+   same way meals.html already does. */
+
+const MealPlan = {
+  KEY: 'sh_basil_mealplans',
+
+  loadHistory() {
+    try { return JSON.parse(localStorage.getItem(MealPlan.KEY) || '[]'); }
+    catch (e) { return []; }
+  },
+
+  saveHistory(history) {
+    try { localStorage.setItem(MealPlan.KEY, JSON.stringify(history.slice(-10))); }
+    catch (e) { /* non-critical */ }
+  },
+
+  current() {
+    const history = MealPlan.loadHistory();
+    return history.length ? history[history.length - 1] : null;
+  },
+
+  summarizePrevious() {
+    const history = MealPlan.loadHistory();
+    if (!history.length) return null;
+    const prev = history[history.length - 1];
+    const total = prev.days.length;
+    const done = prev.days.filter(d => d.done).length;
+    const pct = total ? Math.round((done / total) * 100) : 0;
+    return { weekGoal: prev.weekGoal, done, total, pct };
+  },
+
+  toggleDay(idx) {
+    const history = MealPlan.loadHistory();
+    if (!history.length) return;
+    const current = history[history.length - 1];
+    if (!current.days[idx]) return;
+    current.days[idx].done = !current.days[idx].done;
+    MealPlan.saveHistory(history);
+    MealPlan.render();
+  },
+
+  render() {
+    const content = document.getElementById('content');
+    const plan = MealPlan.current();
+
+    if (!plan) {
+      content.innerHTML = `
+        <div class="empty-state">
+          <p>Basil builds a real weekly meal plan \u2014 specific meals, specific days, actually tracked \u2014 not just loose suggestions. For quick one-off ideas without tracking, use Meal Ideas from Scores instead.</p>
+          <button id="build-btn">Build my meal plan</button>
+          <div id="error-note"></div>
+        </div>`;
+      document.getElementById('build-btn').addEventListener('click', MealPlan.build);
+      return;
+    }
+
+    const done = plan.days.filter(d => d.done).length;
+    const daysHtml = plan.days.map((d, i) => `
+      <div class="day-row ${d.done ? 'done' : ''}" data-idx="${i}">
+        <div class="check">${d.done ? '\u2713' : ''}</div>
+        <div class="day-body">
+          <div class="day-label">${d.day}</div>
+          <div class="meal-name">${d.name}</div>
+          <div class="meal-ing">${d.ingredients.join(', ')}</div>
+        </div>
+      </div>`).join('');
+
+    content.innerHTML = `
+      <div class="week-goal">${plan.weekGoal}</div>
+      ${plan.coordinatedWithRegimen ? '<div class="coord-note">Coordinated with Hawthorn\u2019s current regimen \u2014 not just your stated preferences.</div>' : ''}
+      <div class="completion-banner">${done} of ${plan.days.length} meals made this week</div>
+      ${daysHtml}
+      <button id="build-btn" style="margin-top:8px;">Build next week's plan</button>
+      <div id="error-note"></div>`;
+
+    content.querySelectorAll('.day-row').forEach(el => {
+      el.addEventListener('click', () => MealPlan.toggleDay(Number(el.dataset.idx)));
+    });
+    document.getElementById('build-btn').addEventListener('click', MealPlan.build);
+  },
+
+  async build() {
+    const btn = document.getElementById('build-btn');
+    const err = document.getElementById('error-note');
+    btn.disabled = true;
+    btn.textContent = 'Basil is building it\u2026';
+    err.style.display = 'none';
+
+    let profile;
+    try { profile = JSON.parse(localStorage.getItem('sh_team_profile') || '{}'); }
+    catch (e) { profile = {}; }
+    const nutritionProfile = profile.nutrition;
+
+    if (!nutritionProfile || (!nutritionProfile.restrictions && !nutritionProfile.hardest)) {
+      err.textContent = 'Basil needs to know your real preferences first \u2014 answer his questions in Meet the Team.';
+      err.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = 'Build my meal plan';
+      return;
+    }
+    const restrictions = nutritionProfile.restrictions || 'none specified';
+
+    let nutritionLog;
+    try { nutritionLog = JSON.parse(localStorage.getItem('sh_nutrition_log') || '{}'); }
+    catch (e) { nutritionLog = {}; }
+    const loggedDays = Object.keys(nutritionLog).sort().slice(-7).map(d => nutritionLog[d]).filter(d => d.calories != null);
+    let trendText = 'No real nutrition trend logged yet \u2014 base this on their stated preferences only.';
+    if (loggedDays.length > 1) {
+      const avg = key => Math.round(loggedDays.reduce((s, d) => s + (d[key] || 0), 0) / loggedDays.length);
+      trendText = `Their real logged average: ~${avg('calories')} cal, ${avg('protein')}g protein, ${avg('carbs')}g carbs, ${avg('fat')}g fat per day.`;
+    }
+
+    let regimenText = 'No current exercise regimen from Hawthorn to coordinate with.';
+    let coordinatedWithRegimen = false;
+    try {
+      const regimens = JSON.parse(localStorage.getItem('sh_hawthorn_regimens') || '[]');
+      if (regimens.length) {
+        regimenText = `Hawthorn's regimen this week: "${regimens[regimens.length - 1].weekGoal}"`;
+        coordinatedWithRegimen = true;
+      }
+    } catch (e) { /* non-critical */ }
+
+    const prevSummary = MealPlan.summarizePrevious();
+    const historyText = prevSummary
+      ? `Last week's plan was: "${prevSummary.weekGoal}" \u2014 they made ${prevSummary.done} of ${prevSummary.total} meals (${prevSummary.pct}%). ${prevSummary.pct >= 70 ? 'They largely followed through \u2014 consider genuine variety, not repeats.' : prevSummary.pct <= 30 ? 'They struggled to follow it \u2014 this week should be simpler, less prep-intensive.' : 'Partial follow-through \u2014 keep this week realistic.'}`
+      : 'This is their first meal plan \u2014 no prior week to build on yet.';
+
+    const nameProfile = profile.drSage?.preferredName;
+    const nameBlock = nameProfile ? `\n\nCall them ${nameProfile}.` : '';
+
+    const userMessage = `This person's stated dietary preferences/restrictions: ${restrictions}.\n\n${trendText}\n\n${regimenText}\n\n${historyText}${nameBlock}\n\nBuild a real weekly meal plan \u2014 3 to 4 specific days, each with ONE real, specific, named meal and real ingredients. Genuinely varied across the week, not repeats. Respect their stated restrictions exactly. If Hawthorn's regimen is real, let it inform your choices. Say it directly, don't hedge. Respond ONLY with valid JSON, no markdown: {"weekGoal": "1-2 sentences on this week's focus, stated directly", "days": [{"day": "Tuesday dinner", "name": "specific dish name", "ingredients": ["real ingredient", "..."]}, ...3-4 days]}`;
+
+    try {
+      const res = await fetch('/.netlify/functions/claude', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system: 'You are Basil, a nutrition coach focused on helping people eat better. Be direct and specific \u2014 real dish names and real ingredients. You are NOT a licensed dietitian \u2014 you are a coach. You NEVER diagnose, NEVER claim a meal will produce a specific health outcome, and you ALWAYS respect stated dietary restrictions exactly. You NEVER invent data you weren\u2019t given. Respond with ONLY the requested JSON, nothing else.',
+          messages: [{ role: 'user', content: userMessage }],
+          max_tokens: 500,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Request failed');
+      const text = (data.content?.[0]?.text || '').replace(/```json\s*|```\s*/g, '').trim();
+      const parsed = JSON.parse(text);
+      if (!parsed.weekGoal || !Array.isArray(parsed.days) || !parsed.days.length) throw new Error('Invalid response shape');
+
+      const newPlan = {
+        weekGoal: parsed.weekGoal,
+        days: parsed.days.slice(0, 5).map(d => ({
+          day: String(d.day || '').slice(0, 40),
+          name: String(d.name || '').slice(0, 80),
+          ingredients: Array.isArray(d.ingredients) ? d.ingredients.slice(0, 8).map(i => String(i).slice(0, 60)) : [],
+          done: false,
+        })).filter(d => d.day && d.name),
+        coordinatedWithRegimen,
+        createdDate: new Date().toISOString().slice(0, 10),
+      };
+      if (!newPlan.days.length) throw new Error('No valid days in response');
+
+      const history = MealPlan.loadHistory();
+      history.push(newPlan);
+      MealPlan.saveHistory(history);
+      MealPlan.render();
+    } catch (e) {
+      err.textContent = 'Couldn\u2019t build a valid plan right now \u2014 try again.';
+      err.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = 'Build my meal plan';
+    }
+  },
+};
+
+MealPlan.render();
+</script>
+</body>
+</html>
