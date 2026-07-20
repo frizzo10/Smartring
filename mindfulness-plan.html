@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<title>Your Mindfulness Plan — Lotus</title>
+<meta name="theme-color" content="#0A0D14">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0A0D14; color: #F4F5F7; padding: 0 0 40px; }
+  #top-bar { display: flex; align-items: center; gap: 10px; padding: 18px 20px; }
+  #back-btn { width: 36px; height: 36px; border-radius: 10px; border: 1px solid #2A3B5E; background: transparent; color: #fff; font-size: 18px; display: flex; align-items: center; justify-content: center; }
+  #top-bar h1 { font-size: 19px; font-weight: 700; }
+  #content { padding: 0 20px; }
+  .empty-state { background: #131B2E; border: 1px solid rgba(255,255,255,0.08); border-radius: 18px; padding: 22px; text-align: center; }
+  .empty-state p { color: #9CA3AF; font-size: 14px; line-height: 1.5; margin-bottom: 16px; }
+  #build-btn { width: 100%; padding: 15px; border-radius: 14px; border: none; background: #D0AAEE; color: #0A0D14; font-size: 15px; font-weight: 700; font-family: inherit; cursor: pointer; }
+  #build-btn:disabled { opacity: 0.5; }
+  #error-note { color: #E86A5C; font-size: 13px; margin-top: 12px; display: none; }
+  .week-goal { background: linear-gradient(145deg, rgba(208,170,238,0.16), rgba(208,170,238,0.04)); border: 1px solid rgba(208,170,238,0.3); border-radius: 18px; padding: 20px; margin-bottom: 16px; font-size: 15px; line-height: 1.5; }
+  .day-row {
+    display: flex; align-items: center; gap: 12px; padding: 14px; margin-bottom: 8px;
+    background: #131B2E; border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; cursor: pointer;
+  }
+  .check { width: 20px; height: 20px; border-radius: 6px; border: 1.5px solid rgba(255,255,255,0.35); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+  .day-row.done .check { background: #6FCF97; border-color: #6FCF97; color: #0A0D14; }
+  .day-row.done .practice-text { text-decoration: line-through; opacity: 0.6; }
+  .day-body { flex: 1; }
+  .day-label { font-size: 11px; color: #9CA3AF; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 2px; }
+  .practice-text { font-size: 13.5px; }
+  .completion-banner { text-align: center; font-size: 13px; color: #9CA3AF; margin: 4px 0 16px; }
+  .discussion-note { font-size: 11.5px; color: #6B7280; margin-bottom: 14px; padding: 10px 12px; background: rgba(255,255,255,0.04); border-radius: 10px; }
+</style>
+</head>
+<body>
+
+  <div id="top-bar">
+    <button id="back-btn" onclick="window.location.href='scores.html'">‹</button>
+    <h1>Your Mindfulness Plan — Lotus</h1>
+  </div>
+
+  <div id="content"></div>
+
+<script>
+/* Same proven pattern as Hawthorn's regimen and Willow's sleep
+   plan — archive-not-overwrite, real tracking, real week-to-week
+   adaptation. The one genuine difference: Lotus already has an
+   open conversation surface (lotus-chat.html), so her plan is the
+   one that actually incorporates real DISCUSSION content, not
+   just structured data \u2014 if someone's mentioned a specific
+   stressor in chat, that shapes what she builds, not just their
+   onboarding answers and stress score. */
+
+const MindfulnessPlan = {
+  KEY: 'sh_lotus_mindfulnessplans',
+
+  loadHistory() {
+    try { return JSON.parse(localStorage.getItem(MindfulnessPlan.KEY) || '[]'); }
+    catch (e) { return []; }
+  },
+
+  saveHistory(history) {
+    try { localStorage.setItem(MindfulnessPlan.KEY, JSON.stringify(history.slice(-10))); }
+    catch (e) { /* non-critical */ }
+  },
+
+  current() {
+    const history = MindfulnessPlan.loadHistory();
+    return history.length ? history[history.length - 1] : null;
+  },
+
+  summarizePrevious() {
+    const history = MindfulnessPlan.loadHistory();
+    if (!history.length) return null;
+    const prev = history[history.length - 1];
+    const total = prev.days.length;
+    const done = prev.days.filter(d => d.done).length;
+    const pct = total ? Math.round((done / total) * 100) : 0;
+    return { weekGoal: prev.weekGoal, done, total, pct };
+  },
+
+  toggleDay(idx) {
+    const history = MindfulnessPlan.loadHistory();
+    if (!history.length) return;
+    const current = history[history.length - 1];
+    if (!current.days[idx]) return;
+    current.days[idx].done = !current.days[idx].done;
+    MindfulnessPlan.saveHistory(history);
+    MindfulnessPlan.render();
+  },
+
+  render() {
+    const content = document.getElementById('content');
+    const plan = MindfulnessPlan.current();
+
+    if (!plan) {
+      content.innerHTML = `
+        <div class="empty-state">
+          <p>Lotus builds a real weekly practice plan \u2014 different techniques across the week, not the same thing every day \u2014 shaped by what you've told her and what's actually come up in conversation with her.</p>
+          <button id="build-btn">Build my mindfulness plan</button>
+          <div id="error-note"></div>
+        </div>`;
+      document.getElementById('build-btn').addEventListener('click', MindfulnessPlan.build);
+      return;
+    }
+
+    const done = plan.days.filter(d => d.done).length;
+    const daysHtml = plan.days.map((d, i) => `
+      <div class="day-row ${d.done ? 'done' : ''}" data-idx="${i}">
+        <div class="check">${d.done ? '\u2713' : ''}</div>
+        <div class="day-body">
+          <div class="day-label">${d.day}</div>
+          <div class="practice-text">${d.practice}</div>
+        </div>
+      </div>`).join('');
+
+    content.innerHTML = `
+      <div class="week-goal">${plan.weekGoal}</div>
+      ${plan.usedDiscussion ? '<div class="discussion-note">This week\'s plan draws on something you actually talked through with Lotus, not just your onboarding answers.</div>' : ''}
+      <div class="completion-banner">${done} of ${plan.days.length} practices done this week</div>
+      ${daysHtml}
+      <button id="build-btn" style="margin-top:8px;">Build next week's plan</button>
+      <div id="error-note"></div>`;
+
+    content.querySelectorAll('.day-row').forEach(el => {
+      el.addEventListener('click', () => MindfulnessPlan.toggleDay(Number(el.dataset.idx)));
+    });
+    document.getElementById('build-btn').addEventListener('click', MindfulnessPlan.build);
+  },
+
+  async build() {
+    const btn = document.getElementById('build-btn');
+    const err = document.getElementById('error-note');
+    btn.disabled = true;
+    btn.textContent = 'Lotus is building it\u2026';
+    err.style.display = 'none';
+
+    let profile;
+    try { profile = JSON.parse(localStorage.getItem('sh_team_profile') || '{}'); }
+    catch (e) { profile = {}; }
+    const stressProfile = profile.stress;
+
+    if (!stressProfile || (!stressProfile.experience && !stressProfile.stressors)) {
+      err.textContent = 'Lotus needs to know your real starting point first \u2014 answer her questions in Meet the Team.';
+      err.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = 'Build my mindfulness plan';
+      return;
+    }
+
+    // Real discussion content \u2014 the genuine difference from the
+    // other plans. Only the last few real exchanges, not the
+    // whole conversation, and only if it's substantive.
+    let conversation;
+    try { conversation = JSON.parse(localStorage.getItem('sh_lotus_conversation') || '[]'); }
+    catch (e) { conversation = []; }
+    const realUserMessages = conversation.filter(m => m.role === 'user').slice(-3);
+    const usedDiscussion = realUserMessages.length > 0;
+    const discussionText = usedDiscussion
+      ? `Real things they've actually said to you in conversation recently: ${realUserMessages.map(m => `"${m.content}"`).join('; ')}.`
+      : 'No real conversation with them yet \u2014 base this on their onboarding answers only.';
+
+    const prevSummary = MindfulnessPlan.summarizePrevious();
+    const historyText = prevSummary
+      ? `Last week's plan was: "${prevSummary.weekGoal}" \u2014 they completed ${prevSummary.done} of ${prevSummary.total} practices (${prevSummary.pct}%). ${prevSummary.pct >= 70 ? 'They largely followed through \u2014 consider a real progression.' : prevSummary.pct <= 30 ? 'They struggled to follow it \u2014 this week should be simpler, more approachable.' : 'Partial follow-through \u2014 keep this week realistic.'}`
+      : 'This is their first mindfulness plan \u2014 no prior week to build on yet.';
+
+    const nameProfile = profile.drSage?.preferredName;
+    const nameBlock = nameProfile ? `\n\nCall them ${nameProfile}.` : '';
+
+    const userMessage = `This person told you, when you first met: their experience with meditation or yoga is "${stressProfile.experience || 'not specified'}" and what stresses them most is "${stressProfile.stressors || 'not specified'}".\n\n${discussionText}\n\n${historyText}${nameBlock}\n\nBuild a real weekly mindfulness plan \u2014 3 to 4 specific days, each with ONE concrete practice (a real technique: box breathing, a body scan, a short walk without a phone, journaling a specific prompt, etc.) \u2014 genuinely varied across the week, not the same thing repeated, and appropriate to their real stated experience level. If they've said something real in conversation, let it shape at least one day directly. Say it directly, don't hedge. Respond ONLY with valid JSON, no markdown: {"weekGoal": "1-2 sentences on this week's focus, stated directly, referencing their real situation", "days": [{"day": "Day 1", "practice": "specific technique, described concretely enough to actually do"}, ...3-4 days]}`;
+
+    try {
+      const res = await fetch('/.netlify/functions/claude', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system: 'You are Lotus, a mindfulness coach and active yoga practitioner. Be direct and confident \u2014 tell them what to do, don\u2019t hedge. You are NOT a therapist or licensed clinician \u2014 you are a coach. You NEVER diagnose a mental health condition, NEVER claim certainty about outcomes. You NEVER invent something they didn\u2019t actually say or give you. Respond with ONLY the requested JSON, nothing else.',
+          messages: [{ role: 'user', content: userMessage }],
+          max_tokens: 450,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Request failed');
+      const text = (data.content?.[0]?.text || '').replace(/```json\s*|```\s*/g, '').trim();
+      const parsed = JSON.parse(text);
+      if (!parsed.weekGoal || !Array.isArray(parsed.days) || !parsed.days.length) throw new Error('Invalid response shape');
+
+      const newPlan = {
+        weekGoal: parsed.weekGoal,
+        days: parsed.days.slice(0, 5).map(d => ({ day: String(d.day || '').slice(0, 40), practice: String(d.practice || '').slice(0, 200), done: false })),
+        usedDiscussion,
+        createdDate: new Date().toISOString().slice(0, 10),
+      };
+      const history = MindfulnessPlan.loadHistory();
+      history.push(newPlan);
+      MindfulnessPlan.saveHistory(history);
+      MindfulnessPlan.render();
+    } catch (e) {
+      err.textContent = 'Couldn\u2019t build a valid plan right now \u2014 try again.';
+      err.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = 'Build my mindfulness plan';
+    }
+  },
+};
+
+MindfulnessPlan.render();
+</script>
+</body>
+</html>
