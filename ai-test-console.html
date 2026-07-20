@@ -200,7 +200,7 @@ const Team = {
   },
 
   ensureSeeded() {
-    if (localStorage.getItem('sh_team_profile')) return; // already seeded, don't reset progress
+    if (localStorage.getItem('sh_team_profile')) return; // already seeded (or you did it for real) — don't reset progress
     localStorage.setItem('sh_team_profile', JSON.stringify({
       drSage: { preferredName: 'Frank', goal: 'I want to lose weight and have more energy' },
       sleep: { bedtime: '11pm', struggle: 'Waking too early' },
@@ -214,6 +214,14 @@ const Team = {
         { rmssd: 38, recordedAt: new Date(now - 6*day).toISOString() },
         { rmssd: 40, recordedAt: new Date(now - 4*day).toISOString() },
         { rmssd: 44, recordedAt: new Date(now - 1*3600000).toISOString() },
+      ],
+      sleep: { totalMin: 460, asleepMin: 450, date: new Date(now).toISOString().slice(0,10) },
+      sleepDetail: { phases: [
+        { type: 2, durationMin: 180 }, { type: 3, durationMin: 120 }, { type: 5, durationMin: 10 },
+        { type: 2, durationMin: 90 }, { type: 4, durationMin: 60 },
+      ]},
+      sleepPeriods: [
+        { startMins: 22*60+30, daysPrevious: 2 }, { startMins: 22*60+45, daysPrevious: 1 }, { startMins: 23*60, daysPrevious: 0 },
       ],
       activityHistory: [
         { date: new Date(now-3*day).toISOString().slice(0,10), totalSteps: 6200 },
