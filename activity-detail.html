@@ -14,38 +14,51 @@
   .card { background: #1A2A4D; border: 1px solid #2A3B5E; border-radius: 18px; padding: 18px 18px 20px; margin-bottom: 14px; }
   .card-title { font-size: 15px; font-weight: 700; color: #C8D0E0; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.04em; }
   .card-sub { font-size: 12px; color: #8A93A8; margin-bottom: 12px; }
-  .big-value { font-size: 44px; font-weight: 800; }
-  .big-unit { font-size: 15px; color: #8A93A8; margin-left: 4px; }
-  .stat-grid { display: flex; gap: 14px; margin-top: 14px; }
+  svg.chart { width: 100%; height: 140px; display: block; }
+  .grid-line { stroke: rgba(255,255,255,0.15); stroke-width: 1; stroke-dasharray: 3 3; }
+  .grid-label { fill: rgba(255,255,255,0.5); font-size: 9px; }
+  .stat-grid { display: flex; gap: 14px; }
   .stat-box { flex: 1; background: rgba(255,255,255,0.06); border-radius: 12px; padding: 14px; text-align: center; }
-  .stat-box .val { font-size: 20px; font-weight: 800; }
+  .stat-box .val { font-size: 22px; font-weight: 800; }
   .stat-box .lbl { font-size: 11px; color: #8A93A8; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.04em; }
-  svg.chart { width: 100%; height: 130px; display: block; }
-  .bar-label { fill: #8A93A8; font-size: 9px; }
+  .callout { background: rgba(255,255,255,0.06); border-radius: 10px; padding: 12px 14px; font-size: 14px; margin-top: 10px; }
+  .warn { color: #E8A85C; font-size: 12px; margin-top: 8px; }
   .empty-note { font-size: 13px; color: #8A93A8; }
 </style>
 </head>
 <body>
 
-  <a class="back" href="scores.html">‹ Back to Scores</a>
+  <a class="back" href="dashboard.html">‹ Back to Dashboard</a>
   <h1>Activity Detail</h1>
   <div class="date" id="detail-date">--</div>
 
   <div id="content" style="display:none;">
 
     <div class="card">
-      <div class="card-title">Most Recent Day</div>
-      <div class="card-sub" id="capture-date">--</div>
-      <div><span class="big-value" id="steps-value">--</span><span class="big-unit">steps</span></div>
+      <div class="card-title">Intraday Steps</div>
+      <div class="card-sub">Every 15-minute slot the ring logged today — real per-slot data, not a daily total.</div>
+      <svg id="steps-chart" class="chart" viewBox="0 0 300 140" preserveAspectRatio="none"></svg>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Intraday Calories</div>
+      <div class="card-sub">Same per-slot data, calorie field.</div>
+      <svg id="cal-chart" class="chart" viewBox="0 0 300 140" preserveAspectRatio="none"></svg>
+      <div class="warn">⚠ Known ~100x scaling bug in the ring's calorie output (open item, not corrected here) — shown as real raw ring data, not a trustworthy calorie count.</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Today's Stats</div>
       <div class="stat-grid">
-        <div class="stat-box"><div class="val" id="stat-avg">--</div><div class="lbl">Prior Avg/Day</div></div>
-        <div class="stat-box"><div class="val" id="stat-vs-avg">--</div><div class="lbl">vs That Average</div></div>
+        <div class="stat-box"><div class="val" id="stat-active-slots">--</div><div class="lbl">Active Slots</div></div>
+        <div class="stat-box"><div class="val" id="stat-sedentary-slots">--</div><div class="lbl">Sedentary Slots</div></div>
       </div>
+      <div class="callout" id="peak-window">Most active window: --</div>
     </div>
 
     <div class="card" id="trend-card" style="display:none;">
-      <div class="card-title">Step Trend</div>
-      <div class="card-sub">Every real day the ring recorded, most recent on the right.</div>
+      <div class="card-title">Day-to-Day Trend</div>
+      <div class="card-sub">Total steps per day, most recent on the right — different from the intraday chart above, this is across multiple days.</div>
       <svg id="trend-chart" class="chart" viewBox="0 0 300 130" preserveAspectRatio="none"></svg>
     </div>
 
@@ -66,98 +79,171 @@
 
   <div class="empty-note" id="no-data-note">No activity data cached yet — go back and connect the ring first.</div>
 
-<script>
-  function loadSnapshot() {
-    try { return JSON.parse(localStorage.getItem('sh_ring_latest') || 'null'); }
-    catch (e) { return null; }
-  }
-
-  function computeTrend(history) {
-    const clean = (history || []).filter(a => a.totalSteps != null).sort((a, b) => a.date.localeCompare(b.date));
-    if (clean.length < 1) return null;
-    const latest = clean[clean.length - 1];
-    const prior = clean.slice(0, -1);
-    const avgPrior = prior.length ? Math.round(prior.reduce((s, a) => s + a.totalSteps, 0) / prior.length) : null;
-    const pctVsAvg = avgPrior ? Math.round(((latest.totalSteps - avgPrior) / avgPrior) * 100) : null;
-    return { clean, latest, avgPrior, pctVsAvg };
-  }
-
-  function renderTrend(clean) {
-    if (!clean || clean.length < 2) return;
-    document.getElementById('trend-card').style.display = 'block';
-    const w = 300, h = 130, padL = 8, padR = 8, padT = 8, padB = 20;
-    const plotW = w - padL - padR, plotH = h - padT - padB;
-    const maxSteps = Math.max(...clean.map(c => c.totalSteps), 1);
-    const barW = plotW / clean.length * 0.5;
-    const gap = plotW / clean.length;
-    let bars = '';
-    clean.forEach((c, i) => {
-      const x = padL + i * gap + (gap - barW) / 2;
-      const barH = (c.totalSteps / maxSteps) * plotH;
-      const y = padT + plotH - barH;
-      bars += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${barH.toFixed(1)}" rx="3" fill="#E8985C"/>`;
-      bars += `<text x="${(x + barW/2).toFixed(1)}" y="${h - 6}" text-anchor="middle" class="bar-label">${c.date.slice(5)}</text>`;
-    });
-    document.getElementById('trend-chart').innerHTML = bars;
-  }
-
-  function renderRawData(clean) {
-    const el = document.getElementById('raw-data-table');
-    if (!clean || !clean.length) { el.textContent = 'No days recorded yet.'; return; }
-    const header = 'date'.padEnd(14) + 'steps';
-    const rows = [...clean].reverse().map(c => c.date.padEnd(14) + c.totalSteps.toLocaleString());
-    el.innerHTML = '<pre style="white-space:pre; margin:0;">' + [header, '-'.repeat(24)].concat(rows).join('\n') + '</pre>';
-  }
-
-  document.addEventListener('DOMContentLoaded', () => {
-    const snap = loadSnapshot();
-    const trend = snap && computeTrend(snap.activityHistory);
-    if (!trend) return; // no-data-note stays visible
-
-    document.getElementById('no-data-note').style.display = 'none';
-    document.getElementById('content').style.display = 'block';
-    document.getElementById('detail-date').textContent = trend.latest.date;
-    document.getElementById('capture-date').textContent = trend.latest.date;
-    document.getElementById('steps-value').textContent = trend.latest.totalSteps.toLocaleString();
-    document.getElementById('stat-avg').textContent = trend.avgPrior != null ? trend.avgPrior.toLocaleString() : '--';
-    document.getElementById('stat-vs-avg').textContent = trend.pctVsAvg != null ? `${trend.pctVsAvg > 0 ? '+' : ''}${trend.pctVsAvg}%` : '--';
-
-    renderTrend(trend.clean);
-    renderRawData(trend.clean);
-
-    document.getElementById('ask-sage-btn').addEventListener('click', () => askDrSage(trend));
-  });
-
-  async function askDrSage(trend) {
-    const btn = document.getElementById('ask-sage-btn');
-    const responseEl = document.getElementById('sage-response');
-    btn.disabled = true;
-    btn.textContent = 'Thinking...';
-
-    const historyText = trend.clean.map(c => `${c.date}: ${c.totalSteps} steps`).join('; ');
-    const userMessage = `Here is this person's real activity data, exactly as shown on their dashboard:\n\nMost recent day: ${trend.latest.totalSteps} steps (${trend.latest.date}).\nPrior average: ${trend.avgPrior != null ? trend.avgPrior + ' steps/day' : 'not enough history yet'}.\nvs that average: ${trend.pctVsAvg != null ? trend.pctVsAvg + '%' : 'n/a'}.\n\nFull real history: ${historyText}.\n\nExplain what these numbers show in plain language. End with exactly one recommendation, chosen from these three (state which tier plainly): (1) no change needed, (2) consider adjusting a specific behavior, or (3) consider seeing a doctor. Keep it under 180 words.`;
-
-    try {
-      const res = await fetch('/.netlify/functions/claude', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          system: 'You are Dr. Sage, a personal health data explainer. You explain what a person\u2019s own wearable-ring data shows in plain, direct language. You NEVER diagnose any condition, NEVER claim certainty about a health status, and NEVER name a specific disease. You always frame recommendations as one of exactly three tiers: no change needed, adjust a behavior, or see a doctor. Never invent a number not given to you.',
-          messages: [{ role: 'user', content: userMessage }],
-          max_tokens: 400,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Request failed');
-      responseEl.textContent = data.content?.[0]?.text || '(no response)';
-      responseEl.style.display = 'block';
-    } catch (e) {
-      responseEl.textContent = 'Unavailable right now — try again.';
-      responseEl.style.display = 'block';
+  <script>
+    function loadSnapshot() {
+      try { return JSON.parse(localStorage.getItem('sh_ring_latest') || 'null'); }
+      catch (e) { return null; }
     }
-    btn.disabled = false;
-    btn.textContent = 'Ask Dr. Sage';
-  }
-</script>
+
+    function renderBarChart(svgEl, values, labels, gridVals, color) {
+      const w = 300, h = 140, padL = 26, padR = 4, padT = 8, padB = 18;
+      const plotW = w - padL - padR, plotH = h - padT - padB;
+      const maxV = Math.max(...gridVals, ...values, 1);
+      const minV = 0;
+      const barGap = plotW / values.length;
+      const barW = barGap * 0.7;
+
+      let grid = '';
+      gridVals.forEach(v => {
+        const y = padT + plotH - (v / maxV) * plotH;
+        grid += `<line x1="${padL}" y1="${y}" x2="${w-padR}" y2="${y}" class="grid-line"/>`;
+        grid += `<text x="${w-padR}" y="${y-2}" text-anchor="end" class="grid-label">${v}</text>`;
+      });
+
+      let bars = '';
+      values.forEach((v, i) => {
+        if (v <= 0) return;
+        const x = padL + i * barGap + (barGap - barW) / 2;
+        const barH = (v / maxV) * plotH;
+        const y = padT + plotH - barH;
+        bars += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${barH.toFixed(1)}" rx="1.5" fill="${color}"/>`;
+      });
+
+      // A handful of x-axis time labels, not one per slot (too dense)
+      let labelsSvg = '';
+      const labelEvery = Math.ceil(values.length / 6);
+      labels.forEach((lbl, i) => {
+        if (i % labelEvery !== 0) return;
+        const x = padL + i * barGap + barGap / 2;
+        labelsSvg += `<text x="${x.toFixed(1)}" y="${h-4}" text-anchor="middle" class="grid-label">${lbl}</text>`;
+      });
+
+      svgEl.innerHTML = grid + bars + labelsSvg;
+      svgEl.setAttribute('viewBox', `0 0 ${w} ${h}`);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const snap = loadSnapshot();
+      const entries = snap && snap.activityEntries;
+
+      if (!entries || !entries.length) return; // no-data-note stays visible
+
+      document.getElementById('no-data-note').style.display = 'none';
+      document.getElementById('content').style.display = 'block';
+      document.getElementById('detail-date').textContent = (snap.activity && snap.activity.date) || '';
+
+      const steps = entries.map(e => e.steps);
+      const cals = entries.map(e => e.calories);
+      const labels = entries.map(e => `${String(e.hour).padStart(2,'0')}:${String(e.minute).padStart(2,'0')}`);
+
+      renderBarChart(document.getElementById('steps-chart'), steps, labels, [Math.max(...steps, 10)], '#8FA9C4');
+      renderBarChart(document.getElementById('cal-chart'), cals, labels, [Math.max(...cals, 10)], '#E8A85C');
+
+      const activeSlots = entries.filter(e => e.steps > 0).length;
+      const sedentarySlots = entries.length - activeSlots;
+      document.getElementById('stat-active-slots').textContent = activeSlots;
+      document.getElementById('stat-sedentary-slots').textContent = sedentarySlots;
+
+      const peak = entries.reduce((best, e) => e.steps > (best?.steps || 0) ? e : best, null);
+      if (peak && peak.steps > 0) {
+        const startLbl = `${String(peak.hour).padStart(2,'0')}:${String(peak.minute).padStart(2,'0')}`;
+        const endMin = peak.minute + 15;
+        const endHour = peak.hour + Math.floor(endMin / 60);
+        const endLbl = `${String(endHour % 24).padStart(2,'0')}:${String(endMin % 60).padStart(2,'0')}`;
+        document.getElementById('peak-window').textContent = `Most active window: ${startLbl}–${endLbl}, ${peak.steps} steps`;
+      } else {
+        document.getElementById('peak-window').textContent = 'No active slots recorded yet today.';
+      }
+
+      // Multi-day trend + raw data + Ask Dr. Sage — genuinely
+      // different data (day totals across a week, snap.activityHistory)
+      // from the intraday chart above (today's 15-min slots,
+      // snap.activityEntries). Both real, both shown independently
+      // based on what actually exists.
+      const trend = computeTrend(snap.activityHistory);
+      if (trend) {
+        renderTrend(trend.clean);
+        renderRawData(trend.clean);
+        document.getElementById('ask-sage-btn').addEventListener('click', () => askDrSage(trend, entries));
+      } else {
+        document.getElementById('raw-data-table').textContent = 'No multi-day history recorded yet.';
+        document.getElementById('ask-sage-btn').addEventListener('click', () => askDrSage(null, entries));
+      }
+    });
+
+    function computeTrend(history) {
+      const clean = (history || []).filter(a => a.totalSteps != null).sort((a, b) => a.date.localeCompare(b.date));
+      if (clean.length < 1) return null;
+      const latest = clean[clean.length - 1];
+      const prior = clean.slice(0, -1);
+      const avgPrior = prior.length ? Math.round(prior.reduce((s, a) => s + a.totalSteps, 0) / prior.length) : null;
+      const pctVsAvg = avgPrior ? Math.round(((latest.totalSteps - avgPrior) / avgPrior) * 100) : null;
+      return { clean, latest, avgPrior, pctVsAvg };
+    }
+
+    function renderTrend(clean) {
+      if (!clean || clean.length < 2) return;
+      document.getElementById('trend-card').style.display = 'block';
+      const w = 300, h = 130, padL = 8, padR = 8, padT = 8, padB = 20;
+      const plotW = w - padL - padR, plotH = h - padT - padB;
+      const maxSteps = Math.max(...clean.map(c => c.totalSteps), 1);
+      const barW = plotW / clean.length * 0.5;
+      const gap = plotW / clean.length;
+      let bars = '';
+      clean.forEach((c, i) => {
+        const x = padL + i * gap + (gap - barW) / 2;
+        const barH = (c.totalSteps / maxSteps) * plotH;
+        const y = padT + plotH - barH;
+        bars += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${barH.toFixed(1)}" rx="3" fill="#E8985C"/>`;
+        bars += `<text x="${(x + barW/2).toFixed(1)}" y="${h - 6}" text-anchor="middle" class="grid-label">${c.date.slice(5)}</text>`;
+      });
+      document.getElementById('trend-chart').innerHTML = bars;
+    }
+
+    function renderRawData(clean) {
+      const el = document.getElementById('raw-data-table');
+      if (!clean || !clean.length) { el.textContent = 'No days recorded yet.'; return; }
+      const header = 'date'.padEnd(14) + 'steps';
+      const rows = [...clean].reverse().map(c => c.date.padEnd(14) + c.totalSteps.toLocaleString());
+      el.innerHTML = '<pre style="white-space:pre; margin:0;">' + [header, '-'.repeat(24)].concat(rows).join('\n') + '</pre>';
+    }
+
+    async function askDrSage(trend, intradayEntries) {
+      const btn = document.getElementById('ask-sage-btn');
+      const responseEl = document.getElementById('sage-response');
+      btn.disabled = true;
+      btn.textContent = 'Thinking...';
+
+      const trendText = trend
+        ? `Multi-day history: ${trend.clean.map(c => `${c.date}: ${c.totalSteps} steps`).join('; ')}. Most recent vs prior average: ${trend.pctVsAvg != null ? trend.pctVsAvg + '%' : 'not enough history yet'}.`
+        : 'No multi-day history recorded yet — only today\u2019s intraday data exists.';
+      const intradayText = intradayEntries && intradayEntries.length
+        ? `Today's intraday pattern: ${intradayEntries.filter(e => e.steps > 0).length} active 15-minute slots out of ${intradayEntries.length} total.`
+        : '';
+
+      const userMessage = `Here is this person's real activity data, exactly as shown on their dashboard:\n\n${trendText}\n${intradayText}\n\nNote: the ring's calorie output has a known scaling bug and should not be treated as accurate — only comment on steps, not calories, unless specifically asked.\n\nExplain what these numbers show in plain language. End with exactly one recommendation, chosen from these three (state which tier plainly): (1) no change needed, (2) consider adjusting a specific behavior, or (3) consider seeing a doctor. Keep it under 180 words.`;
+
+      try {
+        const res = await fetch('/.netlify/functions/claude', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            system: 'You are Dr. Sage, a personal health data explainer. You explain what a person\u2019s own wearable-ring data shows in plain, direct language. You NEVER diagnose any condition, NEVER claim certainty about a health status, and NEVER name a specific disease. You always frame recommendations as one of exactly three tiers: no change needed, adjust a behavior, or see a doctor. Never invent a number not given to you.',
+            messages: [{ role: 'user', content: userMessage }],
+            max_tokens: 400,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Request failed');
+        responseEl.textContent = data.content?.[0]?.text || '(no response)';
+        responseEl.style.display = 'block';
+      } catch (e) {
+        responseEl.textContent = 'Unavailable right now — try again.';
+        responseEl.style.display = 'block';
+      }
+      btn.disabled = false;
+      btn.textContent = 'Ask Dr. Sage';
+    }
+  </script>
 </body>
 </html>
