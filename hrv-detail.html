@@ -81,6 +81,12 @@
       </div>
     </div>
 
+    <div class="card" id="raw-data-card">
+      <div class="card-title">Raw Data</div>
+      <div class="card-sub">Every real capture, exactly as recorded. No commentary, no interpretation — if you want that, see Insights or Ask Dr. Sage above.</div>
+      <div id="raw-data-table" style="font-family: 'SF Mono', Consolas, monospace; font-size:11.5px; line-height:1.8; color:#C8D0E0; overflow-x:auto;"></div>
+    </div>
+
   </div>
 
   <div class="empty-note" id="no-data-note">No HRV capture yet — go back, connect the ring, and tap "Compute HRV" on the HRV card.</div>
@@ -285,9 +291,26 @@ Explain what these numbers show in plain language. If a section says data is mis
 
       renderTrend(snap.hrvHistory);
       renderInsights(snap);
+      renderRawData(snap.hrvHistory);
 
       document.getElementById('ask-sage-btn').addEventListener('click', () => askDrSage(snap));
     });
+
+    function renderRawData(history) {
+      const el = document.getElementById('raw-data-table');
+      if (!history || !history.length) { el.textContent = 'No captures yet.'; return; }
+      const header = 'timestamp'.padEnd(26) + 'rmssd(ms)'.padEnd(11) + 'beats'.padEnd(8) + 'clean'.padEnd(8) + 'rejected'.padEnd(10) + 'meanRR(ms)';
+      const rows = [...history].reverse().map(h => {
+        const ts = (h.recordedAt ? new Date(h.recordedAt).toISOString() : (h.date || '')).padEnd(26);
+        const rmssd = String(h.rmssd ?? '--').padEnd(11);
+        const beats = String(h.beatsDetected ?? '--').padEnd(8);
+        const clean = String(h.cleanBeats ?? '--').padEnd(8);
+        const rejected = (h.rejectionRate != null ? Math.round(h.rejectionRate * 100) + '%' : '--').padEnd(10);
+        const meanRR = String(h.meanRR ?? '--');
+        return ts + rmssd + beats + clean + rejected + meanRR;
+      });
+      el.innerHTML = '<pre style="white-space:pre; margin:0;">' + [header, '-'.repeat(69)].concat(rows).join('\n') + '</pre>';
+    }
   </script>
 </body>
 </html>
