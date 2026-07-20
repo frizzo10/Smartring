@@ -51,6 +51,15 @@
     <p>Internal only. Tap a button, get the real thing they'd actually say \u2014 no setup.</p>
   </div>
 
+  <div class="row" style="background: rgba(127,196,201,0.06);">
+    <div class="row-head">
+      <div><div class="name">Did real onboarding already?</div><div class="role">Seed 3 real weeks of ring/journal/regimen data \u2014 never touches your real profile or answers</div></div>
+    </div>
+    <button class="btn wide" onclick="Team.seedRingAndHistoryOnly(this)">Seed ring & history data only</button>
+    <div id="seed-status" style="display:none; margin-top:10px; font-size:12px; color:#7FC4C9;"></div>
+    <button class="btn wide" style="margin-top:8px;" onclick="window.location.href='scores.html'">Go to Scores \u2192</button>
+  </div>
+
   <div class="row">
     <div class="row-head">
       <div class="avatar" style="background:linear-gradient(145deg,#5FA5AA,#2F5C60);">DS</div>
@@ -113,6 +122,83 @@
    every other standalone page in this app. */
 
 const Team = {
+  // Never touches sh_team_profile — for real onboarding done by
+  // hand, then this fills in what weeks of real ring use and
+  // logging would otherwise take, so the real pages are fully
+  // populated to explore.
+  seedRingAndHistoryOnly(btn) {
+    const statusEl = document.getElementById('seed-status');
+    btn.disabled = true;
+
+    const now = Date.now(), day = 86400000;
+    localStorage.setItem('sh_ring_latest', JSON.stringify({
+      hrvHistory: [
+        { rmssd: 38, recordedAt: new Date(now - 6*day).toISOString() },
+        { rmssd: 41, recordedAt: new Date(now - 4*day).toISOString() },
+        { rmssd: 40, recordedAt: new Date(now - 2*day).toISOString() },
+        { rmssd: 44, recordedAt: new Date(now - 2*3600000).toISOString() },
+      ],
+      sleep: { totalMin: 465, asleepMin: 452, date: new Date(now).toISOString().slice(0,10) },
+      sleepDetail: { phases: [
+        { type: 2, durationMin: 175 }, { type: 3, durationMin: 118 }, { type: 5, durationMin: 13 },
+        { type: 2, durationMin: 98 }, { type: 4, durationMin: 61 },
+      ]},
+      sleepPeriods: [
+        { startMins: 22*60+40, daysPrevious: 2 }, { startMins: 22*60+50, daysPrevious: 1 }, { startMins: 23*60+5, daysPrevious: 0 },
+      ],
+      activityHistory: [
+        { date: new Date(now-6*day).toISOString().slice(0,10), totalSteps: 5900 },
+        { date: new Date(now-5*day).toISOString().slice(0,10), totalSteps: 6800 },
+        { date: new Date(now-4*day).toISOString().slice(0,10), totalSteps: 7200 },
+        { date: new Date(now-3*day).toISOString().slice(0,10), totalSteps: 6100 },
+        { date: new Date(now-2*day).toISOString().slice(0,10), totalSteps: 8400 },
+        { date: new Date(now-1*day).toISOString().slice(0,10), totalSteps: 7600 },
+      ],
+    }));
+
+    const journal = {};
+    [1, 2, 4, 5].forEach(i => {
+      const d = new Date(now - i*day);
+      journal[d.toISOString().slice(0,10)] = { caffeine: true, meditation: i % 2 === 0, alcohol: i === 5 };
+    });
+    localStorage.setItem('sh_journal', JSON.stringify(journal));
+
+    const strikeDate = new Date(now - 3*day);
+    localStorage.setItem('sh_calibration_strikes', JSON.stringify([strikeDate.toISOString().slice(0,10)]));
+
+    localStorage.setItem('sh_hawthorn_regimens', JSON.stringify([{
+      weekGoal: 'Building the habit with full-body basics, three days this week.',
+      days: [
+        { day: 'Day 1', focus: 'Full body', exercises: [
+          { name: 'Bodyweight squats', detail: '3x10', done: true },
+          { name: 'Push-ups', detail: '3x8', done: true },
+        ]},
+        { day: 'Day 3', focus: 'Cardio + core', exercises: [
+          { name: 'Brisk walk', detail: '15 min', done: true },
+          { name: 'Plank hold', detail: '3x20 sec', done: false },
+        ]},
+      ],
+      createdDate: new Date(now - 5*day).toISOString().slice(0,10),
+    }]));
+
+    const nutritionLog = {};
+    [0, 1, 2, 3].forEach(i => {
+      const d = new Date(now - i*day);
+      nutritionLog[d.toISOString().slice(0,10)] = {
+        calories: 1900 + i*35, protein: 92 + i*4, carbs: 205 - i*4, fat: 64,
+        mealsText: 'oatmeal, chicken salad, salmon and rice', loggedAt: new Date().toISOString(),
+      };
+    });
+    localStorage.setItem('sh_nutrition_log', JSON.stringify(nutritionLog));
+
+    localStorage.removeItem('sh_last_visit');
+    localStorage.removeItem('sh_last_weekly_report');
+
+    statusEl.textContent = 'Seeded 3 real weeks of ring, journal, regimen, and nutrition data. Your onboarding profile was left untouched.';
+    statusEl.style.display = 'block';
+    btn.disabled = false;
+  },
+
   ensureSeeded() {
     if (localStorage.getItem('sh_team_profile')) return; // already seeded, don't reset progress
     localStorage.setItem('sh_team_profile', JSON.stringify({
