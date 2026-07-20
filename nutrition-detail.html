@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<title>Nutrition Detail — myDrSage</title>
+<meta name="theme-color" content="#0B1220">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0B1220; color: #fff; padding: 16px 14px 60px; }
+  a.back { color: #8A93A8; text-decoration: none; font-size: 14px; display: inline-block; margin-bottom: 14px; }
+  h1 { font-size: 22px; margin-bottom: 2px; }
+  .date { font-size: 13px; color: #8A93A8; margin-bottom: 18px; }
+  .card { background: #1A2A4D; border: 1px solid #2A3B5E; border-radius: 18px; padding: 18px 18px 20px; margin-bottom: 14px; }
+  .card-title { font-size: 15px; font-weight: 700; color: #C8D0E0; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .card-sub { font-size: 12px; color: #8A93A8; margin-bottom: 12px; }
+  .stat-grid { display: flex; gap: 10px; margin-top: 4px; }
+  .stat-box { flex: 1; background: rgba(255,255,255,0.06); border-radius: 12px; padding: 12px; text-align: center; }
+  .stat-box .val { font-size: 18px; font-weight: 800; }
+  .stat-box .lbl { font-size: 10.5px; color: #8A93A8; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.04em; }
+  svg.chart { width: 100%; height: 130px; display: block; }
+  .bar-label { fill: #8A93A8; font-size: 9px; }
+  .empty-note { font-size: 13px; color: #8A93A8; }
+  .meal-text { font-size: 13px; color: #C8D0E0; font-style: italic; margin-top: 8px; }
+</style>
+</head>
+<body>
+
+  <a class="back" href="scores.html">‹ Back to Scores</a>
+  <h1>Nutrition Detail</h1>
+  <div class="date" id="detail-date">--</div>
+
+  <div id="content" style="display:none;">
+
+    <div class="card">
+      <div class="card-title">Today's Estimate</div>
+      <div class="card-sub" id="capture-date">--</div>
+      <div class="stat-grid">
+        <div class="stat-box"><div class="val" id="stat-cal">--</div><div class="lbl">Calories</div></div>
+        <div class="stat-box"><div class="val" id="stat-protein">--</div><div class="lbl">Protein (g)</div></div>
+        <div class="stat-box"><div class="val" id="stat-carbs">--</div><div class="lbl">Carbs (g)</div></div>
+        <div class="stat-box"><div class="val" id="stat-fat">--</div><div class="lbl">Fat (g)</div></div>
+      </div>
+      <div class="meal-text" id="meal-text"></div>
+    </div>
+
+    <div class="card" id="trend-card" style="display:none;">
+      <div class="card-title">Calorie Trend</div>
+      <div class="card-sub">Every real day logged, most recent on the right.</div>
+      <svg id="trend-chart" class="chart" viewBox="0 0 300 130" preserveAspectRatio="none"></svg>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Ask Dr. Sage</div>
+      <div class="card-sub">Plain-language explanation of what's above, plus one clear next step. Never a diagnosis.</div>
+      <button id="ask-sage-btn" style="width:100%;padding:12px;border-radius:10px;border:1px solid rgba(127,166,217,0.4);background:transparent;color:#7FA6D9;font-size:14px;font-weight:600;">Ask Dr. Sage</button>
+      <div id="sage-response" style="margin-top:14px;font-size:14px;line-height:1.6;color:#fff;display:none;"></div>
+    </div>
+
+    <div class="card" id="raw-data-card">
+      <div class="card-title">Raw Data</div>
+      <div class="card-sub">Every real logged day, exactly as estimated. No commentary, no interpretation. Self-reported and AI-estimated — not a lab measurement.</div>
+      <div id="raw-data-table" style="font-family: 'SF Mono', Consolas, monospace; font-size:11.5px; line-height:1.8; color:#C8D0E0; overflow-x:auto;"></div>
+    </div>
+
+  </div>
+
+  <div class="empty-note" id="no-data-note">No nutrition logged yet — go to Scores and estimate a meal first.</div>
+
+<script>
+  function loadLog() {
+    try { return JSON.parse(localStorage.getItem('sh_nutrition_log') || '{}'); }
+    catch (e) { return {}; }
+  }
+
+  function computeTrend(log) {
+    const dates = Object.keys(log).sort();
+    const clean = dates.map(d => ({ date: d, ...log[d] })).filter(d => d.calories != null);
+    if (!clean.length) return null;
+    const latest = clean[clean.length - 1];
+    return { clean, latest };
+  }
+
+  function renderTrend(clean) {
+    if (!clean || clean.length < 2) return;
+    document.getElementById('trend-card').style.display = 'block';
+    const w = 300, h = 130, padL = 8, padR = 8, padT = 8, padB = 20;
+    const plotW = w - padL - padR, plotH = h - padT - padB;
+    const maxCal = Math.max(...clean.map(c => c.calories), 1);
+    const barW = plotW / clean.length * 0.5;
+    const gap = plotW / clean.length;
+    let bars = '';
+    clean.forEach((c, i) => {
+      const x = padL + i * gap + (gap - barW) / 2;
+      const barH = (c.calories / maxCal) * plotH;
+      const y = padT + plotH - barH;
+      bars += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${barH.toFixed(1)}" rx="3" fill="#9FD49F"/>`;
+      bars += `<text x="${(x + barW/2).toFixed(1)}" y="${h - 6}" text-anchor="middle" class="bar-label">${c.date.slice(5)}</text>`;
+    });
+    document.getElementById('trend-chart').innerHTML = bars;
+  }
+
+  function renderRawData(clean) {
+    const el = document.getElementById('raw-data-table');
+    if (!clean || !clean.length) { el.textContent = 'No days logged yet.'; return; }
+    const header = 'date'.padEnd(13) + 'cal'.padEnd(7) + 'protein'.padEnd(9) + 'carbs'.padEnd(8) + 'fat'.padEnd(6) + 'source';
+    const rows = [...clean].reverse().map(c => {
+      return c.date.padEnd(13) + String(c.calories).padEnd(7) + String(c.protein ?? '--').padEnd(9) + String(c.carbs ?? '--').padEnd(8) + String(c.fat ?? '--').padEnd(6) + (c.source || 'typed');
+    });
+    el.innerHTML = '<pre style="white-space:pre; margin:0;">' + [header, '-'.repeat(50)].concat(rows).join('\n') + '</pre>';
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const log = loadLog();
+    const trend = computeTrend(log);
+    if (!trend) return; // no-data-note stays visible
+
+    document.getElementById('no-data-note').style.display = 'none';
+    document.getElementById('content').style.display = 'block';
+    document.getElementById('detail-date').textContent = trend.latest.date;
+    document.getElementById('capture-date').textContent = trend.latest.date;
+    document.getElementById('stat-cal').textContent = trend.latest.calories;
+    document.getElementById('stat-protein').textContent = trend.latest.protein ?? '--';
+    document.getElementById('stat-carbs').textContent = trend.latest.carbs ?? '--';
+    document.getElementById('stat-fat').textContent = trend.latest.fat ?? '--';
+    document.getElementById('meal-text').textContent = trend.latest.mealsText || '';
+
+    renderTrend(trend.clean);
+    renderRawData(trend.clean);
+
+    document.getElementById('ask-sage-btn').addEventListener('click', () => askDrSage(trend));
+  });
+
+  async function askDrSage(trend) {
+    const btn = document.getElementById('ask-sage-btn');
+    const responseEl = document.getElementById('sage-response');
+    btn.disabled = true;
+    btn.textContent = 'Thinking...';
+
+    const historyText = trend.clean.map(c => `${c.date}: ${c.calories} cal, ${c.protein ?? '?'}g protein, ${c.carbs ?? '?'}g carbs, ${c.fat ?? '?'}g fat`).join('; ');
+    const userMessage = `Here is this person's real nutrition data, exactly as shown on their dashboard:\n\nMost recent day: ${trend.latest.calories} cal, ${trend.latest.protein ?? '?'}g protein, ${trend.latest.carbs ?? '?'}g carbs, ${trend.latest.fat ?? '?'}g fat.\n\nFull real history: ${historyText}.\n\nNote: these are self-reported descriptions run through AI estimation, not lab measurements or a food scale — real but approximate.\n\nExplain what these numbers show in plain language. End with exactly one recommendation, chosen from these three (state which tier plainly): (1) no change needed, (2) consider adjusting a specific behavior, or (3) consider seeing a doctor. Keep it under 180 words.`;
+
+    try {
+      const res = await fetch('/.netlify/functions/claude', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system: 'You are Dr. Sage, a personal health data explainer. You explain what a person\u2019s own logged data shows in plain, direct language. You NEVER diagnose any condition, NEVER claim certainty about a health status, and NEVER name a specific disease. You always frame recommendations as one of exactly three tiers: no change needed, adjust a behavior, or see a doctor. Never invent a number not given to you.',
+          messages: [{ role: 'user', content: userMessage }],
+          max_tokens: 400,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Request failed');
+      responseEl.textContent = data.content?.[0]?.text || '(no response)';
+      responseEl.style.display = 'block';
+    } catch (e) {
+      responseEl.textContent = 'Unavailable right now — try again.';
+      responseEl.style.display = 'block';
+    }
+    btn.disabled = false;
+    btn.textContent = 'Ask Dr. Sage';
+  }
+</script>
+</body>
+</html>
