@@ -796,7 +796,7 @@ const Team = {
     const onboardingText = Team.buildDomainOnboardingText(domain, profile);
     if (!onboardingText) return null;
 
-    const userMessage = `This is day one \u2014 no ring data exists yet, only what this person just told you directly: ${onboardingText}\n\nGive your real initial take: one short observation, and one honest starting goal for the two of you to work toward together (not a full plan yet, just a real first direction). Respond ONLY with valid JSON, no markdown: {"note": "1-2 sentence initial observation, in your voice", "suggestedGoal": "one honest, concrete starting goal"}`;
+    const userMessage = `This is day one \u2014 no ring data exists yet, only what this person just told you directly: ${onboardingText}\n\nGive your real initial take: one short observation, and 2-3 honest, concrete action steps to start with (not vague goals \u2014 real things they could actually do this week). Respond ONLY with valid JSON, no markdown: {"note": "1-2 sentence initial observation, in your voice", "actionSteps": ["concrete step", "concrete step"]}`;
 
     try {
       const res = await fetch('/.netlify/functions/claude', {
@@ -812,8 +812,10 @@ const Team = {
       if (!res.ok) return null;
       const text = (data.content?.[0]?.text || '').replace(/```json\s*|```\s*/g, '').trim();
       const parsed = JSON.parse(text);
-      if (!parsed.note || !parsed.suggestedGoal) return null;
-      return { domain, name: info.name, title: info.title, color: info.color, note: parsed.note, suggestedGoal: parsed.suggestedGoal };
+      if (!parsed.note || !Array.isArray(parsed.actionSteps) || !parsed.actionSteps.length) return null;
+      const actionSteps = parsed.actionSteps.slice(0, 4).map(s => String(s).slice(0, 150)).filter(s => s);
+      if (!actionSteps.length) return null;
+      return { domain, name: info.name, title: info.title, color: info.color, note: parsed.note, actionSteps };
     } catch (e) {
       return null;
     }
@@ -840,7 +842,7 @@ const Team = {
 
     let framingText = "Here's what the team sees so far \u2014 the real work starts now that they actually know you.";
     if (realAssessments.length) {
-      const notesBlock = realAssessments.map(a => `${a.name} (${a.title}): "${a.note}" \u2014 starting goal: "${a.suggestedGoal}"`).join('\n');
+      const notesBlock = realAssessments.map(a => `${a.name} (${a.title}): "${a.note}" \u2014 action steps: ${a.actionSteps.map(s => `"${s}"`).join(', ')}`).join('\n');
       try {
         const res = await fetch('/.netlify/functions/claude', {
           method: 'POST',
@@ -864,8 +866,9 @@ const Team = {
           <div style="width:26px; height:26px; border-radius:50%; background:${a.color}; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:#fff;">${a.name[0]}</div>
           <div style="font-size:13px; font-weight:700;">${a.name} \u00b7 ${a.title}</div>
         </div>
-        <div style="font-size:13px; color:#E4E6EA; margin-bottom:6px;">${a.note}</div>
-        <div style="font-size:12px; color:#7FC4C9;">Starting goal: ${a.suggestedGoal}</div>
+        <div style="font-size:13px; color:#E4E6EA; margin-bottom:8px;">${a.note}</div>
+        <div style="font-size:11px; color:#9CA3AF; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:4px;">Action steps</div>
+        ${a.actionSteps.map(s => `<div style="font-size:12.5px; color:#7FC4C9; margin-bottom:3px;">\u2022 ${s}</div>`).join('')}
       </div>`).join('');
 
     card.innerHTML = `
@@ -877,7 +880,63 @@ const Team = {
       <button id="confirm-yes-btn" style="width:100%; padding:15px; border-radius:14px; border:none; background:#7FC4C9; color:#0A0D14; font-size:15px; font-weight:700; font-family:inherit; cursor:pointer; margin-bottom:10px;">Yes, this is what I want</button>
     `;
     Team.speak(framingText, 'drSage', document.getElementById('report-avatar'));
-    document.getElementById('confirm-yes-btn').addEventListener('click', Team.renderPromiseCapture);
+    document.getElementById('confirm-yes-btn').addEventListener('click', Team.renderFollowUpDate);
+  },
+
+  // ── FOLLOW-UP DATE + NOTIFICATION PERMISSION ────────────────
+  // The follow-up date is real \u2014 it's the exact same 7-day
+  // cadence the weekly report already runs on, just calculated
+  // and shown here for the first time as part of the plan itself.
+  //
+  // The permission request is genuinely real too \u2014 this calls
+  // the actual browser Notification API and records what the
+  // person actually said. But being fully honest about what this
+  // does and doesn't mean: granting permission here does NOT by
+  // itself mean a notification will ever arrive. Actually
+  // delivering one while the app is closed needs a service
+  // worker, a push subscription stored server-side, and a
+  // scheduled server-side trigger \u2014 none of which exist yet.
+  // This records real, honest consent, ready for that
+  // infrastructure whenever it gets built \u2014 it does not fake
+  // having it already.
+  renderFollowUpDate() {
+    const followUpDate = new Date(Date.now() + 7 * 86400000);
+    const dateLabel = followUpDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+    const profile = Team.loadProfile();
+    profile.drSage = profile.drSage || {};
+    profile.drSage.nextFollowUpDate = followUpDate.toISOString();
+    Team.saveProfile(profile);
+
+    const card = document.getElementById('card-area');
+    card.innerHTML = `
+      <div class="member-title" style="margin-bottom:16px;">Your first check-in</div>
+      <div class="intro-text" style="margin-bottom:6px;">${dateLabel}</div>
+      <div style="font-size:13px; color:#9CA3AF; margin-bottom:24px; max-width:280px;">That's part of the plan, not an afterthought \u2014 the team wants to actually see how this week went, not just hand you steps and disappear.</div>
+      <button id="notif-permission-btn" style="width:100%; padding:15px; border-radius:14px; border:none; background:#7FC4C9; color:#0A0D14; font-size:15px; font-weight:700; font-family:inherit; cursor:pointer; margin-bottom:10px;">Let me know when it's time</button>
+      <button id="notif-skip-btn" style="width:100%; padding:13px; border-radius:14px; border:1px solid rgba(255,255,255,0.18); background:transparent; color:#9CA3AF; font-size:14px; font-family:inherit; cursor:pointer;">I'll check back myself</button>
+    `;
+
+    document.getElementById('notif-permission-btn').addEventListener('click', async function() {
+      let outcome = 'unsupported';
+      if ('Notification' in window) {
+        try {
+          outcome = await Notification.requestPermission();
+        } catch (e) {
+          outcome = 'error';
+        }
+      }
+      const p = Team.loadProfile();
+      p.drSage.notificationPermission = outcome;
+      Team.saveProfile(p);
+      Team.renderPromiseCapture();
+    });
+
+    document.getElementById('notif-skip-btn').addEventListener('click', function() {
+      const p = Team.loadProfile();
+      p.drSage.notificationPermission = 'declined';
+      Team.saveProfile(p);
+      Team.renderPromiseCapture();
+    });
   },
 
   renderPromiseCapture() {
