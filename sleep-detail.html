@@ -94,6 +94,19 @@
       <div class="empty-note" style="margin-top:8px;">Total time asleep per night, as far back as the ring's last sleep log read actually returned.</div>
     </div>
 
+    <div class="card">
+      <div class="card-title">Ask Dr. Sage</div>
+      <div class="empty-note" style="margin-bottom:12px;">Plain-language explanation of what's above, plus one clear next step. Never a diagnosis.</div>
+      <button id="ask-sage-btn" style="width:100%;padding:12px;border-radius:10px;border:1px solid rgba(127,166,217,0.4);background:transparent;color:#7FA6D9;font-size:14px;font-weight:600;">Ask Dr. Sage</button>
+      <div id="sage-response" style="margin-top:14px;font-size:14px;line-height:1.6;color:#fff;display:none;"></div>
+    </div>
+
+    <div class="card" id="raw-data-card">
+      <div class="card-title">Raw Data</div>
+      <div class="empty-note" style="margin-bottom:10px;">Every real night, exactly as recorded. No commentary, no interpretation.</div>
+      <div id="raw-data-table" style="font-family: 'SF Mono', Consolas, monospace; font-size:11.5px; line-height:1.8; color:#C8D0E0; overflow-x:auto;"></div>
+    </div>
+
   </div>
 
   <div class="empty-note" id="no-data-note">No sleep data cached yet — go back and connect the ring first.</div>
@@ -205,7 +218,69 @@
       renderStats(primary);
       renderPhaseBreakdown(primary);
       renderTrend(periods);
+      renderRawData(periods || [primary]);
+
+      document.getElementById('ask-sage-btn').addEventListener('click', () => askDrSage(snap, primary, periods));
     });
+
+    function periodStats(period) {
+      const totalMin = period.phases.reduce((s, p) => s + p.durationMin, 0);
+      const asleepMin = period.phases.filter(p => p.type === 2 || p.type === 3 || p.type === 4).reduce((s, p) => s + p.durationMin, 0);
+      const efficiency = totalMin > 0 ? Math.round((asleepMin / totalMin) * 100) : 0;
+      const wakeEvents = period.phases.filter(p => p.type === 5).length;
+      return { totalMin, asleepMin, efficiency, wakeEvents };
+    }
+
+    function renderRawData(periods) {
+      const el = document.getElementById('raw-data-table');
+      if (!periods || !periods.length) { el.textContent = 'No nights recorded yet.'; return; }
+      const header = 'night'.padEnd(12) + 'start'.padEnd(8) + 'end'.padEnd(8) + 'asleep'.padEnd(10) + 'efficiency'.padEnd(12) + 'wake events';
+      const rows = [...periods].sort((a, b) => a.daysPrevious - b.daysPrevious).map(p => {
+        const s = periodStats(p);
+        const label = (p.daysPrevious === 0 ? 'Last night' : `${p.daysPrevious}d ago`).padEnd(12);
+        const start = fmtTime(p.startMins).padEnd(8);
+        const end = fmtTime(p.endMins).padEnd(8);
+        const asleep = `${Math.floor(s.asleepMin/60)}h${s.asleepMin%60}m`.padEnd(10);
+        const eff = (s.efficiency + '%').padEnd(12);
+        return label + start + end + asleep + eff + s.wakeEvents;
+      });
+      el.innerHTML = '<pre style="white-space:pre; margin:0;">' + [header, '-'.repeat(62)].concat(rows).join('\n') + '</pre>';
+    }
+
+    async function askDrSage(snap, primary, periods) {
+      const btn = document.getElementById('ask-sage-btn');
+      const responseEl = document.getElementById('sage-response');
+      btn.disabled = true;
+      btn.textContent = 'Thinking...';
+
+      const s = periodStats(primary);
+      const trendText = periods && periods.length > 1
+        ? `Recent nights: ${periods.map(p => `${p.daysPrevious}d ago: ${Math.round(periodStats(p).asleepMin)}min asleep, ${periodStats(p).efficiency}% efficiency`).join('; ')}.`
+        : 'Only one night on record so far.';
+
+      const userMessage = `Here is this person's real sleep data, exactly as shown on their dashboard:\n\nLast night: ${Math.floor(s.totalMin/60)}h${s.totalMin%60}m in bed, ${Math.floor(s.asleepMin/60)}h${s.asleepMin%60}m actually asleep, ${s.efficiency}% efficiency, ${s.wakeEvents} wake events.\n\n${trendText}\n\nExplain what these numbers show in plain language. End with exactly one recommendation, chosen from these three (state which tier plainly): (1) no change needed, (2) consider adjusting a specific behavior, or (3) consider seeing a doctor. Keep it under 180 words.`;
+
+      try {
+        const res = await fetch('/.netlify/functions/claude', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            system: 'You are Dr. Sage, a personal health data explainer. You explain what a person\'s own wearable-ring data shows in plain, direct language. You NEVER diagnose any condition, NEVER claim certainty about a health status, and NEVER name a specific disease. You always frame recommendations as one of exactly three tiers: no change needed, adjust a behavior, or see a doctor. Never invent a number not given to you.',
+            messages: [{ role: 'user', content: userMessage }],
+            max_tokens: 400,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Request failed');
+        responseEl.textContent = data.content?.[0]?.text || '(no response)';
+        responseEl.style.display = 'block';
+      } catch (e) {
+        responseEl.textContent = 'Unavailable right now — try again.';
+        responseEl.style.display = 'block';
+      }
+      btn.disabled = false;
+      btn.textContent = 'Ask Dr. Sage';
+    }
   </script>
 </body>
 </html>
