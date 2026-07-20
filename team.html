@@ -439,9 +439,35 @@ const Team = {
     );
   },
 
-  async advance() {
+  followUpResolved: {},
+
+  async advance(fromSkip) {
     const step = Team.currentStep();
     if (!step) return;
+
+    // Real follow-up check \u2014 this is the actual "pry for more"
+    // mechanism. Only on a genuine Continue (never Skip, since
+    // skipping means they don't want to elaborate further), only
+    // for real text questions with a real answer already saved,
+    // and only once per question \u2014 followUpResolved prevents
+    // this from ever asking a second follow-up on the same
+    // question, even if advance() gets called again afterward.
+    if (!fromSkip && Team.questionIndexInStep !== -1) {
+      const q = step.questions[Team.questionIndexInStep];
+      const qFullKey = step.key + '.' + q.key;
+      if (q.type === 'text' && !Team.followUpResolved[qFullKey]) {
+        const profile = Team.loadProfile();
+        const answer = profile[step.key] && profile[step.key][q.key];
+        if (answer && answer.trim()) {
+          Team.followUpResolved[qFullKey] = true; // mark BEFORE the async call, so a fast double-tap can't trigger this twice
+          const followUpQuestion = await Team.checkNeedsFollowUp(q.label, answer);
+          if (followUpQuestion) {
+            Team.renderFollowUp(step, q, followUpQuestion, answer);
+            return;
+          }
+        }
+      }
+    }
 
     if (Team.questionIndexInStep === -1) {
       const next = Team.nextUnansweredQuestionIndex(step, 0);
@@ -455,6 +481,94 @@ const Team = {
     if (next === -1) { await Team.nextStep(); return; }
     Team.questionIndexInStep = next;
     Team.renderQuestion();
+  },
+
+  // This is the actual "first and only time" mechanism \u2014 real
+  // judgment on whether an answer is already specific enough, or
+  // whether one genuine follow-up would get something real worth
+  // having. Deliberately bounded to exactly one follow-up per
+  // question (see followUpResolved above) \u2014 real depth, not an
+  // endless interrogation.
+  async checkNeedsFollowUp(label, answer) {
+    try {
+      const res = await fetch('/.netlify/functions/claude', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system: 'You decide whether a person\u2019s answer to an onboarding question is already specific enough, or whether one genuine follow-up question would get real, valuable additional detail. This is the only time this person will be asked this \u2014 dig for real specifics if the answer is vague, generic, or surface-level (a single word, a broad category with no detail, etc). If the answer is already specific and detailed, no follow-up is needed \u2014 don\u2019t ask one just to ask one. Respond ONLY with valid JSON, no markdown.',
+          messages: [{ role: 'user', content: `They were asked: "${label}"\nThey answered: "${answer}"\n\nDoes this genuinely need one follow-up to get real detail, or is it specific enough already? Respond ONLY with JSON: {"needsFollowUp": true or false, "followUpQuestion": "one specific, real follow-up question \u2014 only include this field if needsFollowUp is true"}` }],
+          max_tokens: 150,
+        }),
+      });
+      if (!res.ok) return null;
+      const data = await res.json();
+      const text = (data.content && data.content[0] && data.content[0].text || '').replace(/```json\s*|```\s*/g, '').trim();
+      const parsed = JSON.parse(text);
+      if (parsed.needsFollowUp && parsed.followUpQuestion && String(parsed.followUpQuestion).trim()) {
+        return String(parsed.followUpQuestion).trim();
+      }
+      return null;
+    } catch (e) {
+      return null; // never blocks the flow if this fails \u2014 just proceeds without a follow-up
+    }
+  },
+
+  renderFollowUp(step, q, followUpQuestion, originalAnswer) {
+    document.documentElement.style.setProperty('--accent', step.accent);
+    const card = document.getElementById('card-area');
+    card.innerHTML = `
+      <div class="member-title" style="margin-bottom:16px;">${step.name} wants to know more</div>
+      <div class="question-block"><div class="question-label">${followUpQuestion}</div>
+        <button class="mic-btn" id="followup-mic-btn">\u{1F3A4}</button>
+        <div class="mic-status" id="followup-status">Tap to speak, or type below</div>
+        <div class="transcript-preview" id="followup-preview"></div>
+        <textarea id="followup-text" placeholder="Type your answer\u2026" style="width:100%; min-height:60px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.14); border-radius:10px; padding:10px; color:#fff; font-family:inherit; font-size:13px; margin:12px 0;"></textarea>
+      </div>
+    `;
+    document.getElementById('next-btn').textContent = 'Continue';
+    document.getElementById('next-btn').disabled = true;
+
+    const submitFollowUp = function(value) {
+      if (!value || !value.trim()) return;
+      const profile = Team.loadProfile();
+      profile[step.key] = profile[step.key] || {};
+      profile[step.key][q.key] = originalAnswer + ' \u2014 ' + value.trim();
+      Team.saveProfile(profile);
+      document.getElementById('next-btn').removeEventListener('click', onNextClick);
+      document.getElementById('next-btn').addEventListener('click', Team.advance);
+      Team.advance();
+    };
+
+    function onNextClick() { submitFollowUp(document.getElementById('followup-text').value); }
+    document.getElementById('next-btn').removeEventListener('click', Team.advance);
+    document.getElementById('next-btn').addEventListener('click', onNextClick);
+
+    const textArea = document.getElementById('followup-text');
+    textArea.addEventListener('input', function() {
+      document.getElementById('next-btn').disabled = !textArea.value.trim();
+    });
+
+    const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRec) {
+      document.getElementById('followup-mic-btn').addEventListener('click', function() {
+        const status = document.getElementById('followup-status');
+        status.textContent = 'Listening\u2026';
+        const rec = new SpeechRec();
+        rec.continuous = false; rec.interimResults = false; rec.lang = 'en-US';
+        rec.onresult = function(e) {
+          const transcript = e.results[0][0].transcript;
+          document.getElementById('followup-preview').textContent = transcript;
+          textArea.value = transcript;
+          document.getElementById('next-btn').disabled = false;
+          status.textContent = 'Got it';
+        };
+        rec.onerror = function() { status.textContent = 'Didn\u2019t catch that \u2014 try typing'; };
+        rec.start();
+      });
+    } else {
+      document.getElementById('followup-mic-btn').disabled = true;
+      document.getElementById('followup-status').textContent = 'Voice not available \u2014 type below';
+    }
   },
 
   async nextStep() {
@@ -535,7 +649,7 @@ const Team = {
     }
   },
 
-  skip() { return Team.advance(); },
+  skip() { return Team.advance(true); },
 
   // ── INITIAL PLANS (independent of ring data) ───────────────
   // Hawthorn and Basil each need something real and executable
