@@ -5,6 +5,24 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
 <title>Scores — myDrSage</title>
 <meta name="theme-color" content="#0B1220">
+<script>
+  // Onboarding is mandatory, not optional — this is the actual
+  // fix. Previously "Meet the Team" was just a button on this
+  // page, meaning someone could land here having never gone
+  // through it at all. Runs as early as possible, before any
+  // content renders, to redirect immediately rather than flash
+  // the real page first.
+  (function() {
+    try {
+      var profile = JSON.parse(localStorage.getItem('sh_team_profile') || '{}');
+      if (!profile.drSage || !profile.drSage.goal) {
+        window.location.replace('team.html');
+      }
+    } catch (e) {
+      window.location.replace('team.html');
+    }
+  })();
+</script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
