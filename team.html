@@ -656,41 +656,113 @@ const Team = {
     return lines.join('\n');
   },
 
-  async renderFinalAffirmation() {
-    document.getElementById('progress-track').style.display = 'none';
-    document.getElementById('nav-row').style.display = 'none';
-    const card = document.getElementById('card-area');
-    card.style.display = 'flex';
-    card.innerHTML = '<div class="intro-text">Dr. Sage is putting together what he\u2019s heard\u2026</div>';
+  INITIAL_ASSESSMENT_DOMAINS: {
+    sleep: { name: 'Willow', title: 'Sleep Coach', voice: 'Willow, a sleep coach', color: 'linear-gradient(145deg,#6B7DC4,#45559A)' },
+    stress: { name: 'Lotus', title: 'Mindfulness Coach', voice: 'Lotus, a mindfulness coach and active yoga practitioner', color: 'linear-gradient(145deg,#B692D0,#8560A8)' },
+    activity: { name: 'Hawthorn', title: 'Exercise Coach', voice: 'Hawthorn, an exercise coach', color: 'linear-gradient(145deg,#EC8E56,#C4622A)' },
+    nutrition: { name: 'Basil', title: 'Nutrition Coach', voice: 'Basil, a nutrition coach', color: 'linear-gradient(145deg,#82BD82,#558A55)' },
+  },
 
-    const summary = Team.gatherOnboardingSummary();
-    const profileForName = Team.loadProfile();
-    const rawName = profileForName?.drSage?.preferredName;
-    const name = rawName && rawName.trim() ? rawName.trim() : null;
+  buildDomainOnboardingText(domain, profile) {
+    const d = profile[domain] || {};
+    const parts = Object.entries(d).filter(([k, v]) => v && String(v).trim()).map(([k, v]) => `${k}: ${v}`);
+    return parts.length ? parts.join('; ') : null;
+  },
 
-    let reportText = "Here's what I'm hearing so far \u2014 the real work starts now that the team knows you a little.";
+  // Real initial assessment per specialist, using ONLY their own
+  // real onboarding answers \u2014 no ring data exists yet, so this
+  // is honestly day-one, not a data-backed read. Mirrors the same
+  // "each specialist sees only their own domain" architecture
+  // already used for real weekly plans, just applied to
+  // onboarding content instead of ring history. Honestly returns
+  // null if that specialist's questions were skipped \u2014 never
+  // invents an assessment from nothing.
+  async callInitialSpecialist(domain, profile) {
+    const info = Team.INITIAL_ASSESSMENT_DOMAINS[domain];
+    const onboardingText = Team.buildDomainOnboardingText(domain, profile);
+    if (!onboardingText) return null;
+
+    const userMessage = `This is day one \u2014 no ring data exists yet, only what this person just told you directly: ${onboardingText}\n\nGive your real initial take: one short observation, and one honest starting goal for the two of you to work toward together (not a full plan yet, just a real first direction). Respond ONLY with valid JSON, no markdown: {"note": "1-2 sentence initial observation, in your voice", "suggestedGoal": "one honest, concrete starting goal"}`;
+
     try {
       const res = await fetch('/.netlify/functions/claude', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          system: 'You are Dr. Sage, giving this person a short, warm initial read right after onboarding \u2014 not based on ring data yet, just what they actually just told your team. Be direct and confident. Never diagnose, never claim certainty about outcomes, never invent anything they didn\u2019t say. 3-4 sentences, spoken naturally, plain text only.',
-          messages: [{ role: 'user', content: `Here's everything this person actually told the team during onboarding:\n\n${summary || 'They skipped most questions \u2014 acknowledge that honestly, don\u2019t invent detail.'}${name ? `\n\nCall them ${name}.` : ''}\n\nGive your genuine initial read \u2014 what stands out, and one honest sense of where the team will start.` }],
-          max_tokens: 250,
+          system: `You are ${info.voice}. This is a real person's first day \u2014 you only have what they just told you, no ring data. Be direct and confident, not tentative. You are NOT a licensed clinician. You NEVER diagnose, NEVER claim certainty about outcomes, NEVER invent anything they didn\u2019t actually say. Respond with ONLY the requested JSON, nothing else.`,
+          messages: [{ role: 'user', content: userMessage }],
+          max_tokens: 200,
         }),
       });
       const data = await res.json();
-      if (res.ok && data.content?.[0]?.text) reportText = data.content[0].text.trim();
-    } catch (e) { /* fallback text above already covers this */ }
+      if (!res.ok) return null;
+      const text = (data.content?.[0]?.text || '').replace(/```json\s*|```\s*/g, '').trim();
+      const parsed = JSON.parse(text);
+      if (!parsed.note || !parsed.suggestedGoal) return null;
+      return { domain, name: info.name, title: info.title, color: info.color, note: parsed.note, suggestedGoal: parsed.suggestedGoal };
+    } catch (e) {
+      return null;
+    }
+  },
+
+  async renderFinalAffirmation() {
+    document.getElementById('progress-track').style.display = 'none';
+    document.getElementById('nav-row').style.display = 'none';
+    const card = document.getElementById('card-area');
+    card.style.display = 'flex';
+    card.innerHTML = '<div class="intro-text">The team is putting together their first read\u2026</div>';
+
+    const profile = Team.loadProfile();
+    const rawName = profile?.drSage?.preferredName;
+    const name = rawName && rawName.trim() ? rawName.trim() : null;
+
+    // Each specialist reviews only their own real onboarding
+    // answers, independently \u2014 same architecture as a real
+    // weekly plan, run here for the first time on day one.
+    const results = await Promise.all(
+      Object.keys(Team.INITIAL_ASSESSMENT_DOMAINS).map(domain => Team.callInitialSpecialist(domain, profile))
+    );
+    const realAssessments = results.filter(r => r !== null);
+
+    let framingText = "Here's what the team sees so far \u2014 the real work starts now that they actually know you.";
+    if (realAssessments.length) {
+      const notesBlock = realAssessments.map(a => `${a.name} (${a.title}): "${a.note}" \u2014 starting goal: "${a.suggestedGoal}"`).join('\n');
+      try {
+        const res = await fetch('/.netlify/functions/claude', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            system: 'You are Dr. Sage, introducing your team\u2019s real first-day read to someone who just finished onboarding \u2014 no ring data exists yet, this is based only on what they told the team directly. Be direct and confident. Never diagnose, never claim certainty, never invent anything beyond what your team actually said. 2-3 sentences, spoken naturally, plain text only.',
+            messages: [{ role: 'user', content: `Here's what each specialist who actually got real answers is seeing:\n\n${notesBlock}${name ? `\n\nCall them ${name}.` : ''}\n\nBriefly frame this for them before they see each specialist's real note \u2014 don\u2019t repeat the details, just set up that the team's already forming real first impressions.` }],
+            max_tokens: 150,
+          }),
+        });
+        const data = await res.json();
+        if (res.ok && data.content?.[0]?.text) framingText = data.content[0].text.trim();
+      } catch (e) { /* fallback text above already covers this */ }
+    } else {
+      framingText = "Most of onboarding got skipped, so there's honestly not much for the team to go on yet \u2014 that's okay, we'll build it from here.";
+    }
+
+    const cardsHtml = realAssessments.map(a => `
+      <div style="width:100%; background:#131B2E; border:1px solid rgba(255,255,255,0.08); border-radius:14px; padding:14px; margin-bottom:10px; text-align:left;">
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+          <div style="width:26px; height:26px; border-radius:50%; background:${a.color}; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:#fff;">${a.name[0]}</div>
+          <div style="font-size:13px; font-weight:700;">${a.name} \u00b7 ${a.title}</div>
+        </div>
+        <div style="font-size:13px; color:#E4E6EA; margin-bottom:6px;">${a.note}</div>
+        <div style="font-size:12px; color:#7FC4C9;">Starting goal: ${a.suggestedGoal}</div>
+      </div>`).join('');
 
     card.innerHTML = `
       <div class="avatar-lg" id="report-avatar" style="background:linear-gradient(145deg,#5FA5AA,#2F5C60);">DS</div>
       <div class="member-name">Dr. Sage</div>
-      <div class="intro-text">${reportText}</div>
-      <div style="font-size:13px; color:#9CA3AF; margin:10px 0 20px;">Is this what you want, and will you actually use it?</div>
+      <div class="intro-text" style="margin-bottom:20px;">${framingText}</div>
+      ${cardsHtml}
+      <div style="font-size:13px; color:#9CA3AF; margin:14px 0 20px;">Is this what you want, and will you actually use it?</div>
       <button id="confirm-yes-btn" style="width:100%; padding:15px; border-radius:14px; border:none; background:#7FC4C9; color:#0A0D14; font-size:15px; font-weight:700; font-family:inherit; cursor:pointer; margin-bottom:10px;">Yes, this is what I want</button>
     `;
-    Team.speak(reportText, 'drSage', document.getElementById('report-avatar'));
+    Team.speak(framingText, 'drSage', document.getElementById('report-avatar'));
     document.getElementById('confirm-yes-btn').addEventListener('click', Team.renderPromiseCapture);
   },
 
