@@ -124,6 +124,7 @@ const Team = {
           sensitiveNote: 'Totally optional. This helps me know what to pay closer attention to \u2014 it\u2019s never used to diagnose anything.' },
         { key: 'familyHistory', label: 'Any family history of things like heart disease, diabetes, or similar?', type: 'text', optional: true,
           sensitiveNote: 'Also optional. Same idea \u2014 context for your team, not a medical record.' },
+        { key: 'pastObstacle', label: "What's gotten in the way of this before, if anything?", type: 'text' },
       ],
     },
     {
@@ -134,6 +135,8 @@ const Team = {
         { key: 'bedtime', label: 'What time do you usually try to go to bed?', type: 'text' },
         { key: 'struggle', label: "What's your biggest sleep struggle?", type: 'options',
           options: ['Falling asleep', 'Staying asleep', 'Waking too early', "Not feeling rested"] },
+        { key: 'waketime', label: 'And what time do you usually wake up?', type: 'text' },
+        { key: 'caffeine', label: "What does your caffeine intake look like, and when's your last cup usually?", type: 'text' },
       ],
     },
     {
@@ -144,6 +147,8 @@ const Team = {
         { key: 'experience', label: 'Any experience with meditation or yoga?', type: 'options',
           options: ['None', 'A little', 'Regular practice', 'Very experienced'] },
         { key: 'stressors', label: 'What tends to stress you out most?', type: 'text' },
+        { key: 'manifestation', label: 'When stress hits, how does it usually show up \u2014 racing thoughts, physical tension, trouble sleeping, something else?', type: 'text' },
+        { key: 'whatHelped', label: "Has anything actually helped before, even a little?", type: 'text' },
       ],
     },
     {
@@ -153,6 +158,9 @@ const Team = {
       questions: [
         { key: 'current', label: 'What does exercise currently look like for you?', type: 'text' },
         { key: 'goal', label: "What's one fitness goal you have right now?", type: 'text' },
+        { key: 'limitations', label: 'Any injuries or physical limitations I should build around?', type: 'text', optional: true,
+          sensitiveNote: 'Optional, but genuinely important \u2014 I\u2019ll never suggest something that works against an injury I know about.' },
+        { key: 'equipment', label: 'What equipment or space do you actually have access to?', type: 'text' },
       ],
     },
     {
@@ -162,6 +170,8 @@ const Team = {
       questions: [
         { key: 'restrictions', label: 'Any dietary preferences or restrictions?', type: 'text' },
         { key: 'hardest', label: "What's the hardest part of eating well for you?", type: 'text' },
+        { key: 'pattern', label: 'How many meals do you typically eat in a day, and do you tend to snack?', type: 'text' },
+        { key: 'cookingFor', label: 'Are you cooking just for yourself, or for others too?', type: 'text' },
       ],
     },
     {
