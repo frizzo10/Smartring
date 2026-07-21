@@ -427,7 +427,7 @@ const Dashboard = {
       if (s === 'disconnected') {
         disconnectBtn.style.display = 'none';
         connectBtn.disabled = false;
-        connectBtn.textContent = 'Connect Colmi R02';
+        connectBtn.textContent = 'Connect Ring';
         document.getElementById('hrv-compute-btn').disabled = true;
         document.getElementById('force-stop-btn').disabled = true;
         document.getElementById('disable-auto-hr-btn').disabled = true;
