@@ -11,6 +11,7 @@
   from = "/"
   to = "/dashboard.html"
   status = 302
+  force = true
 
 [[redirects]]
   from = "/*"
