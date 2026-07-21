@@ -4,29 +4,31 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
 <title>Your Sleep Plan — Willow</title>
-<meta name="theme-color" content="#0A0D14">
+<meta name="theme-color" content="#0D130F">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;1,9..144,400;1,9..144,500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0A0D14; color: #F4F5F7; padding: 0 0 40px; }
+  body { font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0D130F; color: #F3EFE6; padding: 0 0 40px; }
   #top-bar { display: flex; align-items: center; gap: 10px; padding: 18px 20px; }
-  #back-btn { width: 36px; height: 36px; border-radius: 10px; border: 1px solid #2A3B5E; background: transparent; color: #fff; font-size: 18px; display: flex; align-items: center; justify-content: center; }
-  #top-bar h1 { font-size: 19px; font-weight: 700; }
+  #back-btn { width: 36px; height: 36px; border-radius: 10px; border: 1px solid rgba(243,239,230,0.15); background: transparent; color: #F3EFE6; font-size: 18px; display: flex; align-items: center; justify-content: center; }
+  #top-bar h1 { font-family: 'Fraunces', serif; font-weight: 500; font-size: 21px; }
   #content { padding: 0 20px; }
-  .empty-state { background: #131B2E; border: 1px solid rgba(255,255,255,0.08); border-radius: 18px; padding: 22px; text-align: center; }
-  .empty-state p { color: #9CA3AF; font-size: 14px; line-height: 1.5; margin-bottom: 16px; }
-  #build-btn { width: 100%; padding: 15px; border-radius: 14px; border: none; background: #9AACE8; color: #0A0D14; font-size: 15px; font-weight: 700; font-family: inherit; cursor: pointer; }
+  .empty-state { background: #161D18; border: 1px solid rgba(243,239,230,0.08); border-radius: 18px; padding: 22px; text-align: center; }
+  .empty-state p { color: #8C9689; font-size: 14px; line-height: 1.5; margin-bottom: 16px; }
+  #build-btn { width: 100%; padding: 15px; border-radius: 14px; border: none; background: #7E8FD1; color: #0D130F; font-size: 15px; font-weight: 700; font-family: inherit; cursor: pointer; }
   #build-btn:disabled { opacity: 0.5; }
   #error-note { color: #E86A5C; font-size: 13px; margin-top: 12px; display: none; }
-  .week-goal { background: linear-gradient(145deg, rgba(154,172,232,0.16), rgba(154,172,232,0.04)); border: 1px solid rgba(154,172,232,0.3); border-radius: 18px; padding: 20px; margin-bottom: 16px; font-size: 15px; line-height: 1.5; }
+  .week-goal { background: linear-gradient(145deg, rgba(126,143,209,0.16), rgba(126,143,209,0.04)); border: 1px solid rgba(126,143,209,0.3); border-radius: 18px; padding: 20px; margin-bottom: 16px; font-family: 'Fraunces', serif; font-style: italic; font-size: 16px; line-height: 1.5; }
   .action-row {
     display: flex; align-items: center; gap: 12px; padding: 14px; margin-bottom: 8px;
-    background: #131B2E; border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; cursor: pointer;
+    background: #161D18; border: 1px solid rgba(243,239,230,0.08); border-radius: 14px; cursor: pointer;
   }
-  .check { width: 20px; height: 20px; border-radius: 6px; border: 1.5px solid rgba(255,255,255,0.35); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 12px; }
-  .action-row.done .check { background: #6FCF97; border-color: #6FCF97; color: #0A0D14; }
+  .check { width: 20px; height: 20px; border-radius: 6px; border: 1.5px solid rgba(243,239,230,0.35); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+  .action-row.done .check { background: #7E8FD1; border-color: #7E8FD1; color: #0D130F; }
   .action-row.done .action-text { text-decoration: line-through; opacity: 0.6; }
   .action-text { flex: 1; font-size: 13.5px; }
-  .completion-banner { text-align: center; font-size: 13px; color: #9CA3AF; margin: 4px 0 16px; }
+  .completion-banner { text-align: center; font-size: 13px; color: #8C9689; margin: 4px 0 16px; }
 </style>
 </head>
 <body>
