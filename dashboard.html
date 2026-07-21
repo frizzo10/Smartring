@@ -120,7 +120,7 @@
 <body>
 
   <div id="connect-bar">
-    <button id="connect-btn">Connect Colmi R02</button>
+    <button id="connect-btn">Connect Ring</button>
     <button id="disconnect-btn">Disconnect Ring</button>
     <div style="font-size:11px;color:#8C9689;margin-top:6px;text-align:center;">Open this page in the Bluefy app for Bluetooth to work — Safari/Chrome can't connect.</div>
     <button id="reboot-ring-btn" style="width:100%;padding:12px;border-radius:10px;border:1px solid rgba(185,143,201,0.6);background:rgba(185,143,201,0.12);color:#B98FC9;font-size:14px;font-weight:700;margin-top:10px;" disabled>✓ Reboot Ring (confirmed fix — clears stuck LEDs, briefly disconnects)</button>
@@ -138,7 +138,7 @@
   <div id="battery-banner">
     <div>
       <div class="b-title" id="battery-pct">--% Battery</div>
-      <div class="b-sub" id="battery-sub">Colmi R02</div>
+      <div class="b-sub" id="battery-sub">Colmi Ring</div>
     </div>
     <div id="battery-pill"><div id="battery-fill" style="width:0%"></div></div>
   </div>
@@ -230,6 +230,13 @@
     </div>
     <div class="empty-note" id="hrv-empty">Not the ring's own HRV number — this is real math (bandpass filter → peak detection → RMSSD) run on raw PPG. Manual only — tap below when you want a reading. Not automatic on connect: this triggers the raw sensor stream, which has occasionally left the ring's LEDs stuck on after finishing (unresolved, see Force Stop button above if that happens).</div>
     <button id="hrv-compute-btn" style="width:100%;padding:12px;border-radius:10px;border:1px solid rgba(243,239,230,0.2);background:transparent;color:#F3EFE6;font-size:14px;font-weight:600;margin-top:12px;" disabled>Compute HRV (60s, hold still)</button>
+  </div>
+
+  <!-- TEMPERATURE (honest not-built-yet state \u2014 R02 has no temperature sensor; R09 does, but its BLE protocol hasn't been reverse-engineered yet) -->
+  <div id="card-temp" class="qcard" style="background:#161D18;border:1px solid rgba(217,131,92,0.28);cursor:default;">
+    <div class="qcard-title">Temperature</div>
+    <div class="qcard-date">Not available yet</div>
+    <div class="empty-note">The R02 doesn't have a temperature sensor \u2014 this needs the R09, which does. It's on its way, but its Bluetooth protocol hasn't been reverse-engineered yet (the same work that had to happen for the R02 before any of its data could be read). This card will start showing real readings once that's done \u2014 nothing estimated or faked in the meantime.</div>
   </div>
 
   <script src="js/sage/colmi-ble.js"></script>
