@@ -4,68 +4,68 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
 <title>Find Your Ring Size</title>
-<meta name="theme-color" content="#0A0D14">
+<meta name="theme-color" content="#0D130F">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    background: #0A0D14; color: #F4F5F7; padding: 0 0 40px;
+    font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #0D130F; color: #F3EFE6; padding: 0 0 40px;
   }
   #top-bar { display: flex; align-items: center; gap: 10px; padding: 18px 20px; }
   #back-btn {
-    width: 36px; height: 36px; border-radius: 10px; border: 1px solid #2A3B5E;
-    background: transparent; color: #fff; font-size: 18px; display: flex;
+    width: 36px; height: 36px; border-radius: 10px; border: 1px solid rgba(243,239,230,0.15);
+    background: transparent; color: #F3EFE6; font-size: 18px; display: flex;
     align-items: center; justify-content: center;
   }
   #top-bar h1 { font-size: 18px; font-weight: 700; }
   #content { padding: 0 20px; }
 
   .instructions {
-    background: #131B2E; border: 1px solid rgba(255,255,255,0.08); border-radius: 16px;
-    padding: 18px; margin-bottom: 18px; font-size: 13.5px; line-height: 1.6; color: #E4E6EA;
+    background: #161D18; border: 1px solid rgba(243,239,230,0.08); border-radius: 16px;
+    padding: 18px; margin-bottom: 18px; font-size: 13.5px; line-height: 1.6; color: #D6D8D2;
   }
   .instructions ol { padding-left: 18px; margin-top: 8px; }
   .instructions li { margin-bottom: 6px; }
 
-  label { font-size: 12px; color: #9CA3AF; text-transform: uppercase; letter-spacing: 0.04em; }
+  label { font-size: 12px; color: #8C9689; text-transform: uppercase; letter-spacing: 0.04em; }
   select {
-    width: 100%; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.18);
-    border-radius: 10px; padding: 12px; color: #fff; font-family: inherit; font-size: 14px;
+    width: 100%; background: rgba(243,239,230,0.06); border: 1px solid rgba(243,239,230,0.18);
+    border-radius: 10px; padding: 12px; color: #F3EFE6; font-family: inherit; font-size: 14px;
     margin: 8px 0 18px;
   }
 
   .attempt-row {
     display: flex; align-items: center; justify-content: space-between; gap: 10px;
-    background: #131B2E; border: 1px solid rgba(255,255,255,0.08); border-radius: 12px;
+    background: #161D18; border: 1px solid rgba(243,239,230,0.08); border-radius: 12px;
     padding: 12px 14px; margin-bottom: 8px; font-size: 13.5px;
   }
-  .attempt-row .size { font-weight: 700; color: #7FC4C9; }
+  .attempt-row .size { font-weight: 700; color: #8FB596; }
 
   #capture-btn {
     width: 100%; padding: 16px; border-radius: 14px; border: none;
-    background: #7FC4C9; color: #0A0D14; font-size: 15px; font-weight: 700;
+    background: #8FB596; color: #0D130F; font-size: 15px; font-weight: 700;
     font-family: inherit; cursor: pointer; margin-bottom: 8px;
   }
   #capture-btn:disabled { opacity: 0.5; }
   #photo-input { display: none; }
 
-  #status { font-size: 12.5px; color: #9CA3AF; text-align: center; margin: 8px 0; display: none; }
-  #error-note { color: #E86A5C; font-size: 13px; margin: 8px 0; display: none; }
+  #status { font-size: 12.5px; color: #8C9689; text-align: center; margin: 8px 0; display: none; }
+  #error-note { color: #C9A75C; font-size: 13px; margin: 8px 0; display: none; }
 
   #result-card {
-    display: none; margin-top: 20px; background: linear-gradient(145deg, rgba(127,196,201,0.16), rgba(127,196,201,0.04));
-    border: 1px solid rgba(127,196,201,0.3); border-radius: 18px; padding: 22px; text-align: center;
+    display: none; margin-top: 20px; background: linear-gradient(145deg, rgba(143,181,150,0.16), rgba(143,181,150,0.04));
+    border: 1px solid rgba(143,181,150,0.3); border-radius: 18px; padding: 22px; text-align: center;
   }
-  #result-size { font-size: 42px; font-weight: 700; color: #7FC4C9; }
-  #result-sub { font-size: 13px; color: #9CA3AF; margin-top: 4px; }
+  #result-size { font-size: 42px; font-weight: 700; color: #8FB596; }
+  #result-sub { font-size: 13px; color: #8C9689; margin-top: 4px; }
   #consistency-warning {
-    display: none; margin-top: 14px; background: rgba(232,106,92,0.14); border: 1px solid rgba(232,106,92,0.4);
-    border-radius: 10px; padding: 12px; font-size: 12.5px; color: #F2A579; text-align: left; line-height: 1.5;
+    display: none; margin-top: 14px; background: rgba(201,167,92,0.14); border: 1px solid rgba(201,167,92,0.4);
+    border-radius: 10px; padding: 12px; font-size: 12.5px; color: #C9A75C; text-align: left; line-height: 1.5;
   }
 
   .fallback {
-    margin-top: 20px; font-size: 12.5px; color: #6B7280; line-height: 1.6;
-    background: rgba(255,255,255,0.04); border-radius: 12px; padding: 14px;
+    margin-top: 20px; font-size: 12.5px; color: #8C9689; line-height: 1.6;
+    background: rgba(243,239,230,0.04); border-radius: 12px; padding: 14px;
   }
 </style>
 </head>
@@ -226,7 +226,7 @@ const FingerSize = {
     list.innerHTML = FingerSize.attempts.map((a, i) => `
       <div class="attempt-row">
         <span>Photo ${i + 1}</span>
-        <span class="size">Size ${a.size} <span style="color:#6B7280; font-weight:400;">(${a.mm.toFixed(1)}mm)</span></span>
+        <span class="size">Size ${a.size} <span style="color:#8C9689; font-weight:400;">(${a.mm.toFixed(1)}mm)</span></span>
       </div>
     `).join('');
   },
