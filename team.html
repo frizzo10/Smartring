@@ -85,6 +85,8 @@
 </head>
 <body>
 
+  <a href="dashboard.html" style="position:fixed; top:16px; left:16px; z-index:50; font-size:13px; color:#8C9689; background:rgba(22,29,24,0.7); backdrop-filter:blur(8px); padding:6px 12px; border-radius:20px; text-decoration:none; border:1px solid rgba(243,239,230,0.1);">‹ Dashboard</a>
+
   <div id="start-gate" style="min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:40px 30px; text-align:center;">
     <div style="width:72px; height:72px; border-radius:50%; background:linear-gradient(145deg,#A9CDAE,#5F7F63); margin-bottom:24px; display:flex; align-items:center; justify-content:center; font-size:28px; font-weight:700; color:#F3EFE6;">DS</div>
     <div style="font-size:22px; font-weight:700; margin-bottom:10px;">Meet Your Team</div>
@@ -109,6 +111,23 @@
 <script>
 const Team = {
   PROFILE_KEY: 'sh_team_profile',
+
+  // Same real, deterministic safety net as lotus-chat.html \u2014
+  // independent of the AI model, checked on every message sent
+  // through any chat surface in this file. Deliberately errs
+  // toward over-triggering, not under.
+  CRISIS_PATTERNS: [
+    /kill myself/i, /kill me\b/i, /want(ed)? to die/i, /wanna die/i,
+    /end(ing)? my life/i, /ending it all/i, /not worth living/i,
+    /better off dead/i, /no reason to live/i, /can'?t go on/i,
+    /give up on life/i, /\bsuicid/i, /hurt(ing)? myself/i,
+    /harm(ing)? myself/i, /self[\s-]?harm/i, /cutting myself/i,
+    /take my own life/i, /don'?t want to (be here|exist)/i,
+  ],
+
+  checkForCrisisLanguage(text) {
+    return Team.CRISIS_PATTERNS.some(function(re) { return re.test(text); });
+  },
 
   todayKey() {
     return new Date().toISOString().slice(0, 10);
@@ -700,10 +719,11 @@ const Team = {
     const profile = Team.loadProfile();
     const sleepProfile = profile.sleep;
     if (!sleepProfile || (!sleepProfile.bedtime && !sleepProfile.struggle)) return;
+    const goalText = (profile.drSage && profile.drSage.goal && profile.drSage.goal.trim()) || null;
 
     document.getElementById('next-btn').textContent = 'Willow is building your plan\u2026';
 
-    const userMessage = `This person told you, when you first met: their usual bedtime is "${sleepProfile.bedtime || 'not specified'}" and their biggest sleep struggle is "${sleepProfile.struggle || 'not specified'}".\n\nNo ring data exists yet \u2014 this is day one, base this on what they've just told you only. Build a real, concrete sleep plan for this week \u2014 3 to 5 specific daily actions (real sleep behaviors: a bedtime target, a wind-down step, something to remove from the bedroom, etc.), directly addressing their stated struggle. Say it directly, don't hedge. Respond ONLY with valid JSON, no markdown: {"weekGoal": "1-2 sentences on this week's focus, stated directly", "actions": ["specific daily action", "..."]}`;
+    const userMessage = `This person told you, when you first met: their usual bedtime is "${sleepProfile.bedtime || 'not specified'}" and their biggest sleep struggle is "${sleepProfile.struggle || 'not specified'}".${goalText ? `\n\nTheir overall stated goal for using this app: "${goalText}". Every plan you build has to genuinely serve that goal, not just be generic sleep advice \u2014 make the connection explicit in weekGoal (e.g. if their goal is more energy, say how better sleep gets them there specifically).` : ''}\n\nNo ring data exists yet \u2014 this is day one, base this on what they've just told you only. Build a real, concrete sleep plan for this week \u2014 3 to 5 specific daily actions (real sleep behaviors: a bedtime target, a wind-down step, something to remove from the bedroom, etc.), directly addressing their stated struggle. Say it directly, don't hedge. Respond ONLY with valid JSON, no markdown: {"weekGoal": "1-2 sentences on this week's focus, stated directly", "actions": ["specific daily action", "..."]}`;
 
     try {
       const res = await fetch('/.netlify/functions/claude', {
@@ -739,6 +759,7 @@ const Team = {
     const profile = Team.loadProfile();
     const stressProfile = profile.stress;
     if (!stressProfile || (!stressProfile.experience && !stressProfile.stressors)) return;
+    const goalText = (profile.drSage && profile.drSage.goal && profile.drSage.goal.trim()) || null;
 
     document.getElementById('next-btn').textContent = 'Lotus is building your plan\u2026';
 
@@ -746,7 +767,7 @@ const Team = {
     // that's genuinely true and honest. Lotus's plan updates to
     // incorporate real discussion content later, once
     // lotus-chat.html actually has real exchanges to draw from.
-    const userMessage = `This person told you, when you first met: their experience with meditation or yoga is "${stressProfile.experience || 'not specified'}" and what stresses them most is "${stressProfile.stressors || 'not specified'}".\n\nNo real conversation with them yet \u2014 base this on their onboarding answers only. Build a real weekly mindfulness plan \u2014 3 to 4 specific days, each with ONE concrete practice, genuinely varied across the week, appropriate to their real stated experience level. Say it directly, don't hedge. Respond ONLY with valid JSON, no markdown: {"weekGoal": "1-2 sentences on this week's focus, stated directly", "days": [{"day": "Day 1", "practice": "specific technique, described concretely enough to actually do"}, ...3-4 days]}`;
+    const userMessage = `This person told you, when you first met: their experience with meditation or yoga is "${stressProfile.experience || 'not specified'}" and what stresses them most is "${stressProfile.stressors || 'not specified'}".${goalText ? `\n\nTheir overall stated goal for using this app: "${goalText}". Every plan you build has to genuinely serve that goal, not just be generic mindfulness advice \u2014 make the connection explicit in weekGoal.` : ''}\n\nNo real conversation with them yet \u2014 base this on their onboarding answers only. Build a real weekly mindfulness plan \u2014 3 to 4 specific days, each with ONE concrete practice, genuinely varied across the week, appropriate to their real stated experience level. Say it directly, don't hedge. Respond ONLY with valid JSON, no markdown: {"weekGoal": "1-2 sentences on this week's focus, stated directly", "days": [{"day": "Day 1", "practice": "specific technique, described concretely enough to actually do"}, ...3-4 days]}`;
 
     try {
       const res = await fetch('/.netlify/functions/claude', {
@@ -783,10 +804,11 @@ const Team = {
     const profile = Team.loadProfile();
     const activityProfile = profile.activity;
     if (!activityProfile || (!activityProfile.current && !activityProfile.goal)) return; // nothing real to build from
+    const goalText = (profile.drSage && profile.drSage.goal && profile.drSage.goal.trim()) || null;
 
     document.getElementById('next-btn').textContent = 'Hawthorn is building your plan\u2026';
 
-    const userMessage = `This person told you, when you first met: "${activityProfile.current || 'not specified'}" is what exercise currently looks like for them, and their goal is: "${activityProfile.goal || 'not specified'}".\n\nNo ring data exists yet \u2014 this is day one. Build a real, structured 3-day regimen for this week based purely on what they've just told you. Once real activity data starts coming in, you'll refine this week to week \u2014 but they need something real and executable starting today, not a placeholder. Say it directly. Use real, named, honest bodyweight or simple-equipment exercises \u2014 nothing requiring gear you have no evidence they own. Respond ONLY with valid JSON, no markdown: {"weekGoal": "1-2 sentences on this week's focus, stated directly and confidently", "days": [{"day": "Day 1", "focus": "e.g. Full body", "exercises": [{"name": "exercise name", "detail": "sets/reps or duration, appropriate to their level"}]}, ...2-3 days]}`;
+    const userMessage = `This person told you, when you first met: "${activityProfile.current || 'not specified'}" is what exercise currently looks like for them, and their goal is: "${activityProfile.goal || 'not specified'}".${goalText ? `\n\nTheir overall stated goal for using this app: "${goalText}". Every plan you build has to genuinely serve that goal, not just be generic exercise advice \u2014 make the connection explicit in weekGoal.` : ''}\n\nNo ring data exists yet \u2014 this is day one. Build a real, structured 3-day regimen for this week based purely on what they've just told you. Once real activity data starts coming in, you'll refine this week to week \u2014 but they need something real and executable starting today, not a placeholder. Say it directly. Use real, named, honest bodyweight or simple-equipment exercises \u2014 nothing requiring gear you have no evidence they own. Respond ONLY with valid JSON, no markdown: {"weekGoal": "1-2 sentences on this week's focus, stated directly and confidently", "days": [{"day": "Day 1", "focus": "e.g. Full body", "exercises": [{"name": "exercise name", "detail": "sets/reps or duration, appropriate to their level"}]}, ...2-3 days]}`;
 
     try {
       const res = await fetch('/.netlify/functions/claude', {
@@ -830,6 +852,7 @@ const Team = {
     const nutritionProfile = profile.nutrition;
     if (!nutritionProfile || (!nutritionProfile.restrictions && !nutritionProfile.hardest)) return;
     const restrictions = nutritionProfile.restrictions || 'none specified';
+    const goalText = (profile.drSage && profile.drSage.goal && profile.drSage.goal.trim()) || null;
 
     document.getElementById('next-btn').textContent = 'Basil is building your plan\u2026';
 
@@ -843,7 +866,7 @@ const Team = {
       }
     } catch (e) { /* non-critical */ }
 
-    const userMessage = `This person's stated dietary preferences/restrictions: ${restrictions}.\n\nNo real nutrition trend exists yet \u2014 this is day one, base this on their stated preferences only.\n\n${regimenText}\n\nBuild a real weekly meal plan \u2014 3 to 4 specific days, each with ONE real, specific, named meal and real ingredients. Genuinely varied across the week. Respect their stated restrictions exactly. If Hawthorn's regimen is real, let it inform your choices. Say it directly, don't hedge. Respond ONLY with valid JSON, no markdown: {"weekGoal": "1-2 sentences on this week's focus, stated directly", "days": [{"day": "Tuesday dinner", "name": "specific dish name", "ingredients": ["real ingredient", "..."]}, ...3-4 days]}`;
+    const userMessage = `This person's stated dietary preferences/restrictions: ${restrictions}.${goalText ? `\n\nTheir overall stated goal for using this app: "${goalText}". Every plan you build has to genuinely serve that goal, not just be generic meal variety \u2014 make the connection explicit in weekGoal.` : ''}\n\nNo real nutrition trend exists yet \u2014 this is day one, base this on their stated preferences only.\n\n${regimenText}\n\nBuild a real weekly meal plan \u2014 3 to 4 specific days, each with ONE real, specific, named meal and real ingredients. Genuinely varied across the week. Respect their stated restrictions exactly. If Hawthorn's regimen is real, let it inform your choices. Say it directly, don't hedge. Respond ONLY with valid JSON, no markdown: {"weekGoal": "1-2 sentences on this week's focus, stated directly", "days": [{"day": "Tuesday dinner", "name": "specific dish name", "ingredients": ["real ingredient", "..."]}, ...3-4 days]}`;
 
     try {
       const res = await fetch('/.netlify/functions/claude', {
@@ -995,13 +1018,14 @@ const Team = {
     let framingText = "Here's what the team has already built for you \u2014 real plans, not a preview.";
     if (realPlans.length) {
       const goalsBlock = realPlans.map(p => `${p.name} (${p.title}): "${p.plan.weekGoal}"`).join('\n');
+      const statedGoal = (profile.drSage && profile.drSage.goal && profile.drSage.goal.trim()) || null;
       try {
         const res = await fetch('/.netlify/functions/claude', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             system: 'You are Dr. Sage, introducing your team\u2019s real, already-built plans to someone who just finished onboarding. Be direct and confident. Never diagnose, never claim certainty, never invent anything beyond what your team actually built. 2-3 sentences, spoken naturally, plain text only.',
-            messages: [{ role: 'user', content: `Here's what each specialist who had enough to work with has already built:\n\n${goalsBlock}${name ? `\n\nCall them ${name}.` : ''}\n\nBriefly frame this before they see each real plan \u2014 don\u2019t repeat the details, just set up that this is real, already built, not a preview.` }],
+            messages: [{ role: 'user', content: `Here's what each specialist who had enough to work with has already built:\n\n${goalsBlock}${name ? `\n\nCall them ${name}.` : ''}${statedGoal ? `\n\nWhat they told you they actually want out of this, at the very start: "${statedGoal}". Make it explicit that everything below is aimed at that, not just four separate specialists doing their own thing.` : ''}\n\nBriefly frame this before they see each real plan \u2014 don\u2019t repeat the details, just set up that this is real, already built, not a preview, and that it's all pointed at what they said they actually want.` }],
             max_tokens: 150,
           }),
         });
@@ -1071,7 +1095,7 @@ const Team = {
     const card = document.getElementById('card-area');
     card.innerHTML = `
       <div style="width:100%; text-align:left;">
-        <button id="back-to-plans-btn" style="background:transparent; border:none; color:#8C9689; font-size:13px; margin-bottom:12px; cursor:pointer; padding:0;">\u2039 All plans</button>
+        <button id="back-to-plans-btn" style="background:transparent; border:none; color:#8C9689; font-size:13px; margin-bottom:12px; cursor:pointer; padding:0;">${Team.directTalkMode ? '\u2039 Dashboard' : '\u2039 All plans'}</button>
         <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
           <div style="width:30px; height:30px; border-radius:50%; background:${p.color}; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; color:#F3EFE6;">${p.name[0]}</div>
           <div style="font-size:14px; font-weight:700;">${p.name} \u00b7 ${p.title}</div>
@@ -1085,7 +1109,7 @@ const Team = {
         <button id="plan-chat-send-btn" style="width:100%; padding:13px; border-radius:12px; border:none; background:${p.color}; color:#F3EFE6; font-size:14px; font-weight:700; font-family:inherit; cursor:pointer;">Send</button>
       </div>
     `;
-    document.getElementById('back-to-plans-btn').addEventListener('click', Team.renderPlanCardsView);
+    document.getElementById('back-to-plans-btn').addEventListener('click', Team.directTalkMode ? function() { window.location.href = 'dashboard.html'; } : Team.renderPlanCardsView);
     document.getElementById('plan-chat-send-btn').addEventListener('click', () => Team.sendPlanConversationMessage(domain));
 
     await Team.pushPlanConversationOpening(p);
@@ -1094,9 +1118,17 @@ const Team = {
   renderPlanChatMessages() {
     const el = document.getElementById('plan-chat-messages');
     if (!el) return;
-    el.innerHTML = Team.planConversationHistory.map(m => `
-      <div style="max-width:85%; padding:8px 11px; border-radius:12px; font-size:12.5px; line-height:1.4; ${m.role === 'user' ? 'align-self:flex-end; background:rgba(243,239,230,0.08);' : 'align-self:flex-start; background:rgba(143,181,150,0.14);'}">${m.content}</div>
-    `).join('');
+    el.innerHTML = Team.planConversationHistory.map(m => {
+      if (m.role === 'crisis') {
+        return `<div style="max-width:100%; align-self:center; text-align:left; background:rgba(232,106,92,0.14); border:1px solid rgba(232,106,92,0.4); border-radius:12px; padding:10px 12px; font-size:12px; line-height:1.5;">
+          <strong style="color:#E86A5C;">If things feel like too much right now:</strong><br>
+          988 Suicide &amp; Crisis Lifeline \u2014 call or text <strong style="color:#F2A579;">988</strong>, available 24/7<br>
+          Crisis Text Line \u2014 text <strong style="color:#F2A579;">HOME</strong> to <strong style="color:#F2A579;">741741</strong><br>
+          You don't have to go through this alone.
+        </div>`;
+      }
+      return `<div style="max-width:85%; padding:8px 11px; border-radius:12px; font-size:12.5px; line-height:1.4; ${m.role === 'user' ? 'align-self:flex-end; background:rgba(243,239,230,0.08);' : 'align-self:flex-start; background:rgba(143,181,150,0.14);'}">${m.content}</div>`;
+    }).join('');
     el.scrollTop = el.scrollHeight;
   },
 
@@ -1114,7 +1146,7 @@ const Team = {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          system: `You are ${p.name}, ${p.title}. You just built this real plan for someone and now you're talking them through it directly \u2014 not reading the plan back to them, actually walking them through your real thinking and what matters most about it. Be direct and confident. NOT a licensed clinician. Never diagnose, never claim certainty about outcomes, never invent anything beyond the real plan you built. Plain text only, natural spoken tone, 2-4 sentences.`,
+          system: `You are ${p.name}, ${p.title}. You just built this real plan for someone and now you're talking them through it directly \u2014 not reading the plan back to them, actually walking them through your real thinking and what matters most about it. Be direct and confident. NOT a licensed clinician. Never diagnose, never claim certainty about outcomes, never invent anything beyond the real plan you built. If someone expresses thoughts of self-harm, suicide, or being in crisis, do not continue as a normal conversation \u2014 gently acknowledge what they shared and clearly encourage them to reach out to a crisis line or someone they trust right now. Plain text only, natural spoken tone, 2-4 sentences.`,
           messages: [{ role: 'user', content: `Here is the real plan you just built:\n${planText}${name ? `\n\nCall them ${name}.` : ''}\n\nTalk them through it \u2014 what you were thinking, what matters most to actually do. Don't just restate it as a list.` }],
           max_tokens: 250,
         }),
@@ -1140,18 +1172,27 @@ const Team = {
     Team.planConversationHistory.push({ role: 'user', content: text });
     Team.renderPlanChatMessages();
 
+    // Real safety net, independent of whatever the AI is about
+    // to say \u2014 same deterministic check as lotus-chat.html.
+    if (Team.checkForCrisisLanguage(text)) {
+      Team.planConversationHistory.push({ role: 'crisis', content: '' });
+      Team.renderPlanChatMessages();
+    }
+
     const status = document.getElementById('plan-chat-status');
     status.textContent = `${p.name} is thinking\u2026`;
 
     const planText = JSON.stringify(p.plan);
-    const messages = Team.planConversationHistory.map(m => ({ role: m.role === 'specialist' ? 'assistant' : 'user', content: m.content }));
+    const messages = Team.planConversationHistory
+      .filter(m => m.role === 'user' || m.role === 'specialist')
+      .map(m => ({ role: m.role === 'specialist' ? 'assistant' : 'user', content: m.content }));
 
     try {
       const res = await fetch('/.netlify/functions/claude', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          system: `You are ${p.name}, ${p.title}, discussing the real plan you already built with this person: ${planText}\n\nBe direct and confident. NOT a licensed clinician. Never diagnose, never claim certainty about outcomes, never invent anything beyond this real plan. Plain text only, natural spoken tone.`,
+          system: `You are ${p.name}, ${p.title}, discussing the real plan you already built with this person: ${planText}\n\nBe direct and confident. NOT a licensed clinician. Never diagnose, never claim certainty about outcomes, never invent anything beyond this real plan. If someone expresses thoughts of self-harm, suicide, or being in crisis, do not continue as a normal conversation \u2014 gently acknowledge what they shared and clearly encourage them to reach out to a crisis line or someone they trust right now. Plain text only, natural spoken tone.`,
           messages,
           max_tokens: 250,
         }),
@@ -1284,6 +1325,147 @@ const Team = {
     }).join('');
   },
 
+  // ── DIRECT-TALK MODE ──────────────────────────────────────────
+  // Entered via team.html?talk=sleep|stress|activity|nutrition|drsage
+  // from a dashboard button, bypassing the full onboarding walk
+  // entirely. Still needs its own tap-to-begin gate (same browser
+  // audio-autoplay restriction as normal onboarding), just themed
+  // to the one specialist instead of the whole team.
+  directTalkMode: false,
+
+  setupDirectTalkGate(talk) {
+    const stepKey = talk === 'drsage' ? 'drSage' : talk;
+    const step = Team.STEPS.find(function(s) { return s.key === stepKey; }) || Team.STEPS[0];
+    const gate = document.getElementById('start-gate');
+    gate.innerHTML =
+      '<div style="width:72px;height:72px;border-radius:50%;background:' + step.color + ';margin-bottom:24px;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:700;color:#F3EFE6;">' + step.name[0] + '</div>' +
+      '<div style="font-size:22px;font-weight:700;margin-bottom:10px;">Talk to ' + step.name + '</div>' +
+      '<div style="font-size:14.5px;color:#8C9689;line-height:1.5;max-width:280px;margin-bottom:32px;">' + step.name + ' speaks out loud \u2014 your browser needs one tap first before any audio can play.</div>' +
+      '<button id="start-gate-btn" style="width:100%;max-width:280px;padding:16px;border-radius:14px;border:none;background:#8FB596;color:#0D130F;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;">Begin</button>';
+
+    document.getElementById('start-gate-btn').addEventListener('click', function() {
+      gate.style.display = 'none';
+      document.getElementById('card-area').style.display = 'flex';
+      if (talk === 'drsage') {
+        Team.openDrSageGeneralChat();
+        return;
+      }
+      const plan = Team.readRealPlan(talk);
+      if (plan) {
+        Team.currentRealPlans = [plan];
+        Team.openPlanConversation(talk);
+      } else {
+        Team.renderNoPlanYet(step.name);
+      }
+    });
+  },
+
+  renderNoPlanYet(name) {
+    document.getElementById('card-area').innerHTML =
+      '<div style="text-align:center;width:100%;">' +
+      '<div class="member-title" style="margin-bottom:16px;">' + name + '</div>' +
+      '<div class="intro-text" style="margin-bottom:24px;">You haven\u2019t built a real plan with ' + name + ' yet \u2014 that happens during onboarding, when they get to know you first. Want to go meet the team now?</div>' +
+      '<a href="team.html" style="display:inline-block;padding:16px 28px;border-radius:14px;background:#8FB596;color:#0D130F;font-weight:700;text-decoration:none;">Meet the Team</a>' +
+      '<div style="margin-top:18px;"><a href="dashboard.html" style="color:#8C9689;font-size:13px;">\u2039 Back to Dashboard</a></div>' +
+      '</div>';
+  },
+
+  // ── DR. SAGE GENERAL CHAT ─────────────────────────────────────
+  // Not tied to a single domain plan like the other four \u2014 Dr.
+  // Sage is the coordinator, so this is a general check-in that
+  // has visibility into what the whole team has already built,
+  // same crisis safety net as every other real chat surface here.
+  async openDrSageGeneralChat() {
+    Team.planConversationHistory = [];
+    const card = document.getElementById('card-area');
+    card.innerHTML =
+      '<div style="width:100%;text-align:left;">' +
+      '<button id="back-to-plans-btn" style="background:transparent;border:none;color:#8C9689;font-size:13px;margin-bottom:12px;cursor:pointer;padding:0;">\u2039 Dashboard</button>' +
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">' +
+      '<div style="width:30px;height:30px;border-radius:50%;background:linear-gradient(145deg,#A9CDAE,#5F7F63);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#F3EFE6;">DS</div>' +
+      '<div style="font-size:14px;font-weight:700;">Dr. Sage \u00b7 Holistic Wellness Doctor</div>' +
+      '</div>' +
+      '<div id="plan-chat-messages" style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px;max-height:280px;overflow-y:auto;"></div>' +
+      '<div id="plan-chat-status" style="font-size:12px;color:#8C9689;margin-bottom:8px;"></div>' +
+      '<textarea id="plan-chat-input" placeholder="Ask Dr. Sage anything\u2026" style="width:100%;min-height:44px;background:rgba(243,239,230,0.06);border:1px solid rgba(243,239,230,0.14);border-radius:10px;padding:10px;color:#F3EFE6;font-family:inherit;font-size:13px;margin-bottom:8px;"></textarea>' +
+      '<button id="plan-chat-send-btn" style="width:100%;padding:13px;border-radius:12px;border:none;background:#8FB596;color:#0D130F;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;">Send</button>' +
+      '</div>';
+
+    document.getElementById('back-to-plans-btn').addEventListener('click', function() { window.location.href = 'dashboard.html'; });
+    document.getElementById('plan-chat-send-btn').addEventListener('click', Team.sendDrSageGeneralMessage);
+
+    const status = document.getElementById('plan-chat-status');
+    status.textContent = 'Dr. Sage is getting your file\u2026';
+    const profile = Team.loadProfile();
+    const rawName = profile?.drSage?.preferredName;
+    const name = rawName && rawName.trim() ? rawName.trim() : null;
+    const goalText = (profile.drSage && profile.drSage.goal && profile.drSage.goal.trim()) || null;
+    const realPlans = Object.keys(Team.PLAN_DOMAINS).map(function(d) { return Team.readRealPlan(d); }).filter(function(p) { return p !== null; });
+    const plansSummary = realPlans.length ? realPlans.map(function(p) { return p.name + ': "' + p.plan.weekGoal + '"'; }).join('\n') : 'No real specialist plans built yet.';
+
+    try {
+      const res = await fetch('/.netlify/functions/claude', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system: 'You are Dr. Sage, the coordinating holistic wellness doctor. You bring together what the whole team knows about someone into one clear picture, and you flag anything worth a real doctor\u2019s attention. Be direct and confident. You are NOT a licensed medical doctor \u2014 never diagnose, never claim certainty about outcomes, never invent anything you weren\u2019t given. If someone expresses thoughts of self-harm, suicide, or being in crisis, do not continue as a normal conversation \u2014 gently acknowledge what they shared and clearly encourage them to reach out to a crisis line or someone they trust right now. Plain text only, natural spoken tone, 2-4 sentences.',
+          messages: [{ role: 'user', content: 'This person just opened a general check-in with you.' + (name ? ' Call them ' + name + '.' : '') + (goalText ? '\n\nWhat they told you they want out of this: "' + goalText + '".' : '') + '\n\nWhat the team has built so far:\n' + plansSummary + '\n\nOpen the conversation naturally \u2014 don\u2019t just list the plans, actually greet them and invite what\u2019s on their mind.' }],
+          max_tokens: 200,
+        }),
+      });
+      const data = await res.json();
+      const text = (res.ok && data.content && data.content[0] && data.content[0].text) ? data.content[0].text.trim() : 'Hi \u2014 what\u2019s on your mind?';
+      Team.planConversationHistory.push({ role: 'specialist', content: text });
+      Team.renderPlanChatMessages();
+      Team.speak(text, 'drSage', null);
+    } catch (e) {
+      Team.planConversationHistory.push({ role: 'specialist', content: 'Hi \u2014 what\u2019s on your mind?' });
+      Team.renderPlanChatMessages();
+    }
+    status.textContent = '';
+  },
+
+  async sendDrSageGeneralMessage() {
+    const input = document.getElementById('plan-chat-input');
+    const text = input.value.trim();
+    if (!text) return;
+    input.value = '';
+    Team.planConversationHistory.push({ role: 'user', content: text });
+    Team.renderPlanChatMessages();
+
+    if (Team.checkForCrisisLanguage(text)) {
+      Team.planConversationHistory.push({ role: 'crisis', content: '' });
+      Team.renderPlanChatMessages();
+    }
+
+    const status = document.getElementById('plan-chat-status');
+    status.textContent = 'Dr. Sage is thinking\u2026';
+
+    const messages = Team.planConversationHistory
+      .filter(function(m) { return m.role === 'user' || m.role === 'specialist'; })
+      .map(function(m) { return { role: m.role === 'specialist' ? 'assistant' : 'user', content: m.content }; });
+
+    try {
+      const res = await fetch('/.netlify/functions/claude', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system: 'You are Dr. Sage, the coordinating holistic wellness doctor, in an ongoing general check-in conversation. Be direct and confident. NOT a licensed medical doctor \u2014 never diagnose, never claim certainty about outcomes, never invent data you weren\u2019t given. If someone expresses thoughts of self-harm, suicide, or being in crisis, do not continue as a normal conversation \u2014 gently acknowledge what they shared and clearly encourage them to reach out to a crisis line or someone they trust right now. Plain text only, natural spoken tone.',
+          messages: messages,
+          max_tokens: 250,
+        }),
+      });
+      const data = await res.json();
+      const reply = (res.ok && data.content && data.content[0] && data.content[0].text) ? data.content[0].text.trim() : "I'm not able to respond right now \u2014 try again in a moment.";
+      Team.planConversationHistory.push({ role: 'specialist', content: reply });
+      Team.renderPlanChatMessages();
+    } catch (e) {
+      Team.planConversationHistory.push({ role: 'specialist', content: "I'm not able to respond right now \u2014 try again in a moment." });
+      Team.renderPlanChatMessages();
+    }
+    status.textContent = '';
+  },
+
   init() {
     const profile = Team.loadProfile();
     Team.flatQuestions().forEach(function(q) {
@@ -1292,6 +1474,21 @@ const Team = {
 
     document.getElementById('next-btn').addEventListener('click', Team.advance);
     document.getElementById('skip-btn').addEventListener('click', Team.skip);
+
+    // Direct-talk entry from a dashboard button
+    // (team.html?talk=sleep|stress|activity|nutrition|drsage)
+    // skips the full onboarding walk and its own next/skip nav
+    // entirely \u2014 just needs the tap-to-begin audio gate, themed
+    // to that one specialist.
+    const params = new URLSearchParams(window.location.search);
+    const talk = params.get('talk');
+    const validTalkKeys = ['sleep', 'stress', 'activity', 'nutrition', 'drsage'];
+    if (talk && validTalkKeys.indexOf(talk) !== -1) {
+      Team.directTalkMode = true;
+      document.getElementById('nav-row').remove();
+      Team.setupDirectTalkGate(talk);
+      return;
+    }
 
     // The first specialist intro (and its voice) only ever fires
     // from this direct tap, never from page load \u2014 that's the
