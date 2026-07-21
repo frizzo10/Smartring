@@ -2130,6 +2130,54 @@ const Scores = {
     };
   },
 
+  // Separate, focused call from the main report generation \u2014
+  // deliberately not mixed into that prose-only call\u2019s output
+  // shape. Evaluates whether the STATED GOAL ITSELF (not any one
+  // specialist\u2019s weekly plan, which already adapts on its own
+  // page) still fits how the week actually went. Never
+  // auto-applies \u2014 same principle as completeAffirmation(): a
+  // goal change is the person\u2019s own words, confirmed by them, not
+  // something Dr. Sage unilaterally rewrites.
+  async evaluateGoalRevision(data, currentGoal) {
+    if (!currentGoal) return { shouldRevise: false };
+
+    const lines = [
+      `Recovery: ${data.recovery != null ? data.recovery + '/100' : 'not enough real data yet'}`,
+      `Sleep: ${data.sleep != null ? data.sleep + '/100' : 'not enough real data yet'}`,
+      `Stress: ${data.stress != null ? data.stress + '/100' : 'not enough real data yet'}`,
+      `Activity: ${data.activityTrend || 'no real step trend yet'}`,
+      `Nutrition: ${data.nutritionAvg || 'no real logging trend yet'}`,
+      `Journal logged ${data.journalDaysLogged} of the last 7 days`,
+      `Exercise regimen: ${data.regimenAdherence}`,
+    ];
+
+    const userMessage = `Their stated goal: "${currentGoal}".\n\nHere's their real week across every domain:\n${lines.join('\n')}\n\nDecide honestly: is this goal still the right level of ambition given how the week actually went? If they're consistently struggling across multiple real areas (not just one off day), the goal may genuinely need to be eased into something more achievable right now \u2014 that's not failure, that's calibration. If they're consistently exceeding it across multiple areas, consider raising the ambition. If it's mixed, or there genuinely isn't enough real data yet, don't revise \u2014 one so-so week is not a pattern. Respond ONLY with valid JSON, no markdown: {"shouldRevise": true or false, "proposedGoal": "the revised goal, phrased as something THEY would say, first person, only if shouldRevise is true", "reasonForPerson": "1 direct sentence explaining why, spoken to them, only if shouldRevise is true"}`;
+
+    try {
+      const res = await fetch('/.netlify/functions/claude', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system: 'You are Dr. Sage, deciding whether someone\u2019s own stated goal needs to be recalibrated based on a real week of data across every specialist. You are conservative about this \u2014 real, consistent, multi-domain evidence only, never a single bad or great day. Never invent data you weren\u2019t given. Respond with ONLY the requested JSON.',
+          messages: [{ role: 'user', content: userMessage }],
+          max_tokens: 200,
+        }),
+      });
+      if (!res.ok) return { shouldRevise: false };
+      const resData = await res.json();
+      const text = (resData.content?.[0]?.text || '').replace(/```json\s*|```\s*/g, '').trim();
+      const parsed = JSON.parse(text);
+      if (!parsed.shouldRevise || !parsed.proposedGoal || !String(parsed.proposedGoal).trim()) return { shouldRevise: false };
+      return {
+        shouldRevise: true,
+        proposedGoal: String(parsed.proposedGoal).trim(),
+        reasonForPerson: parsed.reasonForPerson ? String(parsed.reasonForPerson).trim() : '',
+      };
+    } catch (e) {
+      return { shouldRevise: false }; // never blocks the report if this fails
+    }
+  },
+
   async generateWeeklyReport(snapshot, onDone) {
     const data = Scores.gatherWeeklyReportData(snapshot);
     const preferredName = Scores.getPreferredName();
@@ -2163,7 +2211,8 @@ const Scores = {
       const reportText = (res2.content?.[0]?.text || '').trim();
       if (!reportText) { onDone({ error: 'Couldn\u2019t generate your report right now.' }); return; }
       Scores.markWeeklyReportShown();
-      onDone({ report: reportText, data });
+      const goalRevision = await Scores.evaluateGoalRevision(data, data.goal);
+      onDone({ report: reportText, data, goalRevision });
     } catch (e) {
       onDone({ error: 'Weekly report unavailable right now: ' + e.message });
     }
@@ -2186,6 +2235,33 @@ const Scores = {
       document.getElementById('weekly-report-banner').style.display = 'none';
       resultEl.innerHTML = `<strong>Dr. Sage:</strong> ${result.report}`;
       resultEl.style.display = 'block';
+
+      // Goal revision, if evaluateGoalRevision() found real
+      // multi-domain evidence for it, is proposed \u2014 not applied.
+      // Same principle as the affirmation gate: the goal is the
+      // person's own words, they confirm the change, Dr. Sage
+      // doesn't unilaterally rewrite it.
+      if (result.goalRevision && result.goalRevision.shouldRevise) {
+        const gr = result.goalRevision;
+        const proposalEl = document.createElement('div');
+        proposalEl.style.cssText = 'margin-top:12px; background:rgba(143,181,150,0.1); border:1px solid rgba(143,181,150,0.3); border-radius:12px; padding:14px;';
+        proposalEl.innerHTML = `
+          <div style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:#8FB596; margin-bottom:8px;">Dr. Sage suggests recalibrating your goal</div>
+          <div style="font-size:13px; line-height:1.5; margin-bottom:10px;">${gr.reasonForPerson || ''}</div>
+          <div style="font-size:13.5px; font-style:italic; padding:10px; background:rgba(0,0,0,0.18); border-radius:8px; margin-bottom:12px;">"${gr.proposedGoal}"</div>
+          <button id="goal-revision-accept-btn" class="trend-btn" style="background:#8FB596; color:#0D130F; border:none; margin-bottom:8px;">Yes, update it</button>
+          <button id="goal-revision-keep-btn" class="trend-btn" style="background:transparent; border:1px solid rgba(243,239,230,0.2);">Keep my original goal</button>
+        `;
+        resultEl.appendChild(proposalEl);
+        document.getElementById('goal-revision-accept-btn').addEventListener('click', () => {
+          Scores.completeAffirmation(gr.proposedGoal);
+          proposalEl.innerHTML = '<div style="font-size:13px; color:#8FB596;">Goal updated \u2014 the team will build toward this from here.</div>';
+        });
+        document.getElementById('goal-revision-keep-btn').addEventListener('click', () => {
+          proposalEl.innerHTML = '<div style="font-size:13px; color:#8C9689;">Kept as-is.</div>';
+        });
+      }
+
       await Scores.speakText(result.report, 'drSage', () => {});
     });
   },
