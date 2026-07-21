@@ -910,27 +910,42 @@ const Team = {
     }
   },
 
+  // Real visual presentation, not text bullets \u2014 a horizontal
+  // weekly grid for the three specialists whose real plans are
+  // genuinely day-by-day (Lotus, Hawthorn, Basil), and a visual
+  // checklist for Willow, whose real plan is daily HABITS that
+  // apply every day, not day-specific items \u2014 forcing her into a
+  // day-grid would misrepresent what her plan actually is.
+  dayGrid(cards) {
+    return `<div style="display:flex; gap:7px; overflow-x:auto; padding:2px 0 6px;">${cards.map(c => `
+      <div style="flex-shrink:0; width:82px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:8px 7px;">
+        <div style="font-size:8.5px; color:#9CA3AF; text-transform:uppercase; letter-spacing:0.03em; margin-bottom:5px;">${c.label}</div>
+        ${c.body}
+      </div>`).join('')}</div>`;
+  },
+
   renderPlanBody(domain, plan) {
     if (domain === 'sleep') {
-      return plan.actions.map(a => `<div style="font-size:12.5px; color:#E4E6EA; margin-bottom:4px;">\u2022 ${a.text}</div>`).join('');
+      return `<div style="display:flex; flex-direction:column; gap:6px;">${plan.actions.map(a => `
+        <div style="display:flex; align-items:center; gap:8px; background:rgba(255,255,255,0.04); border-radius:8px; padding:7px 10px;">
+          <div style="width:6px; height:6px; border-radius:50%; background:#9AACE8; flex-shrink:0;"></div>
+          <div style="font-size:12px; color:#E4E6EA;">${a.text}</div>
+        </div>`).join('')}</div>`;
     }
     if (domain === 'stress') {
-      return plan.days.map(d => `<div style="margin-bottom:6px;"><span style="font-size:11px; color:#9CA3AF; text-transform:uppercase;">${d.day}</span><div style="font-size:12.5px; color:#E4E6EA;">${d.practice}</div></div>`).join('');
+      return Team.dayGrid(plan.days.map(d => ({ label: d.day, body: `<div style="font-size:10.5px; color:#E4E6EA; line-height:1.35;">${d.practice}</div>` })));
     }
     if (domain === 'activity') {
-      return plan.days.map(d => `
-        <div style="margin-bottom:8px;">
-          <div style="font-size:11px; color:#9CA3AF; text-transform:uppercase; margin-bottom:2px;">${d.day} \u2014 ${d.focus}</div>
-          ${d.exercises.map(e => `<div style="font-size:12.5px; color:#E4E6EA;">\u2022 ${e.name} <span style="color:#9CA3AF;">${e.detail}</span></div>`).join('')}
-        </div>`).join('');
+      return Team.dayGrid(plan.days.map(d => ({
+        label: d.day,
+        body: `<div style="font-size:9.5px; color:#F2A579; margin-bottom:3px;">${d.focus}</div><div style="font-size:10px; color:#E4E6EA; line-height:1.3;">${d.exercises.map(e => e.name).join('<br>')}</div>`,
+      })));
     }
     if (domain === 'nutrition') {
-      return plan.days.map(d => `
-        <div style="margin-bottom:8px;">
-          <div style="font-size:11px; color:#9CA3AF; text-transform:uppercase; margin-bottom:2px;">${d.day}</div>
-          <div style="font-size:12.5px; color:#E4E6EA; font-weight:600;">${d.name}</div>
-          <div style="font-size:11.5px; color:#9CA3AF;">${d.ingredients.join(', ')}</div>
-        </div>`).join('');
+      return Team.dayGrid(plan.days.map(d => ({
+        label: d.day,
+        body: `<div style="font-size:10.5px; color:#E4E6EA; font-weight:600; line-height:1.3;">${d.name}</div>`,
+      })));
     }
     return '';
   },
@@ -970,11 +985,22 @@ const Team = {
       framingText = "Most of onboarding got skipped, so there's honestly nothing real for the team to build yet \u2014 that's okay, you can build each plan yourself from Scores whenever you're ready.";
     }
 
+    Team.currentRealPlans = realPlans;
+    Team.currentFramingText = framingText;
+    Team.renderPlanCardsView();
+  },
+
+  renderPlanCardsView() {
+    const card = document.getElementById('card-area');
+    const realPlans = Team.currentRealPlans;
+    const framingText = Team.currentFramingText;
+
     const cardsHtml = realPlans.map(p => `
-      <div style="width:100%; background:#131B2E; border:1px solid rgba(255,255,255,0.08); border-radius:14px; padding:14px; margin-bottom:10px; text-align:left;">
+      <div class="plan-card-tap" data-domain="${p.domain}" style="width:100%; background:#131B2E; border:1px solid rgba(255,255,255,0.08); border-radius:14px; padding:14px; margin-bottom:10px; text-align:left; cursor:pointer;">
         <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
           <div style="width:26px; height:26px; border-radius:50%; background:${p.color}; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:#fff;">${p.name[0]}</div>
-          <div style="font-size:13px; font-weight:700;">${p.name} \u00b7 ${p.title}</div>
+          <div style="font-size:13px; font-weight:700; flex:1;">${p.name} \u00b7 ${p.title}</div>
+          <div style="font-size:11px; color:#7FC4C9;">Talk about this \u203a</div>
         </div>
         <div style="font-size:11.5px; font-style:italic; color:#6B7280; margin-bottom:10px;">${p.plan.weekGoal}</div>
         ${Team.renderPlanBody(p.domain, p.plan)}
@@ -988,9 +1014,132 @@ const Team = {
       <div style="font-size:13px; color:#9CA3AF; margin:14px 0 20px;">Is this what you want, and will you actually use it?</div>
       <button id="confirm-yes-btn" style="width:100%; padding:15px; border-radius:14px; border:none; background:#7FC4C9; color:#0A0D14; font-size:15px; font-weight:700; font-family:inherit; cursor:pointer; margin-bottom:10px;">Yes, this is what I want</button>
     `;
-    Team.speak(framingText, 'drSage', document.getElementById('report-avatar'));
+    if (!Team.plansAlreadySpoken) {
+      Team.speak(framingText, 'drSage', document.getElementById('report-avatar'));
+      Team.plansAlreadySpoken = true;
+    }
     document.getElementById('confirm-yes-btn').addEventListener('click', Team.renderFollowUpDate);
+    document.querySelectorAll('.plan-card-tap').forEach(el => {
+      el.addEventListener('click', () => Team.openPlanConversation(el.dataset.domain));
+    });
   },
+
+  // ── CLICK-TO-CONVERSE ────────────────────────────────────────
+  // Instead of leaving each plan as a static card, tapping it
+  // opens a real conversation with that specialist about their
+  // own real findings and plan \u2014 the same real plan data, kept
+  // visible above the chat, not re-explained from scratch. The
+  // opening message is generated fresh each time (a genuine
+  // conversational walkthrough, not the same weekGoal text
+  // reworded), but the plan itself is never regenerated or
+  // altered \u2014 conversation is read-only with respect to what was
+  // actually built.
+  planConversationHistory: [],
+
+  async openPlanConversation(domain) {
+    const p = Team.currentRealPlans.find(pl => pl.domain === domain);
+    if (!p) return;
+    Team.planConversationHistory = [];
+
+    const card = document.getElementById('card-area');
+    card.innerHTML = `
+      <div style="width:100%; text-align:left;">
+        <button id="back-to-plans-btn" style="background:transparent; border:none; color:#9CA3AF; font-size:13px; margin-bottom:12px; cursor:pointer; padding:0;">\u2039 All plans</button>
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
+          <div style="width:30px; height:30px; border-radius:50%; background:${p.color}; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; color:#fff;">${p.name[0]}</div>
+          <div style="font-size:14px; font-weight:700;">${p.name} \u00b7 ${p.title}</div>
+        </div>
+        <div style="background:#131B2E; border:1px solid rgba(255,255,255,0.08); border-radius:14px; padding:12px; margin-bottom:12px;">
+          ${Team.renderPlanBody(p.domain, p.plan)}
+        </div>
+        <div id="plan-chat-messages" style="display:flex; flex-direction:column; gap:8px; margin-bottom:10px; max-height:220px; overflow-y:auto;"></div>
+        <div id="plan-chat-status" style="font-size:12px; color:#9CA3AF; margin-bottom:8px;"></div>
+        <textarea id="plan-chat-input" placeholder="Ask ${p.name} anything about this\u2026" style="width:100%; min-height:44px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.14); border-radius:10px; padding:10px; color:#fff; font-family:inherit; font-size:13px; margin-bottom:8px;"></textarea>
+        <button id="plan-chat-send-btn" style="width:100%; padding:13px; border-radius:12px; border:none; background:${p.color}; color:#fff; font-size:14px; font-weight:700; font-family:inherit; cursor:pointer;">Send</button>
+      </div>
+    `;
+    document.getElementById('back-to-plans-btn').addEventListener('click', Team.renderPlanCardsView);
+    document.getElementById('plan-chat-send-btn').addEventListener('click', () => Team.sendPlanConversationMessage(domain));
+
+    await Team.pushPlanConversationOpening(p);
+  },
+
+  renderPlanChatMessages() {
+    const el = document.getElementById('plan-chat-messages');
+    if (!el) return;
+    el.innerHTML = Team.planConversationHistory.map(m => `
+      <div style="max-width:85%; padding:8px 11px; border-radius:12px; font-size:12.5px; line-height:1.4; ${m.role === 'user' ? 'align-self:flex-end; background:rgba(255,255,255,0.08);' : 'align-self:flex-start; background:rgba(127,196,201,0.14);'}">${m.content}</div>
+    `).join('');
+    el.scrollTop = el.scrollHeight;
+  },
+
+  async pushPlanConversationOpening(p) {
+    const status = document.getElementById('plan-chat-status');
+    status.textContent = `${p.name} is looking this over\u2026`;
+
+    const planText = JSON.stringify(p.plan);
+    const profile = Team.loadProfile();
+    const rawName = profile?.drSage?.preferredName;
+    const name = rawName && rawName.trim() ? rawName.trim() : null;
+
+    try {
+      const res = await fetch('/.netlify/functions/claude', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system: `You are ${p.name}, ${p.title}. You just built this real plan for someone and now you're talking them through it directly \u2014 not reading the plan back to them, actually walking them through your real thinking and what matters most about it. Be direct and confident. NOT a licensed clinician. Never diagnose, never claim certainty about outcomes, never invent anything beyond the real plan you built. Plain text only, natural spoken tone, 2-4 sentences.`,
+          messages: [{ role: 'user', content: `Here is the real plan you just built:\n${planText}${name ? `\n\nCall them ${name}.` : ''}\n\nTalk them through it \u2014 what you were thinking, what matters most to actually do. Don't just restate it as a list.` }],
+          max_tokens: 250,
+        }),
+      });
+      const data = await res.json();
+      const text = (res.ok && data.content?.[0]?.text) ? data.content[0].text.trim() : `Here's what I built for you \u2014 take a look, and ask me anything about it.`;
+      Team.planConversationHistory.push({ role: 'specialist', content: text });
+      Team.renderPlanChatMessages();
+      Team.speak(text, p.domain === 'sleep' ? 'sleep' : p.domain === 'stress' ? 'stress' : p.domain === 'activity' ? 'activity' : 'nutrition', null);
+    } catch (e) {
+      Team.planConversationHistory.push({ role: 'specialist', content: `Here's what I built for you \u2014 take a look, and ask me anything about it.` });
+      Team.renderPlanChatMessages();
+    }
+    status.textContent = '';
+  },
+
+  async sendPlanConversationMessage(domain) {
+    const p = Team.currentRealPlans.find(pl => pl.domain === domain);
+    const input = document.getElementById('plan-chat-input');
+    const text = input.value.trim();
+    if (!text) return;
+    input.value = '';
+    Team.planConversationHistory.push({ role: 'user', content: text });
+    Team.renderPlanChatMessages();
+
+    const status = document.getElementById('plan-chat-status');
+    status.textContent = `${p.name} is thinking\u2026`;
+
+    const planText = JSON.stringify(p.plan);
+    const messages = Team.planConversationHistory.map(m => ({ role: m.role === 'specialist' ? 'assistant' : 'user', content: m.content }));
+
+    try {
+      const res = await fetch('/.netlify/functions/claude', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system: `You are ${p.name}, ${p.title}, discussing the real plan you already built with this person: ${planText}\n\nBe direct and confident. NOT a licensed clinician. Never diagnose, never claim certainty about outcomes, never invent anything beyond this real plan. Plain text only, natural spoken tone.`,
+          messages,
+          max_tokens: 250,
+        }),
+      });
+      const data = await res.json();
+      const reply = (res.ok && data.content?.[0]?.text) ? data.content[0].text.trim() : "I'm not able to respond right now \u2014 try again in a moment.";
+      Team.planConversationHistory.push({ role: 'specialist', content: reply });
+      Team.renderPlanChatMessages();
+    } catch (e) {
+      Team.planConversationHistory.push({ role: 'specialist', content: "I'm not able to respond right now \u2014 try again in a moment." });
+      Team.renderPlanChatMessages();
+    }
+    status.textContent = '';
+  },
+
 
   // ── FOLLOW-UP DATE + NOTIFICATION PERMISSION ────────────────
   // The follow-up date is real \u2014 it's the exact same 7-day
