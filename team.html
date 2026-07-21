@@ -441,27 +441,28 @@ const Team = {
     );
   },
 
-  followUpResolved: {},
+  followUpCount: {},
+  MAX_FOLLOWUPS_PER_QUESTION: 5, // a safety ceiling against a genuine runaway loop, not a pacing/cost limit -- real depth matters more than speed here
 
   async advance(fromSkip) {
     const step = Team.currentStep();
     if (!step) return;
 
-    // Real reaction, every real answer \u2014 this is the actual fix
-    // for onboarding feeling like a voice-form. One AI call per
-    // answer, in the specialist's real voice, that both reacts to
-    // what was actually said AND decides if it's worth one real
-    // follow-up. Never on Skip (nothing to react to), never twice
-    // on the same question (reactionResolved bound, same pattern
-    // as the old followUpResolved).
+    // Real reaction, every real answer, and genuine iterative
+    // probing \u2014 not capped at one extra question. Each specialist
+    // keeps digging as long as there's real, specific value in
+    // doing so, judged fresh each round, up to a safety ceiling
+    // that exists only to prevent a genuine infinite loop, not to
+    // limit depth.
     if (!fromSkip && Team.questionIndexInStep !== -1) {
       const q = step.questions[Team.questionIndexInStep];
       const qFullKey = step.key + '.' + q.key;
-      if (q.type === 'text' && !Team.followUpResolved[qFullKey]) {
+      const count = Team.followUpCount[qFullKey] || 0;
+      if (q.type === 'text' && count < Team.MAX_FOLLOWUPS_PER_QUESTION) {
         const profile = Team.loadProfile();
         const answer = profile[step.key] && profile[step.key][q.key];
         if (answer && answer.trim()) {
-          Team.followUpResolved[qFullKey] = true;
+          Team.followUpCount[qFullKey] = count + 1;
           const result = await Team.reactToAnswer(step, q.label, answer);
           if (result && result.reaction) {
             await Team.showReaction(step, result.reaction);
@@ -492,16 +493,20 @@ const Team = {
   // actual "not a form" mechanism. Deliberately asks for
   // something SPECIFIC to what was said, not a generic "got it"
   // repeated 20 times, which would itself start to feel robotic.
-  // Bounded to exactly one follow-up per question, same as before
-  // \u2014 real depth, not an endless interrogation.
+  // Genuine iterative probing \u2014 keeps digging across multiple
+  // rounds as long as there's real value in it, not capped at one
+  // extra question. Each round sees the FULL cumulative answer
+  // built up so far (original plus every prior follow-up
+  // appended), so it judges real depth, not just whether one more
+  // question was asked.
   async reactToAnswer(step, label, answer) {
     try {
       const res = await fetch('/.netlify/functions/claude', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          system: `You are ${step.name}, ${step.title}, listening to someone answer your real onboarding question \u2014 not silently recording it, actually reacting like a real person would. Your reaction must be SHORT (one sentence, sometimes a fragment), warm, and SPECIFIC to what they actually said \u2014 never a generic "got it" or "thanks" you could say to any answer. Then decide if one genuine follow-up would get real, valuable additional detail (this is the only time they'll be asked this \u2014 dig if the answer is vague or generic; don't ask one just to ask one if it's already specific). Respond ONLY with valid JSON, no markdown.`,
-          messages: [{ role: 'user', content: `You asked: "${label}"\nThey answered: "${answer}"\n\nRespond ONLY with JSON: {"reaction": "your short, specific, natural reaction to what they actually said", "needsFollowUp": true or false, "followUpQuestion": "one specific real follow-up \u2014 only include if needsFollowUp is true"}` }],
+          system: `You are ${step.name}, ${step.title}, listening to someone answer your real onboarding question \u2014 not silently recording it, actually reacting like a real person would. Your reaction must be SHORT (one sentence, sometimes a fragment), warm, and SPECIFIC to what they actually said \u2014 never a generic "got it" or "thanks" you could say to any answer. Then decide if another genuine follow-up would get real, valuable additional detail \u2014 real depth matters far more than speed here, so keep digging if there's genuinely more worth knowing, don't settle for a surface-level answer. Only stop asking once the answer is actually specific and complete \u2014 not after just one extra question by default. Respond ONLY with valid JSON, no markdown.`,
+          messages: [{ role: 'user', content: `You asked: "${label}"\nHere's everything they've told you on this so far: "${answer}"\n\nRespond ONLY with JSON: {"reaction": "your short, specific, natural reaction to what they actually said", "needsFollowUp": true or false, "followUpQuestion": "one specific real follow-up, digging deeper into what's still missing \u2014 only include if needsFollowUp is true"}` }],
           max_tokens: 150,
         }),
       });
