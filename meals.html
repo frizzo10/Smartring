@@ -4,47 +4,47 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
 <title>Meal Ideas — Basil</title>
-<meta name="theme-color" content="#0A0D14">
+<meta name="theme-color" content="#0D130F">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    background: #0A0D14; color: #F4F5F7; padding: 0 0 40px;
+    font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #0D130F; color: #F3EFE6; padding: 0 0 40px;
   }
   #top-bar { display: flex; align-items: center; gap: 10px; padding: 18px 20px 0; }
   #back-btn {
-    width: 36px; height: 36px; border-radius: 10px; border: 1px solid #2A3B5E;
-    background: transparent; color: #fff; font-size: 18px; display: flex;
+    width: 36px; height: 36px; border-radius: 10px; border: 1px solid rgba(243,239,230,0.15);
+    background: transparent; color: #F3EFE6; font-size: 18px; display: flex;
     align-items: center; justify-content: center;
   }
   #top-bar h1 { font-size: 19px; font-weight: 700; }
   #content { padding: 20px; }
 
-  .empty-state { background: #131B2E; border: 1px solid rgba(255,255,255,0.08); border-radius: 18px; padding: 22px; text-align: center; }
-  .empty-state p { color: #9CA3AF; font-size: 14px; line-height: 1.5; margin-bottom: 16px; }
+  .empty-state { background: #161D18; border: 1px solid rgba(243,239,230,0.08); border-radius: 18px; padding: 22px; text-align: center; }
+  .empty-state p { color: #8C9689; font-size: 14px; line-height: 1.5; margin-bottom: 16px; }
 
   #build-btn {
     width: 100%; padding: 15px; border-radius: 14px; border: none;
-    background: #9FD49F; color: #0A0D14; font-size: 15px; font-weight: 700;
+    background: #9FC96B; color: #0D130F; font-size: 15px; font-weight: 700;
     font-family: inherit; cursor: pointer;
   }
   #build-btn:disabled { opacity: 0.5; }
-  #error-note { color: #E86A5C; font-size: 13px; margin-top: 12px; display: none; }
+  #error-note { color: #D9835C; font-size: 13px; margin-top: 12px; display: none; }
 
   .intro-line {
-    background: linear-gradient(145deg, rgba(111,168,111,0.16), rgba(111,168,111,0.04));
-    border: 1px solid rgba(111,168,111,0.3); border-radius: 18px; padding: 20px; margin-bottom: 16px;
+    background: linear-gradient(145deg, rgba(159,201,107,0.16), rgba(159,201,107,0.04));
+    border: 1px solid rgba(159,201,107,0.3); border-radius: 18px; padding: 20px; margin-bottom: 16px;
     font-size: 15px; line-height: 1.5;
   }
-  .meal-card { background: #131B2E; border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 18px; margin-bottom: 12px; }
-  .meal-name { font-weight: 700; font-size: 15.5px; color: #9FD49F; margin-bottom: 8px; }
-  .meal-ingredients { font-size: 13px; color: #E4E6EA; margin-bottom: 8px; }
-  .meal-note { font-size: 12.5px; color: #9CA3AF; font-style: italic; }
+  .meal-card { background: #161D18; border: 1px solid rgba(243,239,230,0.08); border-radius: 16px; padding: 18px; margin-bottom: 12px; }
+  .meal-name { font-weight: 700; font-size: 15.5px; color: #9FC96B; margin-bottom: 8px; }
+  .meal-ingredients { font-size: 13px; color: #D6D8D2; margin-bottom: 8px; }
+  .meal-note { font-size: 12.5px; color: #8C9689; font-style: italic; }
 
   .fern-link {
     display: block; text-align: center; margin-top: 18px; padding: 13px;
-    border-radius: 12px; border: 1px solid rgba(255,255,255,0.18);
-    color: #fff; text-decoration: none; font-size: 13.5px; font-weight: 600;
+    border-radius: 12px; border: 1px solid rgba(243,239,230,0.18);
+    color: #F3EFE6; text-decoration: none; font-size: 13.5px; font-weight: 600;
   }
 </style>
 </head>
