@@ -1412,9 +1412,11 @@ const Scores = {
   // producing.
   formatMedicalContext(profile) {
     const d = profile?.drSage || {};
+    const s = profile?.stress || {};
     const lines = [];
     if (d.medicalHistory && d.medicalHistory.trim()) lines.push(`Diagnosed conditions they've shared: ${d.medicalHistory.trim()}`);
     if (d.familyHistory && d.familyHistory.trim()) lines.push(`Family health history they've shared: ${d.familyHistory.trim()}`);
+    if (s.sleepAids && s.sleepAids.trim()) lines.push(`Over-the-counter sleep aids they've mentioned using: ${s.sleepAids.trim()}`);
     return lines.join('\n');
   },
 
@@ -1427,7 +1429,7 @@ const Scores = {
     const profileText = Scores.formatProfileAnswers(domain, profile);
     const profileBlock = profileText ? `\n\nWhat they told you about themselves when you first met:\n${profileText}` : '';
     const medicalText = Scores.formatMedicalContext(profile);
-    const medicalBlock = medicalText ? `\n\nContext they've shared with Dr. Sage (for awareness only \u2014 use this to inform how careful or attentive your suggestion should be, NEVER to state or imply a diagnosis, risk assessment, or medical conclusion):\n${medicalText}` : '';
+    const medicalBlock = medicalText ? `\n\nContext they've shared with Dr. Sage (for awareness only \u2014 use this to inform how careful or attentive your suggestion should be, NEVER to state or imply a diagnosis, risk assessment, or medical conclusion, and NEVER to suggest starting, stopping, or changing any medication or supplement):\n${medicalText}` : '';
     const userMessage = `Here is this person's real ${role.title.toLowerCase()} data:\n${domainInfo.score != null ? domainInfo.score + '/100 \u2014 ' : ''}${domainInfo.detail}${nameBlock}${profileBlock}${medicalBlock}\n\nTheir recent self-logged daily habits:\n${journalBlock}\n\nBased on the real data (and what they've told you about themselves, if anything above), give ONE short specialist observation and ONE small, concrete action for them to do this week. Say it directly \u2014 "do X" or "try X this week," not "you might want to consider." Respond ONLY with valid JSON, no markdown: {"note": "1-2 sentence observation in your voice, referencing the real number(s) above", "suggestedAction": "one small concrete daily action, stated directly"}`;
 
     try {
@@ -1498,8 +1500,10 @@ const Scores = {
     const preferredName = Scores.getPreferredName(profile);
     const nameBlock = preferredName ? `\n\nCall them ${preferredName} \u2014 that's what they asked to be called.` : '';
     const stated = Scores.formatProfileAnswers('drSage', profile);
-    const goalBlock = stated ? `\n\nWhat this person told Dr. Sage when they first met (their goal, and any medical or family health context they chose to share \u2014 use the latter only to calibrate attentiveness and referral judgment, NEVER to state a diagnosis or risk assessment):\n${stated}\n` : '';
-    return `Here is real input from this person's specialist care team, each reviewing only their own area of focus:\n\n${notesBlock}\n\nTheir recent self-logged habits:\n${journalBlock}${nameBlock}${goalBlock}\n\nAs the coordinating advisor synthesizing this team's input, weave 2-5 of their suggested actions into ONE cohesive 7-day plan (you may lightly adapt wording, but stay true to what each specialist actually suggested \u2014 do not invent a new action for an area not covered above). State each action directly and confidently \u2014 "do X," not "you might try X." Also decide if any area is worth a real referral \u2014 a fuller one-on-one consult with that specialist \u2014 based on your own judgment of what you're seeing, not just a fixed rule. Respond ONLY with valid JSON, no markdown: {"goalText": "1-2 plain sentences tying the team's observations together, stated directly and confidently", "actions": [{"text": "one small concrete daily action, stated directly", "domain": "one of: ${validDomains}", "journalKey": "one of: ${validKeys}, or null"}, ...2-5 actions], "referrals": [{"domain": "one of: ${validDomains}", "reason": "one short sentence on why this specialist is worth a fuller consult"}, ...0-2 referrals, empty array if none warranted]}`;
+    const goalBlock = stated ? `\n\nWhat this person told Dr. Sage when they first met (their goal):\n${stated}\n` : '';
+    const medicalText = Scores.formatMedicalContext(profile);
+    const medicalBlock = medicalText ? `\n\nContext they've shared (for awareness only \u2014 use only to calibrate attentiveness and referral judgment, NEVER to state a diagnosis or risk assessment, and NEVER to suggest starting, stopping, or changing any medication or supplement):\n${medicalText}\n` : '';
+    return `Here is real input from this person's specialist care team, each reviewing only their own area of focus:\n\n${notesBlock}\n\nTheir recent self-logged habits:\n${journalBlock}${nameBlock}${goalBlock}${medicalBlock}\n\nAs the coordinating advisor synthesizing this team's input, weave 2-5 of their suggested actions into ONE cohesive 7-day plan (you may lightly adapt wording, but stay true to what each specialist actually suggested \u2014 do not invent a new action for an area not covered above). State each action directly and confidently \u2014 "do X," not "you might try X." Also decide if any area is worth a real referral \u2014 a fuller one-on-one consult with that specialist \u2014 based on your own judgment of what you're seeing, not just a fixed rule. Respond ONLY with valid JSON, no markdown: {"goalText": "1-2 plain sentences tying the team's observations together, stated directly and confidently", "actions": [{"text": "one small concrete daily action, stated directly", "domain": "one of: ${validDomains}", "journalKey": "one of: ${validKeys}, or null"}, ...2-5 actions], "referrals": [{"domain": "one of: ${validDomains}", "reason": "one short sentence on why this specialist is worth a fuller consult"}, ...0-2 referrals, empty array if none warranted]}`;
   },
 
   parsePlanResponse(text) {
@@ -1720,7 +1724,7 @@ const Scores = {
     const profileText = Scores.formatProfileAnswers(domain, profile);
     const profileBlock = profileText ? `\n\nWhat they told you about themselves when you first met:\n${profileText}` : '';
     const medicalText = Scores.formatMedicalContext(profile);
-    const medicalBlock = medicalText ? `\n\nContext they've shared with Dr. Sage (for awareness only \u2014 use only to calibrate how careful your suggestion should be, NEVER to state a diagnosis or risk assessment):\n${medicalText}` : '';
+    const medicalBlock = medicalText ? `\n\nContext they've shared with Dr. Sage (for awareness only \u2014 use only to calibrate how careful your suggestion should be, NEVER to state a diagnosis or risk assessment, and NEVER to suggest starting, stopping, or changing any medication or supplement):\n${medicalText}` : '';
     const preferredName = Scores.getPreferredName(profile);
     const nameBlock = preferredName ? `\n\nCall them ${preferredName} \u2014 that's what they asked to be called.` : '';
     const userMessage = `Dr. Sage has referred this person to you for a fuller consult. Your earlier brief note was: "${note.note}" (you'd suggested: "${note.suggestedAction}"). Dr. Sage's reason for referring: ${referral.reasons.join('; ')}${nameBlock}${profileBlock}${medicalBlock}\n\nWrite a short, warm, first-person consult (3-5 sentences) as ${role.name}, this person's ${role.title.toLowerCase()} \u2014 more detail and personality than your earlier brief note, but still grounded only in what's already been said above. Be direct about what you want them to do \u2014 say it plainly, don't hedge on the recommendation itself. Do not diagnose. Do not name a medical condition. Do not order any test. Do not claim certainty about the outcome. Respond with plain text only, no JSON, no markdown.`;
