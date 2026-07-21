@@ -4,7 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>myDrSage — Talk to the Team</title>
-<meta name="theme-color" content="#0A0D14">
+<meta name="theme-color" content="#0D130F">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script>
   // Same real gate as scores.html — onboarding is mandatory
   // first, even to reach this internal tool. If you haven't
@@ -24,40 +26,40 @@
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    background: #0A0D14; color: #F4F5F7; padding: 0 0 60px;
+    font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #0D130F; color: #F3EFE6; padding: 0 0 60px;
   }
-  #top-bar { padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+  #top-bar { padding: 20px; border-bottom: 1px solid rgba(243,239,230,0.08); }
   #top-bar h1 { font-size: 20px; font-weight: 700; }
-  #top-bar p { font-size: 13px; color: #9CA3AF; margin-top: 4px; }
+  #top-bar p { font-size: 13px; color: #8C9689; margin-top: 4px; }
 
-  .row { padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+  .row { padding: 16px 20px; border-bottom: 1px solid rgba(243,239,230,0.08); }
   .row-head { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
-  .avatar { width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px; color: #fff; }
+  .avatar { width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px; color: #F3EFE6; }
   .row-head .name { font-size: 15px; font-weight: 700; }
-  .row-head .role { font-size: 12px; color: #6B7280; }
+  .row-head .role { font-size: 12px; color: #8C9689; }
 
   .btn {
-    background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.16); border-radius: 10px;
-    padding: 11px 16px; color: #fff; font-family: inherit; font-size: 13px; font-weight: 700;
+    background: rgba(243,239,230,0.08); border: 1px solid rgba(243,239,230,0.16); border-radius: 10px;
+    padding: 11px 16px; color: #F3EFE6; font-family: inherit; font-size: 13px; font-weight: 700;
     cursor: pointer; margin-left: auto;
   }
   .btn:disabled { opacity: 0.5; }
 
   .result {
-    display: none; margin-top: 12px; background: rgba(255,255,255,0.04); border-radius: 12px;
+    display: none; margin-top: 12px; background: rgba(243,239,230,0.04); border-radius: 12px;
     padding: 14px; font-size: 14px; line-height: 1.6;
   }
   .result .note { margin-bottom: 8px; }
-  .result .action { color: #7FC4C9; font-weight: 600; }
-  .day-block { margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+  .result .action { color: #8FB596; font-weight: 600; }
+  .day-block { margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid rgba(243,239,230,0.06); }
   .day-block:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
   .day-title { font-weight: 700; font-size: 13px; margin-bottom: 4px; }
-  .ex-row { font-size: 13px; color: #E4E6EA; display: flex; justify-content: space-between; padding: 3px 0; }
-  .ex-row span:last-child { color: #9CA3AF; }
+  .ex-row { font-size: 13px; color: #D6D8D2; display: flex; justify-content: space-between; padding: 3px 0; }
+  .ex-row span:last-child { color: #8C9689; }
   .meal-block { margin-bottom: 10px; }
-  .meal-name { font-weight: 700; font-size: 13.5px; color: #9FD49F; }
-  .meal-ing { font-size: 12.5px; color: #9CA3AF; margin-top: 2px; }
+  .meal-name { font-weight: 700; font-size: 13.5px; color: #9FC96B; }
+  .meal-ing { font-size: 12.5px; color: #8C9689; margin-top: 2px; }
 </style>
 </head>
 <body>
@@ -72,13 +74,13 @@
       <div><div class="name">Did real onboarding already?</div><div class="role">Seed 3 real weeks of ring/journal/regimen data \u2014 never touches your real profile or answers</div></div>
     </div>
     <button class="btn wide" onclick="Team.seedRingAndHistoryOnly(this)">Seed ring & history data only</button>
-    <div id="seed-status" style="display:none; margin-top:10px; font-size:12px; color:#7FC4C9;"></div>
+    <div id="seed-status" style="display:none; margin-top:10px; font-size:12px; color:#8FB596;"></div>
     <button class="btn wide" style="margin-top:8px;" onclick="window.location.href='scores.html'">Go to Scores \u2192</button>
   </div>
 
   <div class="row">
     <div class="row-head">
-      <div class="avatar" style="background:linear-gradient(145deg,#5FA5AA,#2F5C60);">DS</div>
+      <div class="avatar" style="background:linear-gradient(145deg,#A9CDAE,#5F7F63);">DS</div>
       <div><div class="name">Dr. Sage</div><div class="role">Full 7-day plan (runs the whole team first)</div></div>
       <button class="btn" onclick="Team.runSynthesis(this)">Build my plan</button>
     </div>
@@ -87,7 +89,7 @@
 
   <div class="row">
     <div class="row-head">
-      <div class="avatar" style="background:linear-gradient(145deg,#6B7DC4,#45559A);">W</div>
+      <div class="avatar" style="background:linear-gradient(145deg,#98A5DE,#4C5AA0);">W</div>
       <div><div class="name">Willow</div><div class="role">Sleep Coach</div></div>
       <button class="btn" onclick="Team.runSpecialist('sleep', this)">Talk to Willow</button>
     </div>
@@ -96,7 +98,7 @@
 
   <div class="row">
     <div class="row-head">
-      <div class="avatar" style="background:linear-gradient(145deg,#B692D0,#8560A8);">L</div>
+      <div class="avatar" style="background:linear-gradient(145deg,#CBA8D6,#7A5589);">L</div>
       <div><div class="name">Lotus</div><div class="role">Mindfulness Coach</div></div>
       <button class="btn" onclick="Team.runSpecialist('stress', this)">Talk to Lotus</button>
     </div>
@@ -105,7 +107,7 @@
 
   <div class="row">
     <div class="row-head">
-      <div class="avatar" style="background:linear-gradient(145deg,#EC8E56,#C4622A);">H</div>
+      <div class="avatar" style="background:linear-gradient(145deg,#E6A183,#A85936);">H</div>
       <div><div class="name">Hawthorn</div><div class="role">Exercise Coach</div></div>
       <button class="btn" onclick="Team.runRegimen(this)">See Hawthorn's plan</button>
     </div>
@@ -114,7 +116,7 @@
 
   <div class="row">
     <div class="row-head">
-      <div class="avatar" style="background:linear-gradient(145deg,#82BD82,#558A55);">B</div>
+      <div class="avatar" style="background:linear-gradient(145deg,#B6D68A,#6B8F45);">B</div>
       <div><div class="name">Basil</div><div class="role">Nutrition Coach</div></div>
       <button class="btn" onclick="Team.runMeals(this)">See Basil's meal ideas</button>
     </div>
@@ -123,7 +125,7 @@
 
   <div class="row">
     <div class="row-head">
-      <div class="avatar" style="background:linear-gradient(145deg,#5FA5AA,#2F5C60);">DS</div>
+      <div class="avatar" style="background:linear-gradient(145deg,#A9CDAE,#5F7F63);">DS</div>
       <div><div class="name">Dr. Sage</div><div class="role">Weekly report</div></div>
       <button class="btn" onclick="Team.runWeeklyReport(this)">Hear this week's report</button>
     </div>
