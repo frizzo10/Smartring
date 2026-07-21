@@ -583,17 +583,17 @@ const Team = {
     if (Team.stepIndex === 0) {
       await Team.reorderSpecialistsByGoal();
     } else {
-      // Hawthorn and Basil each need to walk away from their own
-      // step with a real, immediately usable deliverable \u2014 not
-      // wait for a separate page visit. Built from what's
-      // independent of ring data (stated preferences and goals);
-      // real ring data arriving later VALIDATES and refines these
-      // plans (see regimen.html/meals.html's real-adherence and
-      // real-nutrition-trend logic) rather than gating them.
-      // Checked by KEY, not a fixed step index, since the team
-      // order is now dynamic \u2014 Hawthorn or Basil could be in any
-      // position depending on the person's stated goal.
+      // Every specialist walks away from their own step with a
+      // real, immediately usable plan \u2014 not wait for a separate
+      // page visit. Built from what's independent of ring data
+      // (stated preferences and goals); real ring data arriving
+      // later VALIDATES and refines these plans (see each real
+      // plan page's own adherence/readiness/trend logic) rather
+      // than gating them. Checked by KEY, not a fixed step index,
+      // since the team order is now dynamic.
       const leavingKey = Team.currentStep().key;
+      if (leavingKey === 'sleep') await Team.buildInitialSleepPlan();
+      if (leavingKey === 'stress') await Team.buildInitialMindfulnessPlan();
       if (leavingKey === 'activity') await Team.buildInitialRegimen();
       if (leavingKey === 'nutrition') await Team.buildInitialMealPlan();
     }
@@ -666,6 +666,89 @@ const Team = {
   // the person can always build one manually later from
   // regimen.html or meals.html if this doesn't succeed.
 
+  async buildInitialSleepPlan() {
+    const existing = JSON.parse(localStorage.getItem('sh_willow_sleepplans') || '[]');
+    if (existing.length) return;
+
+    const profile = Team.loadProfile();
+    const sleepProfile = profile.sleep;
+    if (!sleepProfile || (!sleepProfile.bedtime && !sleepProfile.struggle)) return;
+
+    document.getElementById('next-btn').textContent = 'Willow is building your plan\u2026';
+
+    const userMessage = `This person told you, when you first met: their usual bedtime is "${sleepProfile.bedtime || 'not specified'}" and their biggest sleep struggle is "${sleepProfile.struggle || 'not specified'}".\n\nNo ring data exists yet \u2014 this is day one, base this on what they've just told you only. Build a real, concrete sleep plan for this week \u2014 3 to 5 specific daily actions (real sleep behaviors: a bedtime target, a wind-down step, something to remove from the bedroom, etc.), directly addressing their stated struggle. Say it directly, don't hedge. Respond ONLY with valid JSON, no markdown: {"weekGoal": "1-2 sentences on this week's focus, stated directly", "actions": ["specific daily action", "..."]}`;
+
+    try {
+      const res = await fetch('/.netlify/functions/claude', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system: 'You are Willow, a sleep coach. Getting a good night\u2019s rest is your only job, and most of the time, the most important one. Be direct and confident \u2014 tell them what to do, don\u2019t hedge. You are NOT a licensed doctor \u2014 you are a coach. You NEVER diagnose a sleep disorder, NEVER claim certainty about outcomes. You NEVER invent data you weren\u2019t given. Respond with ONLY the requested JSON, nothing else.',
+          messages: [{ role: 'user', content: userMessage }],
+          max_tokens: 400,
+        }),
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      const text = (data.content && data.content[0] && data.content[0].text || '').replace(/```json\s*|```\s*/g, '').trim();
+      const parsed = JSON.parse(text);
+      if (!parsed.weekGoal || !Array.isArray(parsed.actions) || !parsed.actions.length) return;
+
+      const newPlan = {
+        weekGoal: parsed.weekGoal,
+        actions: parsed.actions.slice(0, 6).map(function(t) { return { text: String(t).slice(0, 150), done: false }; }),
+        createdDate: Team.todayKey(),
+      };
+      localStorage.setItem('sh_willow_sleepplans', JSON.stringify([newPlan]));
+    } catch (e) {
+      // Non-fatal \u2014 they can build one manually from sleep-plan.html later.
+    }
+  },
+
+  async buildInitialMindfulnessPlan() {
+    const existing = JSON.parse(localStorage.getItem('sh_lotus_mindfulnessplans') || '[]');
+    if (existing.length) return;
+
+    const profile = Team.loadProfile();
+    const stressProfile = profile.stress;
+    if (!stressProfile || (!stressProfile.experience && !stressProfile.stressors)) return;
+
+    document.getElementById('next-btn').textContent = 'Lotus is building your plan\u2026';
+
+    // No real conversation exists yet at onboarding time \u2014
+    // that's genuinely true and honest. Lotus's plan updates to
+    // incorporate real discussion content later, once
+    // lotus-chat.html actually has real exchanges to draw from.
+    const userMessage = `This person told you, when you first met: their experience with meditation or yoga is "${stressProfile.experience || 'not specified'}" and what stresses them most is "${stressProfile.stressors || 'not specified'}".\n\nNo real conversation with them yet \u2014 base this on their onboarding answers only. Build a real weekly mindfulness plan \u2014 3 to 4 specific days, each with ONE concrete practice, genuinely varied across the week, appropriate to their real stated experience level. Say it directly, don't hedge. Respond ONLY with valid JSON, no markdown: {"weekGoal": "1-2 sentences on this week's focus, stated directly", "days": [{"day": "Day 1", "practice": "specific technique, described concretely enough to actually do"}, ...3-4 days]}`;
+
+    try {
+      const res = await fetch('/.netlify/functions/claude', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system: 'You are Lotus, a mindfulness coach and active yoga practitioner. Be direct and confident \u2014 tell them what to do, don\u2019t hedge. You are NOT a therapist or licensed clinician \u2014 you are a coach. You NEVER diagnose a mental health condition, NEVER claim certainty about outcomes. You NEVER invent something they didn\u2019t actually say or give you. Respond with ONLY the requested JSON, nothing else.',
+          messages: [{ role: 'user', content: userMessage }],
+          max_tokens: 450,
+        }),
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      const text = (data.content && data.content[0] && data.content[0].text || '').replace(/```json\s*|```\s*/g, '').trim();
+      const parsed = JSON.parse(text);
+      if (!parsed.weekGoal || !Array.isArray(parsed.days) || !parsed.days.length) return;
+
+      const newPlan = {
+        weekGoal: parsed.weekGoal,
+        days: parsed.days.slice(0, 5).map(function(d) { return { day: String(d.day || '').slice(0, 40), practice: String(d.practice || '').slice(0, 200), done: false }; }),
+        usedDiscussion: false,
+        createdDate: Team.todayKey(),
+      };
+      localStorage.setItem('sh_lotus_mindfulnessplans', JSON.stringify([newPlan]));
+    } catch (e) {
+      // Non-fatal \u2014 they can build one manually from mindfulness-plan.html later.
+    }
+  },
+
   async buildInitialRegimen() {
     const existing = JSON.parse(localStorage.getItem('sh_hawthorn_regimens') || '[]');
     if (existing.length) return; // never silently overwrite a plan that already exists
@@ -707,16 +790,33 @@ const Team = {
     }
   },
 
+  // Rewritten to match meal-plan.html's REAL structure (named
+  // meals per day, real regimen coordination) \u2014 the previous
+  // version of this function saved to sh_meal_ideas, the older
+  // untracked "quick suggestions" system, meaning Basil's actual
+  // trackable plan was never being built here at all.
   async buildInitialMealPlan() {
-    const existing = JSON.parse(localStorage.getItem('sh_meal_ideas') || 'null');
-    if (existing) return; // never silently overwrite
+    const existing = JSON.parse(localStorage.getItem('sh_basil_mealplans') || '[]');
+    if (existing.length) return;
 
     const profile = Team.loadProfile();
-    const restrictions = profile.nutrition?.restrictions || 'none specified';
+    const nutritionProfile = profile.nutrition;
+    if (!nutritionProfile || (!nutritionProfile.restrictions && !nutritionProfile.hardest)) return;
+    const restrictions = nutritionProfile.restrictions || 'none specified';
 
     document.getElementById('next-btn').textContent = 'Basil is building your plan\u2026';
 
-    const userMessage = `This person's stated dietary preferences/restrictions: ${restrictions}.\n\nNo real nutrition trend exists yet \u2014 this is day one. Suggest 3 real, specific meals that genuinely support what they're working on, based purely on what they've just told you. Respect their stated restrictions exactly. Once they start logging real meals, you'll refine these suggestions \u2014 but they need something real and usable today, not a placeholder. Respond ONLY with valid JSON, no markdown: {"intro": "1 sentence tying these choices to what's actually going on for them", "meals": [{"name": "specific dish name", "ingredients": ["real ingredient", "..."], "note": "one short line"}, ...3 meals]}`;
+    let regimenText = 'No current exercise regimen from Hawthorn to coordinate with.';
+    let coordinatedWithRegimen = false;
+    try {
+      const regimens = JSON.parse(localStorage.getItem('sh_hawthorn_regimens') || '[]');
+      if (regimens.length) {
+        regimenText = `Hawthorn's regimen this week: "${regimens[regimens.length - 1].weekGoal}"`;
+        coordinatedWithRegimen = true;
+      }
+    } catch (e) { /* non-critical */ }
+
+    const userMessage = `This person's stated dietary preferences/restrictions: ${restrictions}.\n\nNo real nutrition trend exists yet \u2014 this is day one, base this on their stated preferences only.\n\n${regimenText}\n\nBuild a real weekly meal plan \u2014 3 to 4 specific days, each with ONE real, specific, named meal and real ingredients. Genuinely varied across the week. Respect their stated restrictions exactly. If Hawthorn's regimen is real, let it inform your choices. Say it directly, don't hedge. Respond ONLY with valid JSON, no markdown: {"weekGoal": "1-2 sentences on this week's focus, stated directly", "days": [{"day": "Tuesday dinner", "name": "specific dish name", "ingredients": ["real ingredient", "..."]}, ...3-4 days]}`;
 
     try {
       const res = await fetch('/.netlify/functions/claude', {
@@ -732,11 +832,25 @@ const Team = {
       const data = await res.json();
       const text = (data.content && data.content[0] && data.content[0].text || '').replace(/```json\s*|```\s*/g, '').trim();
       const parsed = JSON.parse(text);
-      if (!Array.isArray(parsed.meals) || !parsed.meals.length) return;
+      if (!parsed.weekGoal || !Array.isArray(parsed.days) || !parsed.days.length) return;
 
-      localStorage.setItem('sh_meal_ideas', JSON.stringify({ intro: parsed.intro || '', meals: parsed.meals, createdDate: Team.todayKey() }));
+      const newPlan = {
+        weekGoal: parsed.weekGoal,
+        days: parsed.days.slice(0, 5).map(function(d) {
+          return {
+            day: String(d.day || '').slice(0, 40),
+            name: String(d.name || '').slice(0, 80),
+            ingredients: Array.isArray(d.ingredients) ? d.ingredients.slice(0, 8).map(function(i) { return String(i).slice(0, 60); }) : [],
+            done: false,
+          };
+        }).filter(function(d) { return d.day && d.name; }),
+        coordinatedWithRegimen,
+        createdDate: Team.todayKey(),
+      };
+      if (!newPlan.days.length) return;
+      localStorage.setItem('sh_basil_mealplans', JSON.stringify([newPlan]));
     } catch (e) {
-      // Non-fatal \u2014 they can build one manually from meals.html later.
+      // Non-fatal \u2014 they can build one manually from meal-plan.html later.
     }
   },
 
@@ -772,55 +886,53 @@ const Team = {
     return lines.join('\n');
   },
 
-  INITIAL_ASSESSMENT_DOMAINS: {
-    sleep: { name: 'Willow', title: 'Sleep Coach', voice: 'Willow, a sleep coach', color: 'linear-gradient(145deg,#6B7DC4,#45559A)' },
-    stress: { name: 'Lotus', title: 'Mindfulness Coach', voice: 'Lotus, a mindfulness coach and active yoga practitioner', color: 'linear-gradient(145deg,#B692D0,#8560A8)' },
-    activity: { name: 'Hawthorn', title: 'Exercise Coach', voice: 'Hawthorn, an exercise coach', color: 'linear-gradient(145deg,#EC8E56,#C4622A)' },
-    nutrition: { name: 'Basil', title: 'Nutrition Coach', voice: 'Basil, a nutrition coach', color: 'linear-gradient(145deg,#82BD82,#558A55)' },
+  PLAN_DOMAINS: {
+    sleep: { name: 'Willow', title: 'Sleep Coach', color: 'linear-gradient(145deg,#6B7DC4,#45559A)', storageKey: 'sh_willow_sleepplans' },
+    stress: { name: 'Lotus', title: 'Mindfulness Coach', color: 'linear-gradient(145deg,#B692D0,#8560A8)', storageKey: 'sh_lotus_mindfulnessplans' },
+    activity: { name: 'Hawthorn', title: 'Exercise Coach', color: 'linear-gradient(145deg,#EC8E56,#C4622A)', storageKey: 'sh_hawthorn_regimens' },
+    nutrition: { name: 'Basil', title: 'Nutrition Coach', color: 'linear-gradient(145deg,#82BD82,#558A55)', storageKey: 'sh_basil_mealplans' },
   },
 
-  buildDomainOnboardingText(domain, profile) {
-    const d = profile[domain] || {};
-    const parts = Object.entries(d).filter(([k, v]) => v && String(v).trim()).map(([k, v]) => `${k}: ${v}`);
-    return parts.length ? parts.join('; ') : null;
-  },
-
-  // Real initial assessment per specialist, using ONLY their own
-  // real onboarding answers \u2014 no ring data exists yet, so this
-  // is honestly day-one, not a data-backed read. Mirrors the same
-  // "each specialist sees only their own domain" architecture
-  // already used for real weekly plans, just applied to
-  // onboarding content instead of ring history. Honestly returns
-  // null if that specialist's questions were skipped \u2014 never
-  // invents an assessment from nothing.
-  async callInitialSpecialist(domain, profile) {
-    const info = Team.INITIAL_ASSESSMENT_DOMAINS[domain];
-    const onboardingText = Team.buildDomainOnboardingText(domain, profile);
-    if (!onboardingText) return null;
-
-    const userMessage = `This is day one \u2014 no ring data exists yet, only what this person just told you directly: ${onboardingText}\n\nGive your real initial take: one short observation, and 2-3 honest, concrete action steps to start with (not vague goals \u2014 real things they could actually do this week). Respond ONLY with valid JSON, no markdown: {"note": "1-2 sentence initial observation, in your voice", "actionSteps": ["concrete step", "concrete step"]}`;
-
+  // Reads each specialist's REAL, already-persisted plan \u2014 the
+  // exact same one built at their step-end, the exact same one
+  // their real page (sleep-plan.html, mindfulness-plan.html,
+  // regimen.html, meal-plan.html) would show. Nothing generated
+  // fresh here, nothing thrown away after \u2014 what you see in this
+  // walkthrough is what's actually waiting for you later.
+  readRealPlan(domain) {
+    const info = Team.PLAN_DOMAINS[domain];
     try {
-      const res = await fetch('/.netlify/functions/claude', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          system: `You are ${info.voice}. This is a real person's first day \u2014 you only have what they just told you, no ring data. Be direct and confident, not tentative. You are NOT a licensed clinician. You NEVER diagnose, NEVER claim certainty about outcomes, NEVER invent anything they didn\u2019t actually say. Respond with ONLY the requested JSON, nothing else.`,
-          messages: [{ role: 'user', content: userMessage }],
-          max_tokens: 200,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) return null;
-      const text = (data.content?.[0]?.text || '').replace(/```json\s*|```\s*/g, '').trim();
-      const parsed = JSON.parse(text);
-      if (!parsed.note || !Array.isArray(parsed.actionSteps) || !parsed.actionSteps.length) return null;
-      const actionSteps = parsed.actionSteps.slice(0, 4).map(s => String(s).slice(0, 150)).filter(s => s);
-      if (!actionSteps.length) return null;
-      return { domain, name: info.name, title: info.title, color: info.color, note: parsed.note, actionSteps };
+      const history = JSON.parse(localStorage.getItem(info.storageKey) || '[]');
+      if (!history.length) return null;
+      return { domain, name: info.name, title: info.title, color: info.color, plan: history[history.length - 1] };
     } catch (e) {
       return null;
     }
+  },
+
+  renderPlanBody(domain, plan) {
+    if (domain === 'sleep') {
+      return plan.actions.map(a => `<div style="font-size:12.5px; color:#E4E6EA; margin-bottom:4px;">\u2022 ${a.text}</div>`).join('');
+    }
+    if (domain === 'stress') {
+      return plan.days.map(d => `<div style="margin-bottom:6px;"><span style="font-size:11px; color:#9CA3AF; text-transform:uppercase;">${d.day}</span><div style="font-size:12.5px; color:#E4E6EA;">${d.practice}</div></div>`).join('');
+    }
+    if (domain === 'activity') {
+      return plan.days.map(d => `
+        <div style="margin-bottom:8px;">
+          <div style="font-size:11px; color:#9CA3AF; text-transform:uppercase; margin-bottom:2px;">${d.day} \u2014 ${d.focus}</div>
+          ${d.exercises.map(e => `<div style="font-size:12.5px; color:#E4E6EA;">\u2022 ${e.name} <span style="color:#9CA3AF;">${e.detail}</span></div>`).join('')}
+        </div>`).join('');
+    }
+    if (domain === 'nutrition') {
+      return plan.days.map(d => `
+        <div style="margin-bottom:8px;">
+          <div style="font-size:11px; color:#9CA3AF; text-transform:uppercase; margin-bottom:2px;">${d.day}</div>
+          <div style="font-size:12.5px; color:#E4E6EA; font-weight:600;">${d.name}</div>
+          <div style="font-size:11.5px; color:#9CA3AF;">${d.ingredients.join(', ')}</div>
+        </div>`).join('');
+    }
+    return '';
   },
 
   async renderFinalAffirmation() {
@@ -828,30 +940,26 @@ const Team = {
     document.getElementById('nav-row').style.display = 'none';
     const card = document.getElementById('card-area');
     card.style.display = 'flex';
-    card.innerHTML = '<div class="intro-text">The team is putting together their first read\u2026</div>';
+    card.innerHTML = '<div class="intro-text">Bringing up what the team has already built for you\u2026</div>';
 
     const profile = Team.loadProfile();
     const rawName = profile?.drSage?.preferredName;
     const name = rawName && rawName.trim() ? rawName.trim() : null;
 
-    // Each specialist reviews only their own real onboarding
-    // answers, independently \u2014 same architecture as a real
-    // weekly plan, run here for the first time on day one.
-    const results = await Promise.all(
-      Object.keys(Team.INITIAL_ASSESSMENT_DOMAINS).map(domain => Team.callInitialSpecialist(domain, profile))
-    );
-    const realAssessments = results.filter(r => r !== null);
+    // Real plans, already built and persisted at each specialist's
+    // step-end \u2014 read here, not regenerated.
+    const realPlans = Object.keys(Team.PLAN_DOMAINS).map(d => Team.readRealPlan(d)).filter(p => p !== null);
 
-    let framingText = "Here's what the team sees so far \u2014 the real work starts now that they actually know you.";
-    if (realAssessments.length) {
-      const notesBlock = realAssessments.map(a => `${a.name} (${a.title}): "${a.note}" \u2014 action steps: ${a.actionSteps.map(s => `"${s}"`).join(', ')}`).join('\n');
+    let framingText = "Here's what the team has already built for you \u2014 real plans, not a preview.";
+    if (realPlans.length) {
+      const goalsBlock = realPlans.map(p => `${p.name} (${p.title}): "${p.plan.weekGoal}"`).join('\n');
       try {
         const res = await fetch('/.netlify/functions/claude', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            system: 'You are Dr. Sage, introducing your team\u2019s real first-day read to someone who just finished onboarding \u2014 no ring data exists yet, this is based only on what they told the team directly. Be direct and confident. Never diagnose, never claim certainty, never invent anything beyond what your team actually said. 2-3 sentences, spoken naturally, plain text only.',
-            messages: [{ role: 'user', content: `Here's what each specialist who actually got real answers is seeing:\n\n${notesBlock}${name ? `\n\nCall them ${name}.` : ''}\n\nBriefly frame this for them before they see each specialist's real note \u2014 don\u2019t repeat the details, just set up that the team's already forming real first impressions.` }],
+            system: 'You are Dr. Sage, introducing your team\u2019s real, already-built plans to someone who just finished onboarding. Be direct and confident. Never diagnose, never claim certainty, never invent anything beyond what your team actually built. 2-3 sentences, spoken naturally, plain text only.',
+            messages: [{ role: 'user', content: `Here's what each specialist who had enough to work with has already built:\n\n${goalsBlock}${name ? `\n\nCall them ${name}.` : ''}\n\nBriefly frame this before they see each real plan \u2014 don\u2019t repeat the details, just set up that this is real, already built, not a preview.` }],
             max_tokens: 150,
           }),
         });
@@ -859,18 +967,17 @@ const Team = {
         if (res.ok && data.content?.[0]?.text) framingText = data.content[0].text.trim();
       } catch (e) { /* fallback text above already covers this */ }
     } else {
-      framingText = "Most of onboarding got skipped, so there's honestly not much for the team to go on yet \u2014 that's okay, we'll build it from here.";
+      framingText = "Most of onboarding got skipped, so there's honestly nothing real for the team to build yet \u2014 that's okay, you can build each plan yourself from Scores whenever you're ready.";
     }
 
-    const cardsHtml = realAssessments.map(a => `
+    const cardsHtml = realPlans.map(p => `
       <div style="width:100%; background:#131B2E; border:1px solid rgba(255,255,255,0.08); border-radius:14px; padding:14px; margin-bottom:10px; text-align:left;">
         <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-          <div style="width:26px; height:26px; border-radius:50%; background:${a.color}; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:#fff;">${a.name[0]}</div>
-          <div style="font-size:13px; font-weight:700;">${a.name} \u00b7 ${a.title}</div>
+          <div style="width:26px; height:26px; border-radius:50%; background:${p.color}; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:#fff;">${p.name[0]}</div>
+          <div style="font-size:13px; font-weight:700;">${p.name} \u00b7 ${p.title}</div>
         </div>
-        <div style="font-size:13px; color:#E4E6EA; margin-bottom:8px;">${a.note}</div>
-        <div style="font-size:11px; color:#9CA3AF; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:4px;">Action steps</div>
-        ${a.actionSteps.map(s => `<div style="font-size:12.5px; color:#7FC4C9; margin-bottom:3px;">\u2022 ${s}</div>`).join('')}
+        <div style="font-size:12.5px; color:#7FC4C9; font-weight:600; margin-bottom:8px;">${p.plan.weekGoal}</div>
+        ${Team.renderPlanBody(p.domain, p.plan)}
       </div>`).join('');
 
     card.innerHTML = `
