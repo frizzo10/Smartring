@@ -1,7 +1,7 @@
 {
-  "name": "SageHealth",
-  "short_name": "SageHealth",
-  "description": "Your AI health coach — between a health coach and your doctor",
+  "name": "myDrSage",
+  "short_name": "myDrSage",
+  "description": "Your holistic wellness team — Dr. Sage and specialists in sleep, mindfulness, exercise, and nutrition, powered by your ring's real data.",
   "start_url": "/dashboard.html",
   "display": "standalone",
   "orientation": "portrait",
