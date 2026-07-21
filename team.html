@@ -479,6 +479,7 @@ const Team = {
       const q = step.questions[Team.questionIndexInStep];
       const qFullKey = step.key + '.' + q.key;
       const count = Team.followUpCount[qFullKey] || 0;
+
       if (q.type === 'text' && count < Team.MAX_FOLLOWUPS_PER_QUESTION) {
         const profile = Team.loadProfile();
         const answer = profile[step.key] && profile[step.key][q.key];
@@ -491,6 +492,26 @@ const Team = {
           if (result && result.followUpQuestion) {
             Team.renderFollowUp(step, q, result.followUpQuestion, answer);
             return;
+          }
+        }
+      } else if (q.type === 'options' && count === 0) {
+        // Chip answers get a real, brief reaction too \u2014 the
+        // actual "not a form" fix. Previously only free-text
+        // answers got one, so every multiple-choice question
+        // (a good chunk of onboarding) silently skipped straight
+        // to the next card with zero acknowledgment. No follow-up
+        // question here, deliberately \u2014 a discrete choice doesn't
+        // need probing the way an open answer does, and the reuse
+        // of followUpCount as a one-shot flag (rather than a new
+        // state object) keeps this from re-firing if someone goes
+        // back and reselects.
+        const profile = Team.loadProfile();
+        const answer = profile[step.key] && profile[step.key][q.key];
+        if (answer) {
+          Team.followUpCount[qFullKey] = 1;
+          const result = await Team.reactToAnswer(step, q.label, answer);
+          if (result && result.reaction) {
+            await Team.showReaction(step, result.reaction);
           }
         }
       }
