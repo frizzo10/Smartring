@@ -5,28 +5,30 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
 <title>myDrSage</title>
 <link rel="manifest" href="/manifest.json">
-<meta name="theme-color" content="#14213D">
+<meta name="theme-color" content="#0D130F">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;1,9..144,400;1,9..144,500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root {
-    --navy: #14213D;
-    --navy-card: #1A2A4D;
-    --navy-card-2: #241B1B;
-    --parchment: #F2EFE9;
-    --muted-blue: #8A93A8;
-    --green: #5FA97A;
-    --green-text: #C7DDCF;
-    --amber: #D99A4E;
-    --amber-text: #E8C79A;
+    --navy: #0D130F;
+    --navy-card: #161D18;
+    --navy-card-2: #221A12;
+    --parchment: #F3EFE6;
+    --muted-blue: #8C9689;
+    --green: #7FA66B;
+    --green-text: #D3E0C9;
+    --amber: #C9A75C;
+    --amber-text: #E0C594;
     --red: #C0392B;
     --red-text: #E8B4AC;
-    --line: #2A3B5E;
-    --line-warm: #3A2B2B;
+    --line: rgba(243,239,230,0.15);
+    --line-warm: rgba(201,167,92,0.2);
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
   body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     background: var(--navy);
     color: var(--parchment);
     min-height: 100vh;
@@ -34,7 +36,7 @@
   }
 
   .voice {
-    font-family: Georgia, 'Source Serif 4', serif;
+    font-family: 'Fraunces', serif; font-style: italic;
   }
 
   #app {
@@ -87,7 +89,7 @@
     margin-bottom: 8px;
   }
   .question-banner .prompt {
-    font-family: Georgia, 'Source Serif 4', serif;
+    font-family: 'Fraunces', serif; font-style: italic;
     font-size: 16px;
     line-height: 1.5;
     margin-bottom: 14px;
@@ -134,7 +136,7 @@
   .amber-tone .card-label span { color: var(--amber-text); }
 
   .card-text {
-    font-family: Georgia, 'Source Serif 4', serif;
+    font-family: 'Fraunces', serif; font-style: italic;
     font-size: 17px;
     line-height: 1.55;
   }
