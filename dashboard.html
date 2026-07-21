@@ -4,13 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
 <title>Dashboard — myDrSage</title>
-<meta name="theme-color" content="#0B1220">
+<meta name="theme-color" content="#0D130F">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;1,9..144,400;1,9..144,500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    background: #0B1220;
-    color: #fff;
+    font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #0D130F;
+    color: #F3EFE6;
     padding: 16px 14px 60px;
     -webkit-tap-highlight-color: transparent;
   }
@@ -21,28 +23,28 @@
     font-size: 15px; font-weight: 600; font-family: inherit;
   }
   #connect-btn { background: #F2EFE9; color: #14213D; }
-  #disconnect-btn { background: transparent; color: #fff; border: 1px solid #2A3B5E; margin-top: 8px; display: none; }
+  #disconnect-btn { background: transparent; color: #F3EFE6; border: 1px solid rgba(243,239,230,0.15); margin-top: 8px; display: none; }
   #connect-btn:active, #disconnect-btn:active { transform: scale(0.98); }
-  #status-line { font-size: 12px; color: #8A93A8; margin: 8px 0 14px; min-height: 14px; }
+  #status-line { font-size: 12px; color: #8C9689; margin: 8px 0 14px; min-height: 14px; }
 
   /* battery banner */
   #battery-banner {
     display: none;
     align-items: center; justify-content: space-between;
-    background: #14181f; border-radius: 20px; padding: 16px 18px;
+    background: #161D18; border-radius: 20px; padding: 16px 18px;
     margin-bottom: 14px;
   }
   #battery-banner .b-title { font-size: 17px; font-weight: 700; }
-  #battery-banner .b-sub { font-size: 12px; color: #8A93A8; margin-top: 2px; }
+  #battery-banner .b-sub { font-size: 12px; color: #8C9689; margin-top: 2px; }
   #battery-pill {
-    width: 50px; height: 26px; border-radius: 13px; background: rgba(255,255,255,0.08);
+    width: 50px; height: 26px; border-radius: 13px; background: rgba(243,239,230,0.08);
     position: relative; flex-shrink: 0;
   }
   #battery-pill::after {
     content: ''; position: absolute; right: -4px; top: 8px; width: 4px; height: 10px;
-    background: rgba(255,255,255,0.15); border-radius: 0 2px 2px 0;
+    background: rgba(243,239,230,0.15); border-radius: 0 2px 2px 0;
   }
-  #battery-fill { height: 100%; border-radius: 13px; background: #E86A5C; }
+  #battery-fill { height: 100%; border-radius: 13px; background: #D9835C; }
 
   /* generic card shell */
   .qcard {
@@ -52,10 +54,10 @@
   .qcard-title { font-size: 19px; font-weight: 700; }
   .qcard-date { font-size: 12px; opacity: 0.75; margin-top: 2px; }
 
-  #card-activity { background: linear-gradient(180deg, #4A6382 0%, #6C86A8 100%); }
-  #card-sleep { background: linear-gradient(180deg, #2B2A5C 0%, #1B2440 100%); }
-  #card-heart { background: #1A2A4D; border: 1px solid #2A3B5E; }
-  #card-oxygen { background: linear-gradient(180deg, #2E5B86 0%, #274A72 100%); }
+  #card-activity { background: #161D18; border: 1px solid rgba(217,131,92,0.28); }
+  #card-sleep { background: #161D18; border: 1px solid rgba(126,143,209,0.28); }
+  #card-heart { background: #161D18; border: 1px solid rgba(243,239,230,0.15); }
+  #card-oxygen { background: #161D18; border: 1px solid rgba(143,181,150,0.28); }
 
   .qcard-content { position: relative; z-index: 2; }
 
@@ -73,11 +75,11 @@
   .sub-item .lbl { font-size: 11px; opacity: 0.8; margin-top: 1px; }
 
   /* sleep timeline */
-  .sleep-timeline { display: flex; height: 8px; border-radius: 4px; overflow: hidden; margin: 18px 0 6px; background: rgba(255,255,255,0.12); }
-  .sleep-timeline .seg-light { background: #7FA6D9; }
-  .sleep-timeline .seg-deep { background: #3E4E9A; }
-  .sleep-timeline .seg-rem { background: #A78BD9; }
-  .sleep-timeline .seg-awake { background: #E8A85C; }
+  .sleep-timeline { display: flex; height: 8px; border-radius: 4px; overflow: hidden; margin: 18px 0 6px; background: rgba(243,239,230,0.12); }
+  .sleep-timeline .seg-light { background: #98A5DE; }
+  .sleep-timeline .seg-deep { background: #4C5AA0; }
+  .sleep-timeline .seg-rem { background: #B98FC9; }
+  .sleep-timeline .seg-awake { background: #C9A75C; }
   .sleep-times { display: flex; justify-content: space-between; font-size: 12px; opacity: 0.85; }
   .sleep-total { text-align: center; font-size: 15px; font-weight: 600; margin-top: 10px; }
   .sleep-legend { display: flex; gap: 14px; justify-content: center; margin-top: 10px; flex-wrap: wrap; }
@@ -85,10 +87,10 @@
   .sleep-legend .dot { width: 8px; height: 8px; border-radius: 50%; }
 
   /* line / bar chart cards */
-  .chart-box { background: rgba(255,255,255,0.06); border-radius: 12px; padding: 12px 10px 6px; margin-top: 14px; }
+  .chart-box { background: rgba(243,239,230,0.06); border-radius: 12px; padding: 12px 10px 6px; margin-top: 14px; }
   .chart-box svg { width: 100%; height: 130px; display: block; }
-  .chart-grid-line { stroke: rgba(255,255,255,0.15); stroke-width: 1; stroke-dasharray: 3 3; }
-  .chart-grid-label { fill: rgba(255,255,255,0.5); font-size: 9px; }
+  .chart-grid-line { stroke: rgba(243,239,230,0.15); stroke-width: 1; stroke-dasharray: 3 3; }
+  .chart-grid-label { fill: rgba(243,239,230,0.5); font-size: 9px; }
 
   .metric-row { display: flex; justify-content: space-between; align-items: center; margin-top: 14px; }
   .metric-main { display: flex; align-items: center; gap: 8px; font-size: 20px; font-weight: 700; }
@@ -98,10 +100,10 @@
 
   #spinner {
     display: none; align-items: center; justify-content: center; gap: 10px;
-    padding: 12px; margin-top: 10px; font-size: 13px; color: #C8D0E0;
+    padding: 12px; margin-top: 10px; font-size: 13px; color: #D6D8D2;
   }
   #spinner .dot {
-    width: 8px; height: 8px; border-radius: 50%; background: #7FA6D9;
+    width: 8px; height: 8px; border-radius: 50%; background: #98A5DE;
     animation: pulse 1s ease-in-out infinite;
   }
   #spinner .dot:nth-child(2) { animation-delay: 0.15s; }
@@ -111,8 +113,8 @@
   #data-banner {
     font-size: 12px; text-align: center; padding: 8px; border-radius: 8px; margin: 8px 0 14px;
   }
-  #data-banner.archived { background: rgba(232,168,92,0.12); color: #E8A85C; }
-  #data-banner.fresh { background: rgba(127,166,217,0.12); color: #7FA6D9; }
+  #data-banner.archived { background: rgba(201,167,92,0.12); color: #C9A75C; }
+  #data-banner.fresh { background: rgba(126,143,209,0.12); color: #98A5DE; }
 </style>
 </head>
 <body>
@@ -120,18 +122,18 @@
   <div id="connect-bar">
     <button id="connect-btn">Connect Colmi R02</button>
     <button id="disconnect-btn">Disconnect Ring</button>
-    <div style="font-size:11px;color:#8A93A8;margin-top:6px;text-align:center;">Open this page in the Bluefy app for Bluetooth to work — Safari/Chrome can't connect.</div>
-    <button id="reboot-ring-btn" style="width:100%;padding:12px;border-radius:10px;border:1px solid rgba(190,120,220,0.6);background:rgba(190,120,220,0.12);color:#BE78DC;font-size:14px;font-weight:700;margin-top:10px;" disabled>✓ Reboot Ring (confirmed fix — clears stuck LEDs, briefly disconnects)</button>
-    <div id="reboot-ring-status" style="font-size:11px;color:#8A93A8;margin-top:4px;text-align:center;"></div>
-    <button id="force-stop-btn" style="width:100%;padding:10px;border-radius:10px;border:1px solid rgba(232,168,92,0.3);background:transparent;color:#8A93A8;font-size:12px;font-weight:600;margin-top:10px;" disabled>Force Stop Sensors (didn't clear it in testing — try Reboot instead)</button>
-    <div id="force-stop-status" style="font-size:11px;color:#8A93A8;margin-top:4px;text-align:center;"></div>
-    <button id="disable-auto-hr-btn" style="width:100%;padding:10px;border-radius:10px;border:1px solid rgba(127,166,217,0.3);background:transparent;color:#8A93A8;font-size:12px;font-weight:600;margin-top:8px;" disabled>Try: Disable Auto HR Monitor (didn't clear it in testing)</button>
-    <div id="disable-auto-hr-status" style="font-size:11px;color:#8A93A8;margin-top:4px;text-align:center;"></div>
+    <div style="font-size:11px;color:#8C9689;margin-top:6px;text-align:center;">Open this page in the Bluefy app for Bluetooth to work — Safari/Chrome can't connect.</div>
+    <button id="reboot-ring-btn" style="width:100%;padding:12px;border-radius:10px;border:1px solid rgba(185,143,201,0.6);background:rgba(185,143,201,0.12);color:#B98FC9;font-size:14px;font-weight:700;margin-top:10px;" disabled>✓ Reboot Ring (confirmed fix — clears stuck LEDs, briefly disconnects)</button>
+    <div id="reboot-ring-status" style="font-size:11px;color:#8C9689;margin-top:4px;text-align:center;"></div>
+    <button id="force-stop-btn" style="width:100%;padding:10px;border-radius:10px;border:1px solid rgba(201,167,92,0.3);background:transparent;color:#8C9689;font-size:12px;font-weight:600;margin-top:10px;" disabled>Force Stop Sensors (didn't clear it in testing — try Reboot instead)</button>
+    <div id="force-stop-status" style="font-size:11px;color:#8C9689;margin-top:4px;text-align:center;"></div>
+    <button id="disable-auto-hr-btn" style="width:100%;padding:10px;border-radius:10px;border:1px solid rgba(126,143,209,0.3);background:transparent;color:#8C9689;font-size:12px;font-weight:600;margin-top:8px;" disabled>Try: Disable Auto HR Monitor (didn't clear it in testing)</button>
+    <div id="disable-auto-hr-status" style="font-size:11px;color:#8C9689;margin-top:4px;text-align:center;"></div>
     <div id="spinner"><div class="dot"></div><div class="dot"></div><div class="dot"></div><span id="spinner-text">Connecting...</span></div>
   </div>
   <div id="status-line"></div>
   <div id="data-banner"></div>
-  <div id="synced-label" style="font-size:12px;color:#8A93A8;margin:-8px 0 14px;"></div>
+  <div id="synced-label" style="font-size:12px;color:#8C9689;margin:-8px 0 14px;"></div>
 
   <div id="battery-banner">
     <div>
@@ -147,7 +149,7 @@
     <div class="qcard-title">Activity <span style="font-size:12px;opacity:0.7;font-weight:400;">— tap for details ›</span></div>
     <div class="qcard-date" id="activity-date"></div>
     <div class="arc-wrap">
-      <svg viewBox="0 0 220 130"><path id="activity-arc-bg" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="14" stroke-linecap="round"/><path id="activity-arc-fg" fill="none" stroke="#ffffff" stroke-width="14" stroke-linecap="round"/></svg>
+      <svg viewBox="0 0 220 130"><path id="activity-arc-bg" fill="none" stroke="rgba(243,239,230,0.35)" stroke-width="14" stroke-linecap="round"/><path id="activity-arc-fg" fill="none" stroke="#ffffff" stroke-width="14" stroke-linecap="round"/></svg>
       <div class="arc-center">
         <div style="font-size:18px;opacity:0.85;">👑</div>
         <div class="arc-value" id="activity-steps">--</div>
@@ -170,7 +172,7 @@
     <div class="qcard-date" id="sleep-date"></div>
     <div id="sleep-body" style="display:none;">
       <div class="arc-wrap">
-        <svg viewBox="0 0 220 130"><path id="sleep-arc-bg" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="14" stroke-linecap="round"/><path id="sleep-arc-fg" fill="none" stroke="#ffffff" stroke-width="14" stroke-linecap="round"/></svg>
+        <svg viewBox="0 0 220 130"><path id="sleep-arc-bg" fill="none" stroke="rgba(243,239,230,0.25)" stroke-width="14" stroke-linecap="round"/><path id="sleep-arc-fg" fill="none" stroke="#ffffff" stroke-width="14" stroke-linecap="round"/></svg>
         <div class="arc-center">
           <div style="font-size:18px;opacity:0.85;">👑</div>
           <div class="arc-value" id="sleep-hours">--</div>
@@ -219,7 +221,7 @@
   </div>
 
   <!-- HRV -->
-  <div id="card-hrv" class="qcard" style="background:#1A2A4D;border:1px solid #2A3B5E;">
+  <div id="card-hrv" class="qcard" style="background:#161D18;border:1px solid rgba(243,239,230,0.15);">
     <div class="qcard-title" onclick="window.location.href='hrv-detail.html'" style="cursor:pointer;">HRV <span style="font-size:12px;opacity:0.7;font-weight:400;">— tap for details ›</span></div>
     <div class="qcard-date" id="hrv-date"></div>
     <div class="metric-row" id="hrv-metric-row" style="display:none;">
@@ -227,7 +229,7 @@
       <div class="metric-range" id="hrv-detail">--</div>
     </div>
     <div class="empty-note" id="hrv-empty">Not the ring's own HRV number — this is real math (bandpass filter → peak detection → RMSSD) run on raw PPG. Manual only — tap below when you want a reading. Not automatic on connect: this triggers the raw sensor stream, which has occasionally left the ring's LEDs stuck on after finishing (unresolved, see Force Stop button above if that happens).</div>
-    <button id="hrv-compute-btn" style="width:100%;padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.2);background:transparent;color:#fff;font-size:14px;font-weight:600;margin-top:12px;" disabled>Compute HRV (60s, hold still)</button>
+    <button id="hrv-compute-btn" style="width:100%;padding:12px;border-radius:10px;border:1px solid rgba(243,239,230,0.2);background:transparent;color:#F3EFE6;font-size:14px;font-weight:600;margin-top:12px;" disabled>Compute HRV (60s, hold still)</button>
   </div>
 
   <script src="js/sage/colmi-ble.js"></script>
