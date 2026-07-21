@@ -4,7 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
 <title>Scores — myDrSage</title>
-<meta name="theme-color" content="#0B1220">
+<meta name="theme-color" content="#0D130F">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;1,9..144,400;1,9..144,500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script>
   // Onboarding is mandatory, not optional — this is the actual
   // fix. Previously "Meet the Team" was just a button on this
@@ -26,21 +28,21 @@
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    background: #0B1220;
-    color: #fff;
+    font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #0D130F;
+    color: #F3EFE6;
     padding: 16px 14px 80px;
     -webkit-tap-highlight-color: transparent;
   }
 
   #top-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
   #back-btn {
-    width: 36px; height: 36px; border-radius: 10px; border: 1px solid #2A3B5E;
-    background: transparent; color: #fff; font-size: 18px; display: flex;
+    width: 36px; height: 36px; border-radius: 10px; border: 1px solid rgba(243,239,230,0.15);
+    background: transparent; color: #F3EFE6; font-size: 18px; display: flex;
     align-items: center; justify-content: center; flex-shrink: 0;
   }
-  #top-bar h1 { font-size: 22px; font-weight: 800; }
-  #top-sub { font-size: 12px; color: #8A93A8; margin: -12px 0 18px 46px; }
+  #top-bar h1 { font-family: 'Fraunces', serif; font-weight: 500; font-size: 24px; }
+  #top-sub { font-size: 12px; color: #8C9689; margin: -12px 0 18px 46px; }
 
   /* generic score card */
   .score-card {
@@ -52,18 +54,22 @@
   .score-title .chev { margin-left: auto; font-size: 13px; opacity: 0.6; font-weight: 400; }
   .score-sub { font-size: 12px; opacity: 0.75; margin-top: 2px; }
 
-  #card-recovery { background: linear-gradient(180deg, #2E5B4A 0%, #1F4038 100%); }
-  #card-sleep-score { background: linear-gradient(180deg, #2B2A5C 0%, #1B2440 100%); }
-  #card-stress { background: linear-gradient(180deg, #6B4A8A 0%, #4A3468 100%); }
-  #card-strain { background: linear-gradient(180deg, #8A5A3A 0%, #6B4228 100%); }
+  #card-recovery { background: #161D18; border: 1px solid rgba(143,181,150,0.28); }
+  #card-sleep-score { background: #161D18; border: 1px solid rgba(126,143,209,0.28); }
+  #card-stress { background: #161D18; border: 1px solid rgba(185,143,201,0.28); }
+  #card-strain { background: #161D18; border: 1px solid rgba(217,131,92,0.28); }
+
+  #card-recovery .ring-gauge .fill, #recovery-num, #recovery-band { stroke: #8FB596; color: #8FB596; }
+  #card-sleep-score .ring-gauge .fill, #sleep-score-num, #sleep-score-band { stroke: #7E8FD1; color: #7E8FD1; }
+  #card-stress .ring-gauge .fill, #stress-num, #stress-band { stroke: #B98FC9; color: #B98FC9; }
 
   .score-body { display: flex; align-items: center; gap: 18px; margin-top: 16px; }
 
   /* ring gauge (0-100) */
   .ring-gauge { position: relative; width: 84px; height: 84px; flex-shrink: 0; }
   .ring-gauge svg { transform: rotate(-90deg); width: 84px; height: 84px; }
-  .ring-gauge .track { fill: none; stroke: rgba(255,255,255,0.18); stroke-width: 9; }
-  .ring-gauge .fill { fill: none; stroke: #fff; stroke-width: 9; stroke-linecap: round; transition: stroke-dashoffset 0.6s ease; }
+  .ring-gauge .track { fill: none; stroke: rgba(243,239,230,0.1); stroke-width: 9; }
+  .ring-gauge .fill { fill: none; stroke: #F3EFE6; stroke-width: 9; stroke-linecap: round; transition: stroke-dashoffset 0.6s ease; }
   .ring-gauge .num {
     position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
     font-size: 24px; font-weight: 800;
@@ -77,26 +83,26 @@
   .empty-note { font-size: 12.5px; opacity: 0.8; margin-top: 14px; line-height: 1.4; }
 
   /* journal */
-  #card-journal { background: #14181f; border: 1px solid #2A3B5E; cursor: default; }
+  #card-journal { background: #161D18; border: 1px solid rgba(243,239,230,0.1); cursor: default; }
   .journal-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 14px; }
   .journal-item {
-    background: rgba(255,255,255,0.05); border: 1px solid transparent; border-radius: 12px;
+    background: rgba(243,239,230,0.05); border: 1px solid transparent; border-radius: 12px;
     padding: 12px 8px; text-align: center; font-size: 12px; font-weight: 600;
   }
   .journal-item .j-icon { font-size: 20px; display: block; margin-bottom: 4px; }
-  .journal-item.active { background: rgba(127,166,217,0.16); border-color: #7FA6D9; color: #7FA6D9; }
-  #journal-saved-note { font-size: 11px; color: #8A93A8; margin-top: 10px; text-align: center; min-height: 14px; }
+  .journal-item.active { background: rgba(143,181,150,0.16); border-color: #8FB596; color: #8FB596; }
+  #journal-saved-note { font-size: 11px; color: #8C9689; margin-top: 10px; text-align: center; min-height: 14px; }
 
-  .section-label { font-size: 13px; font-weight: 700; color: #8A93A8; text-transform: uppercase; letter-spacing: 0.04em; margin: 22px 0 10px 2px; }
+  .section-label { font-size: 13px; font-weight: 700; color: #8C9689; text-transform: uppercase; letter-spacing: 0.04em; margin: 22px 0 10px 2px; }
 
   .status-line {
     font-size: 13.5px; font-weight: 600; line-height: 1.4; margin-top: 14px;
-    padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.14);
+    padding-top: 14px; border-top: 1px solid rgba(243,239,230,0.14);
   }
   .trend-btn {
     width: 100%; padding: 11px; border-radius: 10px; margin-top: 10px;
-    border: 1px solid rgba(255,255,255,0.25); background: transparent;
-    color: #fff; font-size: 13px; font-weight: 600; font-family: inherit;
+    border: 1px solid rgba(243,239,230,0.25); background: transparent;
+    color: #F3EFE6; font-size: 13px; font-weight: 600; font-family: inherit;
   }
   .trend-btn:disabled { opacity: 0.6; }
   .trend-response {
@@ -105,20 +111,21 @@
   }
 
   .plan-card {
-    background: linear-gradient(180deg, #2E4A5C 0%, #1E3240 100%);
+    background: #161D18; border: 1px solid rgba(201,167,92,0.3);
     border-radius: 22px; padding: 20px; margin-bottom: 14px;
   }
+  .plan-goal { font-family: 'Fraunces', serif; }
   .plan-domain-pills { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
   .plan-domain-pill {
     font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em;
-    background: rgba(255,255,255,0.14); border-radius: 20px; padding: 3px 9px;
+    background: rgba(243,239,230,0.14); border-radius: 20px; padding: 3px 9px;
   }
   .plan-domain-tag {
     font-size: 10px; font-weight: 700; text-transform: uppercase; opacity: 0.65;
     margin-right: 6px; display: inline;
   }
   .plan-goal { font-size: 15.5px; font-weight: 700; line-height: 1.4; }
-  .specialist-notes { margin-top: 14px; padding: 12px; background: rgba(255,255,255,0.06); border-radius: 12px; }
+  .specialist-notes { margin-top: 14px; padding: 12px; background: rgba(243,239,230,0.06); border-radius: 12px; }
   .specialist-notes-label { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; opacity: 0.65; margin-bottom: 8px; }
   .specialist-note { font-size: 12.5px; line-height: 1.45; margin-bottom: 8px; }
   .specialist-note:last-child { margin-bottom: 0; }
@@ -132,12 +139,12 @@
   .referrals-block { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
   .referral-chip {
     width: 100%; text-align: left; padding: 11px 12px; border-radius: 10px;
-    border: 1px dashed rgba(255,255,255,0.35); background: rgba(255,255,255,0.05);
-    color: #fff; font-family: inherit; font-size: 12.5px; font-weight: 600;
+    border: 1px dashed rgba(243,239,230,0.35); background: rgba(243,239,230,0.05);
+    color: #F3EFE6; font-family: inherit; font-size: 12.5px; font-weight: 600;
   }
   .referral-chip:disabled { opacity: 0.6; }
   .referral-consult {
-    background: rgba(127,166,217,0.14); border: 1px solid rgba(127,166,217,0.35);
+    background: rgba(143,181,150,0.14); border: 1px solid rgba(143,181,150,0.35);
     border-radius: 10px; padding: 12px;
   }
   .referral-consult-role { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; opacity: 0.75; margin-bottom: 6px; }
@@ -145,19 +152,19 @@
   .plan-actions { margin-top: 14px; display: flex; flex-direction: column; gap: 8px; }
   .plan-action {
     display: flex; align-items: center; gap: 10px; font-size: 13.5px;
-    background: rgba(255,255,255,0.07); border-radius: 10px; padding: 10px 12px;
+    background: rgba(243,239,230,0.07); border-radius: 10px; padding: 10px 12px;
   }
-  .plan-action.done { background: rgba(111,207,151,0.18); text-decoration: line-through; opacity: 0.8; }
+  .plan-action.done { background: rgba(143,181,150,0.18); text-decoration: line-through; opacity: 0.8; }
   .plan-check {
-    width: 20px; height: 20px; border-radius: 6px; border: 1.5px solid rgba(255,255,255,0.4);
+    width: 20px; height: 20px; border-radius: 6px; border: 1.5px solid rgba(243,239,230,0.4);
     flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 13px;
   }
-  .plan-action.done .plan-check { background: #6FCF97; border-color: #6FCF97; color: #0B1220; }
-  .plan-status { font-size: 12.5px; opacity: 0.85; margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.14); }
+  .plan-action.done .plan-check { background: #8FB596; border-color: #8FB596; color: #0D130F; }
+  .plan-status { font-size: 12.5px; opacity: 0.85; margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(243,239,230,0.14); }
   .plan-close-btn {
     width: 100%; padding: 10px; border-radius: 10px; margin-top: 10px;
-    border: 1px solid rgba(255,255,255,0.25); background: transparent;
-    color: #fff; font-size: 13px; font-weight: 600; font-family: inherit;
+    border: 1px solid rgba(243,239,230,0.25); background: transparent;
+    color: #F3EFE6; font-size: 13px; font-weight: 600; font-family: inherit;
   }
 </style>
 </head>
@@ -166,15 +173,15 @@
   <div id="top-bar">
     <button id="back-btn" onclick="window.location.href='dashboard.html'">‹</button>
     <h1>Scores</h1>
-    <button id="team-btn" onclick="window.location.href='team.html'" style="margin-left:auto; background:transparent; border:1px solid #2A3B5E; border-radius:10px; color:#fff; font-size:12px; font-weight:600; padding:8px 12px;">Meet the Team</button>
-    <button id="ring-size-btn" onclick="window.location.href='finger-size.html'" style="margin-left:8px; background:transparent; border:1px solid #2A3B5E; border-radius:10px; color:#fff; font-size:12px; font-weight:600; padding:8px 12px;">Ring Size</button>
+    <button id="team-btn" onclick="window.location.href='team.html'" style="margin-left:auto; background:transparent; border:1px solid rgba(243,239,230,0.15); border-radius:10px; color:#F3EFE6; font-size:12px; font-weight:600; padding:8px 12px;">Meet the Team</button>
+    <button id="ring-size-btn" onclick="window.location.href='finger-size.html'" style="margin-left:8px; background:transparent; border:1px solid rgba(243,239,230,0.15); border-radius:10px; color:#F3EFE6; font-size:12px; font-weight:600; padding:8px 12px;">Ring Size</button>
   </div>
   <div id="top-sub">Computed from what your ring has actually logged — no score shows unless the underlying data is real.</div>
-  <div id="welcome-back-note" style="display:none; background:rgba(127,196,201,0.14); border:1px solid rgba(127,196,201,0.3); border-radius:12px; padding:12px 14px; margin:0 20px 16px; font-size:13px; color:#7FC4C9;"></div>
+  <div id="welcome-back-note" style="display:none; background:rgba(143,181,150,0.14); border:1px solid rgba(143,181,150,0.3); border-radius:12px; padding:12px 14px; margin:0 20px 16px; font-size:13px; color:#8FB596;"></div>
 
-  <div id="weekly-report-banner" style="display:none; background:linear-gradient(145deg, rgba(127,196,201,0.16), rgba(127,196,201,0.04)); border:1px solid rgba(127,196,201,0.3); border-radius:16px; padding:16px; margin:0 20px 16px;">
+  <div id="weekly-report-banner" style="display:none; background:linear-gradient(145deg, rgba(143,181,150,0.16), rgba(143,181,150,0.04)); border:1px solid rgba(143,181,150,0.3); border-radius:16px; padding:16px; margin:0 20px 16px;">
     <div style="font-size:14px; font-weight:700; margin-bottom:4px;">📋 Your weekly report is ready</div>
-    <div style="font-size:12.5px; color:#9CA3AF; margin-bottom:12px;">Dr. Sage has put together your week — progress, real gaps, and what's next.</div>
+    <div style="font-size:12.5px; color:#8C9689; margin-bottom:12px;">Dr. Sage has put together your week — progress, real gaps, and what's next.</div>
     <button id="weekly-report-btn" class="trend-btn">Hear it now</button>
     <div id="weekly-report-result" style="display:none; margin-top:12px; font-size:13.5px; line-height:1.5; background:rgba(0,0,0,0.18); border-radius:10px; padding:12px;"></div>
   </div>
@@ -228,7 +235,7 @@
     <div class="status-line" id="sleep-score-status" style="display:none;"></div>
     <button class="trend-btn" id="sleep-score-trend-btn" style="display:none;">Is this normal for me?</button>
     <div class="trend-response" id="sleep-score-trend-response" style="display:none;"></div>
-    <button class="trend-btn" onclick="event.stopPropagation(); window.location.href='sleep-plan.html';" style="margin-top:8px; background:transparent; border:1px solid rgba(255,255,255,0.18);">🌙 Your sleep plan from Willow</button>
+    <button class="trend-btn" onclick="event.stopPropagation(); window.location.href='sleep-plan.html';" style="margin-top:8px; background:transparent; border:1px solid rgba(243,239,230,0.18);">🌙 Your sleep plan from Willow</button>
   </div>
 
   <!-- STRESS -->
@@ -255,7 +262,7 @@
     <button class="trend-btn" id="stress-trend-btn" style="display:none;">Is this normal for me?</button>
     <div class="trend-response" id="stress-trend-response" style="display:none;"></div>
     <button class="trend-btn" onclick="event.stopPropagation(); window.location.href='practice.html';" style="margin-top:10px;">🧘 Guided practice with Lotus</button>
-    <button class="trend-btn" onclick="event.stopPropagation(); window.location.href='mindfulness-plan.html';" style="margin-top:8px; background:transparent; border:1px solid rgba(255,255,255,0.18);">Your mindfulness plan →</button>
+    <button class="trend-btn" onclick="event.stopPropagation(); window.location.href='mindfulness-plan.html';" style="margin-top:8px; background:transparent; border:1px solid rgba(243,239,230,0.18);">Your mindfulness plan →</button>
     <button class="trend-btn" onclick="event.stopPropagation(); window.location.href='lotus-chat.html';" style="margin-top:8px;">💬 Talk with Lotus</button>
   </div>
 
@@ -265,40 +272,40 @@
     <div class="score-sub">Not built yet</div>
     <div class="empty-note">Strain scoring needs workout/activity-type classification from the accelerometer stream — this is a separate, larger build than Recovery/Sleep/Stress. Steps and calories already sync; intensity classification doesn't exist yet.</div>
     <button class="trend-btn" onclick="event.stopPropagation(); window.location.href='regimen.html';" style="margin-top:12px;">🔥 Your regimen from Hawthorn</button>
-    <button class="trend-btn" onclick="event.stopPropagation(); window.location.href='activity-detail.html';" style="margin-top:8px; background:transparent; border:1px solid rgba(255,255,255,0.18);">See real step data →</button>
+    <button class="trend-btn" onclick="event.stopPropagation(); window.location.href='activity-detail.html';" style="margin-top:8px; background:transparent; border:1px solid rgba(243,239,230,0.18);">See real step data →</button>
   </div>
 
   <div class="section-label">Nutrition</div>
-  <div class="score-card" style="background:#14181f; border:1px solid #2A3B5E; cursor:default;">
+  <div class="score-card" style="background:#14181f; border:1px solid rgba(243,239,230,0.15); cursor:default;">
     <div class="score-sub" id="nutrition-status-sub">What did you eat today? A quick description is enough \u2014 estimates are AI-generated, not measured.</div>
-    <textarea id="nutrition-input" placeholder="e.g. oatmeal with banana for breakfast, chicken salad for lunch, salmon and rice for dinner" style="width:100%; margin-top:12px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.18); border-radius:10px; padding:10px; color:#fff; font-family:inherit; font-size:13px; min-height:60px; resize:vertical;"></textarea>
+    <textarea id="nutrition-input" placeholder="e.g. oatmeal with banana for breakfast, chicken salad for lunch, salmon and rice for dinner" style="width:100%; margin-top:12px; background:rgba(243,239,230,0.06); border:1px solid rgba(243,239,230,0.18); border-radius:10px; padding:10px; color:#F3EFE6; font-family:inherit; font-size:13px; min-height:60px; resize:vertical;"></textarea>
     <button id="nutrition-estimate-btn" class="trend-btn">Estimate nutrition</button>
     <input type="file" id="nutrition-photo-input" accept="image/*" capture="environment" style="display:none;">
     <button id="nutrition-photo-btn" class="trend-btn" style="margin-top:8px;">📷 Snap a photo instead</button>
-    <div id="nutrition-photo-status" style="display:none; font-size:12px; color:#9CA3AF; margin-top:8px;"></div>
+    <div id="nutrition-photo-status" style="display:none; font-size:12px; color:#8C9689; margin-top:8px;"></div>
     <div id="nutrition-photo-draft" style="display:none; margin-top:12px; background:rgba(0,0,0,0.2); border-radius:12px; padding:14px;">
-      <div style="font-size:11px; color:#9CA3AF; margin-bottom:8px; text-transform:uppercase; letter-spacing:0.04em;">Basil's estimate \u2014 check it looks right, then save</div>
-      <textarea id="draft-description" style="width:100%; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.18); border-radius:8px; padding:8px; color:#fff; font-family:inherit; font-size:13px; min-height:44px; margin-bottom:10px;"></textarea>
+      <div style="font-size:11px; color:#8C9689; margin-bottom:8px; text-transform:uppercase; letter-spacing:0.04em;">Basil's estimate \u2014 check it looks right, then save</div>
+      <textarea id="draft-description" style="width:100%; background:rgba(243,239,230,0.06); border:1px solid rgba(243,239,230,0.18); border-radius:8px; padding:8px; color:#F3EFE6; font-family:inherit; font-size:13px; min-height:44px; margin-bottom:10px;"></textarea>
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px;">
-        <div><label style="font-size:11px; color:#9CA3AF;">Calories</label><input id="draft-calories" type="number" style="width:100%; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.18); border-radius:8px; padding:8px; color:#fff; font-family:inherit; font-size:13px;"></div>
-        <div><label style="font-size:11px; color:#9CA3AF;">Protein (g)</label><input id="draft-protein" type="number" style="width:100%; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.18); border-radius:8px; padding:8px; color:#fff; font-family:inherit; font-size:13px;"></div>
-        <div><label style="font-size:11px; color:#9CA3AF;">Carbs (g)</label><input id="draft-carbs" type="number" style="width:100%; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.18); border-radius:8px; padding:8px; color:#fff; font-family:inherit; font-size:13px;"></div>
-        <div><label style="font-size:11px; color:#9CA3AF;">Fat (g)</label><input id="draft-fat" type="number" style="width:100%; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.18); border-radius:8px; padding:8px; color:#fff; font-family:inherit; font-size:13px;"></div>
+        <div><label style="font-size:11px; color:#8C9689;">Calories</label><input id="draft-calories" type="number" style="width:100%; background:rgba(243,239,230,0.06); border:1px solid rgba(243,239,230,0.18); border-radius:8px; padding:8px; color:#F3EFE6; font-family:inherit; font-size:13px;"></div>
+        <div><label style="font-size:11px; color:#8C9689;">Protein (g)</label><input id="draft-protein" type="number" style="width:100%; background:rgba(243,239,230,0.06); border:1px solid rgba(243,239,230,0.18); border-radius:8px; padding:8px; color:#F3EFE6; font-family:inherit; font-size:13px;"></div>
+        <div><label style="font-size:11px; color:#8C9689;">Carbs (g)</label><input id="draft-carbs" type="number" style="width:100%; background:rgba(243,239,230,0.06); border:1px solid rgba(243,239,230,0.18); border-radius:8px; padding:8px; color:#F3EFE6; font-family:inherit; font-size:13px;"></div>
+        <div><label style="font-size:11px; color:#8C9689;">Fat (g)</label><input id="draft-fat" type="number" style="width:100%; background:rgba(243,239,230,0.06); border:1px solid rgba(243,239,230,0.18); border-radius:8px; padding:8px; color:#F3EFE6; font-family:inherit; font-size:13px;"></div>
       </div>
       <button id="draft-save-btn" class="trend-btn">Looks good, save it</button>
-      <button id="draft-cancel-btn" class="trend-btn" style="margin-top:6px; background:transparent; border:1px solid rgba(255,255,255,0.18);">Discard</button>
+      <button id="draft-cancel-btn" class="trend-btn" style="margin-top:6px; background:transparent; border:1px solid rgba(243,239,230,0.18);">Discard</button>
     </div>
     <button class="trend-btn" onclick="window.location.href='meals.html';" style="margin-top:8px;">🥗 Meal ideas from Basil</button>
-    <button class="trend-btn" onclick="window.location.href='meal-plan.html';" style="margin-top:8px; background:transparent; border:1px solid rgba(255,255,255,0.18);">Your meal plan →</button>
-    <button class="trend-btn" onclick="window.location.href='nutrition-detail.html';" style="margin-top:8px; background:transparent; border:1px solid rgba(255,255,255,0.18);">See real logged data →</button>
+    <button class="trend-btn" onclick="window.location.href='meal-plan.html';" style="margin-top:8px; background:transparent; border:1px solid rgba(243,239,230,0.18);">Your meal plan →</button>
+    <button class="trend-btn" onclick="window.location.href='nutrition-detail.html';" style="margin-top:8px; background:transparent; border:1px solid rgba(243,239,230,0.18);">See real logged data →</button>
     <div class="empty-note" id="nutrition-error" style="display:none;"></div>
     <div id="nutrition-result" style="display:none; margin-top:12px; background:rgba(0,0,0,0.18); border-radius:10px; padding:12px; font-size:13px; line-height:1.5;"></div>
-    <a href="https://app.clickpickandcook.com" target="_blank" rel="noopener" style="display:block; text-align:center; margin-top:14px; padding:11px; border-radius:10px; border:1px solid rgba(255,255,255,0.25); color:#fff; text-decoration:none; font-size:13px; font-weight:600;">Plan your meals in Fern AI \u2197</a>
+    <a href="https://app.clickpickandcook.com" target="_blank" rel="noopener" style="display:block; text-align:center; margin-top:14px; padding:11px; border-radius:10px; border:1px solid rgba(243,239,230,0.25); color:#F3EFE6; text-decoration:none; font-size:13px; font-weight:600;">Plan your meals in Fern AI \u2197</a>
   </div>
 
   <div class="section-label">Action Plan</div>
   <div id="plan-last-result" class="plan-card" style="display:none;"></div>
-  <div id="plan-empty-state" class="score-card" style="background:#14181f; border:1px solid #2A3B5E; cursor:default;">
+  <div id="plan-empty-state" class="score-card" style="background:#14181f; border:1px solid rgba(243,239,230,0.15); cursor:default;">
     <div class="score-sub">One holistic 7-day plan spanning everything we have real data for \u2014 not a single-issue fix.</div>
     <button id="build-plan-btn" class="trend-btn" style="margin-top:14px;">Build my action plan</button>
     <div class="empty-note" id="plan-build-error" style="display:none;"></div>
