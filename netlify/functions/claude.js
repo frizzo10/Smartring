@@ -14,6 +14,16 @@
    ───────────────────────────────────────────────────── */
 
 const GROQ_MODEL = 'openai/gpt-oss-20b';
+// gpt-oss-20b has NO vision support at all (confirmed: OpenAI's
+// gpt-oss family is text-only). The two real callers that send
+// images -- photo-based nutrition logging and the coin-reference
+// finger-sizing feature -- must explicitly override to qwen,
+// which is the only vision-capable model available on Groq here.
+// Silently routing an image-containing request through a
+// text-only model doesn't necessarily error -- it can just
+// ignore the image and fabricate a plausible-sounding answer with
+// no actual visual basis, which is worse than a loud failure.
+const VISION_MODEL = 'qwen/qwen3.6-27b';
 
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') {
@@ -45,6 +55,15 @@ exports.handler = async (event) => {
     messages.push(...body.messages);
   }
 
+  // Auto-detect image content rather than trusting every caller to
+  // remember a flag -- scans the actual messages being sent, so
+  // this can't silently drift out of sync with what callers
+  // actually do.
+  const containsImage = messages.some(m =>
+    Array.isArray(m.content) && m.content.some(part => part && part.type === 'image_url')
+  );
+  const modelForThisCall = containsImage ? VISION_MODEL : GROQ_MODEL;
+
   try {
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
@@ -53,10 +72,10 @@ exports.handler = async (event) => {
         'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: GROQ_MODEL,
+        model: modelForThisCall,
         max_tokens: body.max_tokens || 1000,
         temperature: 0.7,
-        reasoning_effort: 'low', // gpt-oss models use low/medium/high -- qwen's 'none' setting doesn't apply to this family
+        reasoning_effort: containsImage ? 'none' : 'low', // qwen (vision) uses 'none'; gpt-oss (text) uses low/medium/high
         messages
       })
     });
@@ -74,7 +93,7 @@ exports.handler = async (event) => {
     const text = data.choices?.[0]?.message?.content || '';
     const anthropicFormat = {
       content: [{ type: 'text', text }],
-      model: GROQ_MODEL,
+      model: modelForThisCall,
       usage: {
         input_tokens: data.usage?.prompt_tokens || 0,
         output_tokens: data.usage?.completion_tokens || 0
