@@ -4,28 +4,28 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
 <title>Talk with Lotus</title>
-<meta name="theme-color" content="#0A0D14">
+<meta name="theme-color" content="#0D130F">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body { height: 100%; }
   body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    background: #0A0D14; color: #F4F5F7;
+    font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #0D130F; color: #F3EFE6;
     display: flex; flex-direction: column;
   }
-  #top-bar { display: flex; align-items: center; gap: 10px; padding: 18px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); flex-shrink: 0; }
+  #top-bar { display: flex; align-items: center; gap: 10px; padding: 18px 20px; border-bottom: 1px solid rgba(243,239,230,0.08); flex-shrink: 0; }
   #back-btn {
-    width: 36px; height: 36px; border-radius: 10px; border: 1px solid #2A3B5E;
-    background: transparent; color: #fff; font-size: 18px; display: flex;
+    width: 36px; height: 36px; border-radius: 10px; border: 1px solid rgba(243,239,230,0.15);
+    background: transparent; color: #F3EFE6; font-size: 18px; display: flex;
     align-items: center; justify-content: center;
   }
   #top-bar h1 { font-size: 17px; font-weight: 700; }
-  #top-bar .sub { font-size: 11.5px; color: #6B7280; }
+  #top-bar .sub { font-size: 11.5px; color: #8C9689; }
 
   #messages { flex: 1; overflow-y: auto; padding: 18px 16px 8px; display: flex; flex-direction: column; gap: 12px; }
   .msg { max-width: 82%; padding: 12px 14px; border-radius: 16px; font-size: 14.5px; line-height: 1.5; }
-  .msg.lotus { align-self: flex-start; background: rgba(166,127,196,0.16); border: 1px solid rgba(166,127,196,0.3); border-bottom-left-radius: 4px; }
-  .msg.user { align-self: flex-end; background: rgba(255,255,255,0.08); border-bottom-right-radius: 4px; }
+  .msg.lotus { align-self: flex-start; background: rgba(185,143,201,0.16); border: 1px solid rgba(185,143,201,0.3); border-bottom-left-radius: 4px; }
+  .msg.user { align-self: flex-end; background: rgba(243,239,230,0.08); border-bottom-right-radius: 4px; }
   .msg.crisis {
     align-self: center; max-width: 100%; background: rgba(232,106,92,0.14);
     border: 1px solid rgba(232,106,92,0.4); text-align: left;
@@ -34,22 +34,22 @@
   .msg.crisis a { color: #F2A579; }
 
   #empty-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 30px; }
-  #empty-state .av { width: 64px; height: 64px; border-radius: 50%; background: linear-gradient(145deg,#B692D0,#8560A8); margin-bottom: 16px; }
-  #empty-state p { color: #9CA3AF; font-size: 14px; line-height: 1.5; max-width: 280px; }
+  #empty-state .av { width: 64px; height: 64px; border-radius: 50%; background: linear-gradient(145deg,#CBA8D6,#7A5589); margin-bottom: 16px; }
+  #empty-state p { color: #8C9689; font-size: 14px; line-height: 1.5; max-width: 280px; }
 
-  #input-row { display: flex; gap: 10px; padding: 14px 16px; border-top: 1px solid rgba(255,255,255,0.08); flex-shrink: 0; }
+  #input-row { display: flex; gap: 10px; padding: 14px 16px; border-top: 1px solid rgba(243,239,230,0.08); flex-shrink: 0; }
   #msg-input {
-    flex: 1; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.14);
-    border-radius: 20px; padding: 12px 16px; color: #fff; font-family: inherit; font-size: 14px;
+    flex: 1; background: rgba(243,239,230,0.06); border: 1px solid rgba(243,239,230,0.14);
+    border-radius: 20px; padding: 12px 16px; color: #F3EFE6; font-family: inherit; font-size: 14px;
     resize: none; max-height: 100px;
   }
   #mic-btn, #send-btn {
     width: 44px; height: 44px; border-radius: 50%; border: none; flex-shrink: 0;
     display: flex; align-items: center; justify-content: center; font-size: 18px; cursor: pointer;
   }
-  #mic-btn { background: rgba(255,255,255,0.08); color: #fff; }
+  #mic-btn { background: rgba(243,239,230,0.08); color: #F3EFE6; }
   #mic-btn.listening { background: #E86A5C; }
-  #send-btn { background: #D0AAEE; color: #0A0D14; }
+  #send-btn { background: #B98FC9; color: #0D130F; }
   #send-btn:disabled { opacity: 0.4; }
 </style>
 </head>
