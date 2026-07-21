@@ -4,35 +4,37 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
 <title>HRV Detail — myDrSage</title>
-<meta name="theme-color" content="#0B1220">
+<meta name="theme-color" content="#0D130F">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;1,9..144,400;1,9..144,500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0B1220; color: #fff; padding: 16px 14px 60px; }
-  a.back { color: #8A93A8; text-decoration: none; font-size: 14px; display: inline-block; margin-bottom: 14px; }
-  h1 { font-size: 22px; margin-bottom: 2px; }
-  .date { font-size: 13px; color: #8A93A8; margin-bottom: 18px; }
-  .card { background: #1A2A4D; border: 1px solid #2A3B5E; border-radius: 18px; padding: 18px 18px 20px; margin-bottom: 14px; }
-  .card-title { font-size: 15px; font-weight: 700; color: #C8D0E0; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.04em; }
-  .card-sub { font-size: 12px; color: #8A93A8; margin-bottom: 12px; }
+  body { font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0D130F; color: #F3EFE6; padding: 16px 14px 60px; }
+  a.back { color: #8C9689; text-decoration: none; font-size: 14px; display: inline-block; margin-bottom: 14px; }
+  h1 { font-family: 'Fraunces', serif; font-weight: 500; font-size: 25px; margin-bottom: 2px; }
+  .date { font-size: 13px; color: #8C9689; margin-bottom: 18px; }
+  .card { background: #161D18; border: 1px solid rgba(243,239,230,0.15); border-radius: 18px; padding: 18px 18px 20px; margin-bottom: 14px; }
+  .card-title { font-size: 15px; font-weight: 700; color: #D6D8D2; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .card-sub { font-size: 12px; color: #8C9689; margin-bottom: 12px; }
   .big-value { font-size: 44px; font-weight: 800; }
-  .big-unit { font-size: 15px; color: #8A93A8; margin-left: 4px; }
+  .big-unit { font-size: 15px; color: #8C9689; margin-left: 4px; }
   .stat-grid { display: flex; gap: 14px; margin-top: 14px; }
-  .stat-box { flex: 1; background: rgba(255,255,255,0.06); border-radius: 12px; padding: 14px; text-align: center; }
+  .stat-box { flex: 1; background: rgba(243,239,230,0.06); border-radius: 12px; padding: 14px; text-align: center; }
   .stat-box .val { font-size: 20px; font-weight: 800; }
-  .stat-box .lbl { font-size: 11px; color: #8A93A8; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.04em; }
-  .method { font-size: 13px; color: #C8D0E0; line-height: 1.5; }
-  .method b { color: #fff; }
+  .stat-box .lbl { font-size: 11px; color: #8C9689; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .method { font-size: 13px; color: #D6D8D2; line-height: 1.5; }
+  .method b { color: #F3EFE6; }
   svg.chart { width: 100%; height: 130px; display: block; }
-  .grid-line { stroke: rgba(255,255,255,0.15); stroke-width: 1; stroke-dasharray: 3 3; }
-  .grid-label { fill: rgba(255,255,255,0.5); font-size: 9px; }
-  .empty-note { font-size: 13px; color: #8A93A8; }
+  .grid-line { stroke: rgba(243,239,230,0.15); stroke-width: 1; stroke-dasharray: 3 3; }
+  .grid-label { fill: rgba(243,239,230,0.5); font-size: 9px; }
+  .empty-note { font-size: 13px; color: #8C9689; }
 
-  .insight-row { padding: 14px 0; border-bottom: 1px solid rgba(255,255,255,0.08); }
+  .insight-row { padding: 14px 0; border-bottom: 1px solid rgba(243,239,230,0.08); }
   .insight-row:last-child { border-bottom: none; }
   .insight-title { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
-  .insight-desc { font-size: 12px; color: #8A93A8; line-height: 1.5; margin-bottom: 8px; }
-  .insight-body { font-size: 13px; color: #C8D0E0; line-height: 1.5; }
-  .insight-locked { font-size: 13px; color: #E8A85C; line-height: 1.5; }
+  .insight-desc { font-size: 12px; color: #8C9689; line-height: 1.5; margin-bottom: 8px; }
+  .insight-body { font-size: 13px; color: #D6D8D2; line-height: 1.5; }
+  .insight-locked { font-size: 13px; color: #C9A75C; line-height: 1.5; }
 </style>
 </head>
 <body>
@@ -70,8 +72,8 @@
     <div class="card">
       <div class="card-title">Ask Dr. Sage</div>
       <div class="card-sub">Plain-language explanation of what's above — what your numbers show, or exactly why there isn't enough data yet, plus one clear next step. Never a diagnosis.</div>
-      <button id="ask-sage-btn" style="width:100%;padding:12px;border-radius:10px;border:1px solid rgba(127,166,217,0.4);background:transparent;color:#7FA6D9;font-size:14px;font-weight:600;">Ask Dr. Sage</button>
-      <div id="sage-response" style="margin-top:14px;font-size:14px;line-height:1.6;color:#fff;display:none;"></div>
+      <button id="ask-sage-btn" style="width:100%;padding:12px;border-radius:10px;border:1px solid rgba(127,166,217,0.4);background:transparent;color:#98A5DE;font-size:14px;font-weight:600;">Ask Dr. Sage</button>
+      <div id="sage-response" style="margin-top:14px;font-size:14px;line-height:1.6;color:#F3EFE6;display:none;"></div>
     </div>
 
     <div class="card">
@@ -84,7 +86,7 @@
     <div class="card" id="raw-data-card">
       <div class="card-title">Raw Data</div>
       <div class="card-sub">Every real capture, exactly as recorded. No commentary, no interpretation — if you want that, see Insights or Ask Dr. Sage above.</div>
-      <div id="raw-data-table" style="font-family: 'SF Mono', Consolas, monospace; font-size:11.5px; line-height:1.8; color:#C8D0E0; overflow-x:auto;"></div>
+      <div id="raw-data-table" style="font-family: 'SF Mono', Consolas, monospace; font-size:11.5px; line-height:1.8; color:#D6D8D2; overflow-x:auto;"></div>
     </div>
 
   </div>
@@ -120,11 +122,11 @@
         const y = padT + plotH - ((e.rmssd - minV) / range) * plotH;
         return `${x.toFixed(1)},${y.toFixed(1)}`;
       }).join(' ');
-      const line = `<polyline points="${points}" fill="none" stroke="#7FA6D9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`;
+      const line = `<polyline points="${points}" fill="none" stroke="#98A5DE" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`;
       const dots = history.map((e, i) => {
         const x = padL + i * gap + gap / 2;
         const y = padT + plotH - ((e.rmssd - minV) / range) * plotH;
-        return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3" fill="#7FA6D9"/>`;
+        return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3" fill="#98A5DE"/>`;
       }).join('');
 
       const svg = document.getElementById('trend-chart');
