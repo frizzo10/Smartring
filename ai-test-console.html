@@ -5,6 +5,22 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>myDrSage — Talk to the Team</title>
 <meta name="theme-color" content="#0A0D14">
+<script>
+  // Same real gate as scores.html — onboarding is mandatory
+  // first, even to reach this internal tool. If you haven't
+  // actually done it, this sends you to team.html before
+  // anything here renders.
+  (function() {
+    try {
+      var profile = JSON.parse(localStorage.getItem('sh_team_profile') || '{}');
+      if (!profile.drSage || !profile.drSage.goal) {
+        window.location.replace('team.html');
+      }
+    } catch (e) {
+      window.location.replace('team.html');
+    }
+  })();
+</script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
