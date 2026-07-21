@@ -4,27 +4,29 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
 <title>Blood Oxygen Detail — myDrSage</title>
-<meta name="theme-color" content="#0B1220">
+<meta name="theme-color" content="#0D130F">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;1,9..144,400;1,9..144,500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0B1220; color: #fff; padding: 16px 14px 60px; }
-  a.back { color: #8A93A8; text-decoration: none; font-size: 14px; display: inline-block; margin-bottom: 14px; }
-  h1 { font-size: 22px; margin-bottom: 2px; }
-  .date { font-size: 13px; color: #8A93A8; margin-bottom: 18px; }
-  .card { background: #1A2A4D; border: 1px solid #2A3B5E; border-radius: 18px; padding: 18px 18px 20px; margin-bottom: 14px; }
-  .card-title { font-size: 15px; font-weight: 700; color: #C8D0E0; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.04em; }
-  .card-sub { font-size: 12px; color: #8A93A8; margin-bottom: 12px; }
+  body { font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0D130F; color: #F3EFE6; padding: 16px 14px 60px; }
+  a.back { color: #8C9689; text-decoration: none; font-size: 14px; display: inline-block; margin-bottom: 14px; }
+  h1 { font-family: 'Fraunces', serif; font-weight: 500; font-size: 25px; margin-bottom: 2px; }
+  .date { font-size: 13px; color: #8C9689; margin-bottom: 18px; }
+  .card { background: #161D18; border: 1px solid rgba(243,239,230,0.15); border-radius: 18px; padding: 18px 18px 20px; margin-bottom: 14px; }
+  .card-title { font-size: 15px; font-weight: 700; color: #D6D8D2; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .card-sub { font-size: 12px; color: #8C9689; margin-bottom: 12px; }
   svg.chart { width: 100%; height: 150px; display: block; }
-  .grid-line { stroke: rgba(255,255,255,0.15); stroke-width: 1; stroke-dasharray: 3 3; }
-  .grid-label { fill: rgba(255,255,255,0.5); font-size: 9px; }
+  .grid-line { stroke: rgba(243,239,230,0.15); stroke-width: 1; stroke-dasharray: 3 3; }
+  .grid-label { fill: rgba(243,239,230,0.5); font-size: 9px; }
   .stat-grid { display: flex; gap: 14px; }
-  .stat-box { flex: 1; background: rgba(255,255,255,0.06); border-radius: 12px; padding: 14px; text-align: center; }
+  .stat-box { flex: 1; background: rgba(243,239,230,0.06); border-radius: 12px; padding: 14px; text-align: center; }
   .stat-box .val { font-size: 22px; font-weight: 800; }
-  .stat-box .lbl { font-size: 11px; color: #8A93A8; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .stat-box .lbl { font-size: 11px; color: #8C9689; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.04em; }
   .legend { display: flex; gap: 16px; margin-top: 10px; }
-  .legend .item { font-size: 12px; color: #C8D0E0; display: flex; align-items: center; gap: 6px; }
+  .legend .item { font-size: 12px; color: #D6D8D2; display: flex; align-items: center; gap: 6px; }
   .legend .dot { width: 9px; height: 9px; border-radius: 50%; }
-  .empty-note { font-size: 13px; color: #8A93A8; }
+  .empty-note { font-size: 13px; color: #8C9689; }
 </style>
 </head>
 <body>
@@ -40,8 +42,8 @@
       <div class="card-sub">The ring logs both a max and min SpO2 per hour — the main card only shows max.</div>
       <svg id="oxygen-chart" class="chart" viewBox="0 0 300 150" preserveAspectRatio="none"></svg>
       <div class="legend">
-        <div class="item"><div class="dot" style="background:#BFD8F5;"></div>Max</div>
-        <div class="item"><div class="dot" style="background:#5A7BA6;"></div>Min</div>
+        <div class="item"><div class="dot" style="background:#9CB8DE;"></div>Max</div>
+        <div class="item"><div class="dot" style="background:#4C5AA0;"></div>Min</div>
       </div>
     </div>
 
@@ -94,14 +96,14 @@
           const clamped = Math.max(minV, Math.min(maxV, hd.max));
           const y = padT + plotH - ((clamped - minV) / (maxV - minV)) * plotH;
           const bh = (padT + plotH) - y;
-          bars += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${bh.toFixed(1)}" rx="1.5" fill="#BFD8F5"/>`;
+          bars += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${bh.toFixed(1)}" rx="1.5" fill="#9CB8DE"/>`;
         }
         if (hd.min > 0) {
           const x2 = x + barW;
           const clamped = Math.max(minV, Math.min(maxV, hd.min));
           const y = padT + plotH - ((clamped - minV) / (maxV - minV)) * plotH;
           const bh = (padT + plotH) - y;
-          bars += `<rect x="${x2.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${bh.toFixed(1)}" rx="1.5" fill="#5A7BA6"/>`;
+          bars += `<rect x="${x2.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${bh.toFixed(1)}" rx="1.5" fill="#4C5AA0"/>`;
         }
       });
 
