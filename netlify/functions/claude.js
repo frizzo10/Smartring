@@ -1,13 +1,19 @@
 /* ─────────────────────────────────────────────────────
    SageHealth AI proxy — Groq (everything)
    Groq free tier: 14,400 req/day
-   Model: qwen/qwen3.6-27b (llama-3.3-70b-versatile deprecates
-   08/16/26 — same migration already done on Fern AI's 9 backend
-   functions; qwen3-32b was also deprecated by Groq on 6/17/26,
-   this is the current recommended replacement for both)
+   Model: openai/gpt-oss-20b (switched from qwen/qwen3.6-27b
+   2026-07-21 — production tier on Groq, not preview; ~900-1200
+   tok/s vs qwen's much slower throughput; $0.10/$0.50 per 1M vs
+   qwen's $0.60/$3.00. reasoning_effort set to 'low', NOT qwen's
+   'none' -- gpt-oss models use low/medium/high, not none/some;
+   'none' may not be valid for this family and risked reproducing
+   the same reasoning-field-leak that caused the earlier
+   gpt-oss-120b attempt to get reverted. NEEDS REAL VERIFICATION
+   in the live app that reasoning content isn't leaking into
+   responses before this is trusted the way qwen was.
    ───────────────────────────────────────────────────── */
 
-const GROQ_MODEL = 'qwen/qwen3.6-27b';
+const GROQ_MODEL = 'openai/gpt-oss-20b';
 
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') {
@@ -50,7 +56,7 @@ exports.handler = async (event) => {
         model: GROQ_MODEL,
         max_tokens: body.max_tokens || 1000,
         temperature: 0.7,
-        reasoning_effort: 'none', // matches Fern AI's working default for this model family
+        reasoning_effort: 'low', // gpt-oss models use low/medium/high -- qwen's 'none' setting doesn't apply to this family
         messages
       })
     });
