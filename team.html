@@ -4,90 +4,92 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
 <title>Meet Your Team — myDrSage</title>
-<meta name="theme-color" content="#0A0D14">
+<meta name="theme-color" content="#0D130F">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;1,9..144,400;1,9..144,500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    background: #0A0D14; color: #F4F5F7;
+    font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #0D130F; color: #F3EFE6;
     min-height: 100vh; display: flex; flex-direction: column;
   }
 
   #progress-track { display: flex; gap: 6px; padding: 18px 20px 0; }
-  .progress-dot { flex: 1; height: 3px; border-radius: 3px; background: rgba(255,255,255,0.12); }
-  .progress-dot.done { background: var(--accent, #7FC4C9); }
-  .progress-dot.active { background: var(--accent, #7FC4C9); opacity: 0.5; }
+  .progress-dot { flex: 1; height: 3px; border-radius: 3px; background: rgba(243,239,230,0.1); }
+  .progress-dot.done { background: var(--accent, #8FB596); }
+  .progress-dot.active { background: var(--accent, #8FB596); opacity: 0.5; }
 
   #card-area { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 34px 24px 24px; text-align: center; }
 
   .avatar-lg {
     width: 84px; height: 84px; border-radius: 50%; margin-bottom: 20px;
     display: flex; align-items: center; justify-content: center;
-    font-weight: 700; font-size: 30px; color: #fff;
-    border: 3px solid rgba(255,255,255,0.14); position: relative;
+    font-family: 'Fraunces', serif; font-weight: 500; font-size: 30px; color: #F3EFE6;
+    border: 3px solid rgba(201,167,92,0.3); position: relative;
   }
   .avatar-lg.speaking { animation: pulse 1.4s ease-in-out infinite; }
-  @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(255,255,255,0.25); } 50% { box-shadow: 0 0 0 12px rgba(255,255,255,0); } }
+  @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(243,239,230,0.2); } 50% { box-shadow: 0 0 0 12px rgba(243,239,230,0); } }
 
-  .member-name { font-size: 26px; font-weight: 700; margin-bottom: 4px; }
-  .member-title { font-size: 13.5px; color: #9CA3AF; margin-bottom: 22px; }
-  .intro-text { font-size: 16px; line-height: 1.55; color: #E4E6EA; margin-bottom: 26px; max-width: 380px; }
+  .member-name { font-family: 'Fraunces', serif; font-weight: 500; font-size: 27px; margin-bottom: 4px; }
+  .member-title { font-size: 13.5px; color: #8C9689; margin-bottom: 22px; }
+  .intro-text { font-family: 'Fraunces', serif; font-style: italic; font-size: 17px; line-height: 1.55; color: #D6D8D2; margin-bottom: 26px; max-width: 380px; }
 
   .question-block { width: 100%; max-width: 400px; margin-bottom: 10px; }
   .question-label { font-size: 15px; font-weight: 600; margin-bottom: 18px; }
 
   .mic-btn {
     width: 84px; height: 84px; border-radius: 50%; border: none; margin: 0 auto 16px;
-    background: var(--accent, #7FC4C9); display: flex; align-items: center; justify-content: center;
+    background: var(--accent, #8FB596); display: flex; align-items: center; justify-content: center;
     font-size: 30px; cursor: pointer;
   }
   .mic-btn.listening { animation: pulse 1s ease-in-out infinite; background: #E86A5C; }
-  .mic-status { font-size: 12.5px; color: #6B7280; margin-bottom: 18px; min-height: 16px; }
+  .mic-status { font-size: 12.5px; color: #8C9689; margin-bottom: 18px; min-height: 16px; }
 
-  .type-toggle { font-size: 12.5px; color: #6B7280; text-decoration: underline; background: none; border: none; cursor: pointer; }
+  .type-toggle { font-size: 12.5px; color: #8C9689; text-decoration: underline; background: none; border: none; cursor: pointer; }
 
   textarea {
-    width: 100%; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.14);
-    border-radius: 12px; padding: 12px; color: #fff; font-family: inherit; font-size: 14px;
+    width: 100%; background: rgba(243,239,230,0.06); border: 1px solid rgba(243,239,230,0.14);
+    border-radius: 12px; padding: 12px; color: #F3EFE6; font-family: inherit; font-size: 14px;
     min-height: 64px; resize: vertical; margin-bottom: 12px;
   }
   .option-row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
   .option-chip {
-    padding: 10px 16px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.18);
-    background: rgba(255,255,255,0.04); font-size: 13.5px; color: #E4E6EA; cursor: pointer;
+    padding: 10px 16px; border-radius: 20px; border: 1px solid rgba(243,239,230,0.18);
+    background: rgba(243,239,230,0.04); font-size: 13.5px; color: #D6D8D2; cursor: pointer;
   }
-  .option-chip.selected { border-color: var(--accent, #7FC4C9); background: rgba(127,196,201,0.16); color: var(--accent, #7FC4C9); font-weight: 600; }
+  .option-chip.selected { border-color: var(--accent, #8FB596); background: rgba(143,181,150,0.16); color: var(--accent, #8FB596); font-weight: 600; }
 
-  .transcript-preview { font-size: 14px; color: var(--accent, #7FC4C9); font-style: italic; margin-bottom: 14px; min-height: 20px; }
+  .transcript-preview { font-size: 14px; color: var(--accent, #8FB596); font-style: italic; margin-bottom: 14px; min-height: 20px; }
 
   .sensitive-note {
-    font-size: 12px; color: #6B7280; line-height: 1.5; margin-bottom: 16px;
-    background: rgba(255,255,255,0.04); border-radius: 10px; padding: 10px 14px;
+    font-size: 12px; color: #8C9689; line-height: 1.5; margin-bottom: 16px;
+    background: rgba(243,239,230,0.04); border-radius: 10px; padding: 10px 14px;
   }
 
   .auto-skip-note {
-    font-size: 12px; color: #6B7280; background: rgba(255,255,255,0.04); border-radius: 10px;
+    font-size: 12px; color: #8C9689; background: rgba(243,239,230,0.04); border-radius: 10px;
     padding: 8px 12px; margin-top: 10px; max-width: 380px;
   }
 
   #nav-row { display: flex; gap: 12px; padding: 0 24px 34px; }
   .btn { flex: 1; padding: 15px; border-radius: 14px; border: none; font-size: 15px; font-weight: 700; font-family: inherit; cursor: pointer; }
-  .btn-primary { background: var(--accent, #7FC4C9); color: #0A0D14; }
+  .btn-primary { background: var(--accent, #8FB596); color: #0D130F; }
   .btn-primary:disabled { opacity: 0.4; }
-  .btn-skip { background: transparent; color: #6B7280; flex: 0 0 auto; padding: 15px 18px; }
+  .btn-skip { background: transparent; color: #8C9689; flex: 0 0 auto; padding: 15px 18px; }
 
   #done-screen { display: none; flex: 1; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 40px; }
   .team-row { display: flex; gap: 10px; margin-bottom: 24px; }
-  .mini-av { width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px; color: #fff; }
+  .mini-av { width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px; color: #F3EFE6; }
 </style>
 </head>
 <body>
 
   <div id="start-gate" style="min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:40px 30px; text-align:center;">
-    <div style="width:72px; height:72px; border-radius:50%; background:linear-gradient(145deg,#5FA5AA,#2F5C60); margin-bottom:24px; display:flex; align-items:center; justify-content:center; font-size:28px; font-weight:700; color:#fff;">DS</div>
+    <div style="width:72px; height:72px; border-radius:50%; background:linear-gradient(145deg,#A9CDAE,#5F7F63); margin-bottom:24px; display:flex; align-items:center; justify-content:center; font-size:28px; font-weight:700; color:#F3EFE6;">DS</div>
     <div style="font-size:22px; font-weight:700; margin-bottom:10px;">Meet Your Team</div>
-    <div style="font-size:14.5px; color:#9CA3AF; line-height:1.5; max-width:280px; margin-bottom:32px;">Dr. Sage and the team speak out loud as you go \u2014 your browser needs one tap first before any audio can play.</div>
-    <button id="start-gate-btn" style="width:100%; max-width:280px; padding:16px; border-radius:14px; border:none; background:#7FC4C9; color:#0A0D14; font-size:15px; font-weight:700; font-family:inherit; cursor:pointer;">Begin</button>
+    <div style="font-size:14.5px; color:#8C9689; line-height:1.5; max-width:280px; margin-bottom:32px;">Dr. Sage and the team speak out loud as you go \u2014 your browser needs one tap first before any audio can play.</div>
+    <button id="start-gate-btn" style="width:100%; max-width:280px; padding:16px; border-radius:14px; border:none; background:#8FB596; color:#0D130F; font-size:15px; font-weight:700; font-family:inherit; cursor:pointer;">Begin</button>
   </div>
 
   <div id="progress-track" style="display:none;"></div>
@@ -100,7 +102,7 @@
   <div id="done-screen">
     <div class="team-row" id="done-team-row"></div>
     <h2 style="font-size:22px; margin-bottom:10px;">Your team's ready.</h2>
-    <p style="color:#9CA3AF; font-size:14.5px; max-width:320px; line-height:1.5; margin-bottom:28px;">Everything you shared gets folded into how Willow, Lotus, Hawthorn, and Basil actually think about your data — not just kept on file.</p>
+    <p style="color:#8C9689; font-size:14.5px; max-width:320px; line-height:1.5; margin-bottom:28px;">Everything you shared gets folded into how Willow, Lotus, Hawthorn, and Basil actually think about your data — not just kept on file.</p>
     <button class="btn btn-primary" style="max-width:220px;" onclick="window.location.href='scores.html'">Go to Scores</button>
   </div>
 
@@ -115,7 +117,7 @@ const Team = {
   STEPS: [
     {
       key: 'drSage', name: 'Dr. Sage', title: 'Holistic Wellness Doctor',
-      color: 'linear-gradient(145deg,#5FA5AA,#2F5C60)', accent: '#7FC4C9', voiceKey: 'drSage',
+      color: 'linear-gradient(145deg,#A9CDAE,#5F7F63)', accent: '#8FB596', voiceKey: 'drSage',
       intro: "I'm Dr. Sage. I will be your leader, but rest assured I have specialists monitoring every facet of your health. Let's take a couple of minutes to get acquainted, and then I want you to meet the team \u2014 I'll chat with you again once you're through.",
       questions: [
         { key: 'preferredName', label: 'What would you like to be called?', type: 'text' },
@@ -129,7 +131,7 @@ const Team = {
     },
     {
       key: 'sleep', name: 'Willow', title: 'Sleep Coach',
-      color: 'linear-gradient(145deg,#6B7DC4,#45559A)', accent: '#9AACE8', voiceKey: 'sleep',
+      color: 'linear-gradient(145deg,#98A5DE,#4C5AA0)', accent: '#7E8FD1', voiceKey: 'sleep',
       intro: "{greeting}I'm Willow, your sleep coach. Getting a good night's rest is my only job, and most of the time, the most important one.",
       questions: [
         { key: 'bedtime', label: 'What time do you usually try to go to bed?', type: 'text' },
@@ -141,7 +143,7 @@ const Team = {
     },
     {
       key: 'stress', name: 'Lotus', title: 'Mindfulness Coach',
-      color: 'linear-gradient(145deg,#B692D0,#8560A8)', accent: '#D0AAEE', voiceKey: 'stress',
+      color: 'linear-gradient(145deg,#CBA8D6,#7A5589)', accent: '#B98FC9', voiceKey: 'stress',
       intro: "{greeting}I'm Lotus, a true practitioner of yoga. Think of me as a spiritual guide through the everyday stresses of life. I promise to help take the edge off.",
       questions: [
         { key: 'experience', label: 'Any experience with meditation or yoga?', type: 'options',
@@ -155,7 +157,7 @@ const Team = {
     },
     {
       key: 'activity', name: 'Hawthorn', title: 'Exercise Coach',
-      color: 'linear-gradient(145deg,#EC8E56,#C4622A)', accent: '#F2A579', voiceKey: 'activity',
+      color: 'linear-gradient(145deg,#E6A183,#A85936)', accent: '#D9835C', voiceKey: 'activity',
       intro: "{greeting}I'm Hawthorn, your exercise guru. I will build a plan regardless of whether you are an athlete or novice. No matter your age, I will get you moving and improving.",
       questions: [
         { key: 'current', label: 'What does exercise currently look like for you?', type: 'text' },
@@ -167,7 +169,7 @@ const Team = {
     },
     {
       key: 'nutrition', name: 'Basil', title: 'Nutrition Coach',
-      color: 'linear-gradient(145deg,#82BD82,#558A55)', accent: '#9FD49F', voiceKey: 'nutrition',
+      color: 'linear-gradient(145deg,#B6D68A,#6B8F45)', accent: '#9FC96B', voiceKey: 'nutrition',
       intro: "{greeting}I'm Basil. I am all about food and nutrition. I know what you put in your body counts as much as anything. I will help along the way to a healthier you.",
       questions: [
         { key: 'restrictions', label: 'Any dietary preferences or restrictions?', type: 'text' },
@@ -182,7 +184,7 @@ const Team = {
       // never collides with his opening step's saved profile answers.
       // voiceKey stays 'drSage' so TTS still uses his real voice.
       key: 'drSageClosing', name: 'Dr. Sage', title: 'Holistic Wellness Doctor',
-      color: 'linear-gradient(145deg,#5FA5AA,#2F5C60)', accent: '#7FC4C9', voiceKey: 'drSage',
+      color: 'linear-gradient(145deg,#A9CDAE,#5F7F63)', accent: '#8FB596', voiceKey: 'drSage',
       intro: "{greeting}That's the team. Willow, Lotus, Hawthorn, and Basil are all watching now, and everything you just shared is already helping them do their job. I'll be checking in as your reports come together \u2014 talk soon.",
       questions: [],
     },
@@ -532,7 +534,7 @@ const Team = {
       const card = document.getElementById('card-area');
       const existing = card.querySelector('.question-block') || card;
       const reactionEl = document.createElement('div');
-      reactionEl.style.cssText = 'font-size:13px; color:#9CA3AF; font-style:italic; margin:10px 0; text-align:center;';
+      reactionEl.style.cssText = 'font-size:13px; color:#8C9689; font-style:italic; margin:10px 0; text-align:center;';
       reactionEl.textContent = `\u201c${reactionText}\u201d`;
       existing.appendChild ? existing.appendChild(reactionEl) : card.appendChild(reactionEl);
       Team.speak(reactionText, step.voiceKey, null);
@@ -549,7 +551,7 @@ const Team = {
         <button class="mic-btn" id="followup-mic-btn">\u{1F3A4}</button>
         <div class="mic-status" id="followup-status">Tap to speak, or type below</div>
         <div class="transcript-preview" id="followup-preview"></div>
-        <textarea id="followup-text" placeholder="Type your answer\u2026" style="width:100%; min-height:60px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.14); border-radius:10px; padding:10px; color:#fff; font-family:inherit; font-size:13px; margin:12px 0;"></textarea>
+        <textarea id="followup-text" placeholder="Type your answer\u2026" style="width:100%; min-height:60px; background:rgba(243,239,230,0.06); border:1px solid rgba(243,239,230,0.14); border-radius:10px; padding:10px; color:#F3EFE6; font-family:inherit; font-size:13px; margin:12px 0;"></textarea>
       </div>
     `;
     document.getElementById('next-btn').textContent = 'Continue';
@@ -912,10 +914,10 @@ const Team = {
   },
 
   PLAN_DOMAINS: {
-    sleep: { name: 'Willow', title: 'Sleep Coach', color: 'linear-gradient(145deg,#6B7DC4,#45559A)', storageKey: 'sh_willow_sleepplans' },
-    stress: { name: 'Lotus', title: 'Mindfulness Coach', color: 'linear-gradient(145deg,#B692D0,#8560A8)', storageKey: 'sh_lotus_mindfulnessplans' },
-    activity: { name: 'Hawthorn', title: 'Exercise Coach', color: 'linear-gradient(145deg,#EC8E56,#C4622A)', storageKey: 'sh_hawthorn_regimens' },
-    nutrition: { name: 'Basil', title: 'Nutrition Coach', color: 'linear-gradient(145deg,#82BD82,#558A55)', storageKey: 'sh_basil_mealplans' },
+    sleep: { name: 'Willow', title: 'Sleep Coach', color: 'linear-gradient(145deg,#98A5DE,#4C5AA0)', storageKey: 'sh_willow_sleepplans' },
+    stress: { name: 'Lotus', title: 'Mindfulness Coach', color: 'linear-gradient(145deg,#CBA8D6,#7A5589)', storageKey: 'sh_lotus_mindfulnessplans' },
+    activity: { name: 'Hawthorn', title: 'Exercise Coach', color: 'linear-gradient(145deg,#E6A183,#A85936)', storageKey: 'sh_hawthorn_regimens' },
+    nutrition: { name: 'Basil', title: 'Nutrition Coach', color: 'linear-gradient(145deg,#B6D68A,#6B8F45)', storageKey: 'sh_basil_mealplans' },
   },
 
   // Reads each specialist's REAL, already-persisted plan \u2014 the
@@ -943,8 +945,8 @@ const Team = {
   // day-grid would misrepresent what her plan actually is.
   dayGrid(cards) {
     return `<div style="display:flex; gap:7px; overflow-x:auto; padding:2px 0 6px;">${cards.map(c => `
-      <div style="flex-shrink:0; width:82px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:8px 7px;">
-        <div style="font-size:8.5px; color:#9CA3AF; text-transform:uppercase; letter-spacing:0.03em; margin-bottom:5px;">${c.label}</div>
+      <div style="flex-shrink:0; width:82px; background:rgba(243,239,230,0.05); border:1px solid rgba(243,239,230,0.08); border-radius:10px; padding:8px 7px;">
+        <div style="font-size:8.5px; color:#8C9689; text-transform:uppercase; letter-spacing:0.03em; margin-bottom:5px;">${c.label}</div>
         ${c.body}
       </div>`).join('')}</div>`;
   },
@@ -952,24 +954,24 @@ const Team = {
   renderPlanBody(domain, plan) {
     if (domain === 'sleep') {
       return `<div style="display:flex; flex-direction:column; gap:6px;">${plan.actions.map(a => `
-        <div style="display:flex; align-items:center; gap:8px; background:rgba(255,255,255,0.04); border-radius:8px; padding:7px 10px;">
-          <div style="width:6px; height:6px; border-radius:50%; background:#9AACE8; flex-shrink:0;"></div>
-          <div style="font-size:12px; color:#E4E6EA;">${a.text}</div>
+        <div style="display:flex; align-items:center; gap:8px; background:rgba(243,239,230,0.04); border-radius:8px; padding:7px 10px;">
+          <div style="width:6px; height:6px; border-radius:50%; background:#7E8FD1; flex-shrink:0;"></div>
+          <div style="font-size:12px; color:#D6D8D2;">${a.text}</div>
         </div>`).join('')}</div>`;
     }
     if (domain === 'stress') {
-      return Team.dayGrid(plan.days.map(d => ({ label: d.day, body: `<div style="font-size:10.5px; color:#E4E6EA; line-height:1.35;">${d.practice}</div>` })));
+      return Team.dayGrid(plan.days.map(d => ({ label: d.day, body: `<div style="font-size:10.5px; color:#D6D8D2; line-height:1.35;">${d.practice}</div>` })));
     }
     if (domain === 'activity') {
       return Team.dayGrid(plan.days.map(d => ({
         label: d.day,
-        body: `<div style="font-size:9.5px; color:#F2A579; margin-bottom:3px;">${d.focus}</div><div style="font-size:10px; color:#E4E6EA; line-height:1.3;">${d.exercises.map(e => e.name).join('<br>')}</div>`,
+        body: `<div style="font-size:9.5px; color:#D9835C; margin-bottom:3px;">${d.focus}</div><div style="font-size:10px; color:#D6D8D2; line-height:1.3;">${d.exercises.map(e => e.name).join('<br>')}</div>`,
       })));
     }
     if (domain === 'nutrition') {
       return Team.dayGrid(plan.days.map(d => ({
         label: d.day,
-        body: `<div style="font-size:10.5px; color:#E4E6EA; font-weight:600; line-height:1.3;">${d.name}</div>`,
+        body: `<div style="font-size:10.5px; color:#D6D8D2; font-weight:600; line-height:1.3;">${d.name}</div>`,
       })));
     }
     return '';
@@ -1021,23 +1023,23 @@ const Team = {
     const framingText = Team.currentFramingText;
 
     const cardsHtml = realPlans.map(p => `
-      <div class="plan-card-tap" data-domain="${p.domain}" style="width:100%; background:#131B2E; border:1px solid rgba(255,255,255,0.08); border-radius:14px; padding:14px; margin-bottom:10px; text-align:left; cursor:pointer;">
+      <div class="plan-card-tap" data-domain="${p.domain}" style="width:100%; background:#161D18; border:1px solid rgba(243,239,230,0.08); border-radius:14px; padding:14px; margin-bottom:10px; text-align:left; cursor:pointer;">
         <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
-          <div style="width:26px; height:26px; border-radius:50%; background:${p.color}; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:#fff;">${p.name[0]}</div>
+          <div style="width:26px; height:26px; border-radius:50%; background:${p.color}; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:#F3EFE6;">${p.name[0]}</div>
           <div style="font-size:13px; font-weight:700; flex:1;">${p.name} \u00b7 ${p.title}</div>
-          <div style="font-size:11px; color:#7FC4C9;">Talk about this \u203a</div>
+          <div style="font-size:11px; color:#8FB596;">Talk about this \u203a</div>
         </div>
-        <div style="font-size:11.5px; font-style:italic; color:#6B7280; margin-bottom:10px;">${p.plan.weekGoal}</div>
+        <div style="font-size:11.5px; font-style:italic; color:#8C9689; margin-bottom:10px;">${p.plan.weekGoal}</div>
         ${Team.renderPlanBody(p.domain, p.plan)}
       </div>`).join('');
 
     card.innerHTML = `
-      <div class="avatar-lg" id="report-avatar" style="background:linear-gradient(145deg,#5FA5AA,#2F5C60);">DS</div>
+      <div class="avatar-lg" id="report-avatar" style="background:linear-gradient(145deg,#A9CDAE,#5F7F63);">DS</div>
       <div class="member-name">Dr. Sage</div>
       <div class="intro-text" style="margin-bottom:20px;">${framingText}</div>
       ${cardsHtml}
-      <div style="font-size:13px; color:#9CA3AF; margin:14px 0 20px;">Is this what you want, and will you actually use it?</div>
-      <button id="confirm-yes-btn" style="width:100%; padding:15px; border-radius:14px; border:none; background:#7FC4C9; color:#0A0D14; font-size:15px; font-weight:700; font-family:inherit; cursor:pointer; margin-bottom:10px;">Yes, this is what I want</button>
+      <div style="font-size:13px; color:#8C9689; margin:14px 0 20px;">Is this what you want, and will you actually use it?</div>
+      <button id="confirm-yes-btn" style="width:100%; padding:15px; border-radius:14px; border:none; background:#8FB596; color:#0D130F; font-size:15px; font-weight:700; font-family:inherit; cursor:pointer; margin-bottom:10px;">Yes, this is what I want</button>
     `;
     if (!Team.plansAlreadySpoken) {
       Team.speak(framingText, 'drSage', document.getElementById('report-avatar'));
@@ -1069,18 +1071,18 @@ const Team = {
     const card = document.getElementById('card-area');
     card.innerHTML = `
       <div style="width:100%; text-align:left;">
-        <button id="back-to-plans-btn" style="background:transparent; border:none; color:#9CA3AF; font-size:13px; margin-bottom:12px; cursor:pointer; padding:0;">\u2039 All plans</button>
+        <button id="back-to-plans-btn" style="background:transparent; border:none; color:#8C9689; font-size:13px; margin-bottom:12px; cursor:pointer; padding:0;">\u2039 All plans</button>
         <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
-          <div style="width:30px; height:30px; border-radius:50%; background:${p.color}; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; color:#fff;">${p.name[0]}</div>
+          <div style="width:30px; height:30px; border-radius:50%; background:${p.color}; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; color:#F3EFE6;">${p.name[0]}</div>
           <div style="font-size:14px; font-weight:700;">${p.name} \u00b7 ${p.title}</div>
         </div>
-        <div style="background:#131B2E; border:1px solid rgba(255,255,255,0.08); border-radius:14px; padding:12px; margin-bottom:12px;">
+        <div style="background:#161D18; border:1px solid rgba(243,239,230,0.08); border-radius:14px; padding:12px; margin-bottom:12px;">
           ${Team.renderPlanBody(p.domain, p.plan)}
         </div>
         <div id="plan-chat-messages" style="display:flex; flex-direction:column; gap:8px; margin-bottom:10px; max-height:220px; overflow-y:auto;"></div>
-        <div id="plan-chat-status" style="font-size:12px; color:#9CA3AF; margin-bottom:8px;"></div>
-        <textarea id="plan-chat-input" placeholder="Ask ${p.name} anything about this\u2026" style="width:100%; min-height:44px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.14); border-radius:10px; padding:10px; color:#fff; font-family:inherit; font-size:13px; margin-bottom:8px;"></textarea>
-        <button id="plan-chat-send-btn" style="width:100%; padding:13px; border-radius:12px; border:none; background:${p.color}; color:#fff; font-size:14px; font-weight:700; font-family:inherit; cursor:pointer;">Send</button>
+        <div id="plan-chat-status" style="font-size:12px; color:#8C9689; margin-bottom:8px;"></div>
+        <textarea id="plan-chat-input" placeholder="Ask ${p.name} anything about this\u2026" style="width:100%; min-height:44px; background:rgba(243,239,230,0.06); border:1px solid rgba(243,239,230,0.14); border-radius:10px; padding:10px; color:#F3EFE6; font-family:inherit; font-size:13px; margin-bottom:8px;"></textarea>
+        <button id="plan-chat-send-btn" style="width:100%; padding:13px; border-radius:12px; border:none; background:${p.color}; color:#F3EFE6; font-size:14px; font-weight:700; font-family:inherit; cursor:pointer;">Send</button>
       </div>
     `;
     document.getElementById('back-to-plans-btn').addEventListener('click', Team.renderPlanCardsView);
@@ -1093,7 +1095,7 @@ const Team = {
     const el = document.getElementById('plan-chat-messages');
     if (!el) return;
     el.innerHTML = Team.planConversationHistory.map(m => `
-      <div style="max-width:85%; padding:8px 11px; border-radius:12px; font-size:12.5px; line-height:1.4; ${m.role === 'user' ? 'align-self:flex-end; background:rgba(255,255,255,0.08);' : 'align-self:flex-start; background:rgba(127,196,201,0.14);'}">${m.content}</div>
+      <div style="max-width:85%; padding:8px 11px; border-radius:12px; font-size:12.5px; line-height:1.4; ${m.role === 'user' ? 'align-self:flex-end; background:rgba(243,239,230,0.08);' : 'align-self:flex-start; background:rgba(143,181,150,0.14);'}">${m.content}</div>
     `).join('');
     el.scrollTop = el.scrollHeight;
   },
@@ -1194,9 +1196,9 @@ const Team = {
     card.innerHTML = `
       <div class="member-title" style="margin-bottom:16px;">Your first check-in</div>
       <div class="intro-text" style="margin-bottom:6px;">${dateLabel}</div>
-      <div style="font-size:13px; color:#9CA3AF; margin-bottom:24px; max-width:280px;">That's part of the plan, not an afterthought \u2014 the team wants to actually see how this week went, not just hand you steps and disappear.</div>
-      <button id="notif-permission-btn" style="width:100%; padding:15px; border-radius:14px; border:none; background:#7FC4C9; color:#0A0D14; font-size:15px; font-weight:700; font-family:inherit; cursor:pointer; margin-bottom:10px;">Let me know when it's time</button>
-      <button id="notif-skip-btn" style="width:100%; padding:13px; border-radius:14px; border:1px solid rgba(255,255,255,0.18); background:transparent; color:#9CA3AF; font-size:14px; font-family:inherit; cursor:pointer;">I'll check back myself</button>
+      <div style="font-size:13px; color:#8C9689; margin-bottom:24px; max-width:280px;">That's part of the plan, not an afterthought \u2014 the team wants to actually see how this week went, not just hand you steps and disappear.</div>
+      <button id="notif-permission-btn" style="width:100%; padding:15px; border-radius:14px; border:none; background:#8FB596; color:#0D130F; font-size:15px; font-weight:700; font-family:inherit; cursor:pointer; margin-bottom:10px;">Let me know when it's time</button>
+      <button id="notif-skip-btn" style="width:100%; padding:13px; border-radius:14px; border:1px solid rgba(243,239,230,0.18); background:transparent; color:#8C9689; font-size:14px; font-family:inherit; cursor:pointer;">I'll check back myself</button>
     `;
 
     document.getElementById('notif-permission-btn').addEventListener('click', async function() {
@@ -1230,8 +1232,8 @@ const Team = {
       <button class="mic-btn" id="promise-mic-btn">\u{1F3A4}</button>
       <div class="mic-status" id="promise-status">Tap to speak, or type below</div>
       <div class="transcript-preview" id="promise-preview"></div>
-      <textarea id="promise-text" placeholder="Type your promise\u2026" style="width:100%; min-height:60px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.14); border-radius:10px; padding:10px; color:#fff; font-family:inherit; font-size:13px; margin:12px 0;"></textarea>
-      <button id="promise-submit-btn" style="width:100%; padding:15px; border-radius:14px; border:none; background:#7FC4C9; color:#0A0D14; font-size:15px; font-weight:700; font-family:inherit; cursor:pointer;" disabled>I promise</button>
+      <textarea id="promise-text" placeholder="Type your promise\u2026" style="width:100%; min-height:60px; background:rgba(243,239,230,0.06); border:1px solid rgba(243,239,230,0.14); border-radius:10px; padding:10px; color:#F3EFE6; font-family:inherit; font-size:13px; margin:12px 0;"></textarea>
+      <button id="promise-submit-btn" style="width:100%; padding:15px; border-radius:14px; border:none; background:#8FB596; color:#0D130F; font-size:15px; font-weight:700; font-family:inherit; cursor:pointer;" disabled>I promise</button>
     `;
 
     const textArea = document.getElementById('promise-text');
