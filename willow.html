@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<title>Willow — myDrSage</title>
+<meta name="theme-color" content="#0D130F">
+<script>
+  (function() {
+    try {
+      var profile = JSON.parse(localStorage.getItem('sh_team_profile') || '{}');
+      if (!profile.drSage || !profile.drSage.goal) {
+        window.location.replace('team.html');
+      }
+    } catch (e) {
+      window.location.replace('team.html');
+    }
+  })();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;1,9..144,400;1,9..144,500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0D130F; color: #F3EFE6; padding: 60px 18px 90px; }
+  h1 { font-family: 'Fraunces', serif; font-weight: 500; font-size: 26px; margin-bottom: 4px; }
+  .sub { font-size: 13px; color: #8C9689; margin-bottom: 20px; }
+  .qcard { background: #161D18; border: 1px solid rgba(126,143,209,0.28); border-radius: 16px; padding: 18px; margin-bottom: 16px; }
+  .qcard-title { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+  .qcard-sub { font-size: 11.5px; color: #8C9689; margin-bottom: 10px; }
+  .metric-main { font-size: 22px; font-weight: 700; color: #7E8FD1; }
+  .empty-note { font-size: 12.5px; color: #8C9689; line-height: 1.5; }
+  .action-btn {
+    display: block; width: 100%; text-align: center; padding: 15px; border-radius: 14px; border: none;
+    background: #7E8FD1; color: #0D130F; font-family: inherit; font-size: 14.5px; font-weight: 700;
+    text-decoration: none; margin-bottom: 10px; cursor: pointer;
+  }
+  .action-btn.secondary { background: transparent; border: 1px solid rgba(243,239,230,0.18); color: #F3EFE6; }
+  .section-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #7E8FD1; margin: 24px 0 12px; }
+
+  .empty-state { background: #161D18; border: 1px solid rgba(243,239,230,0.08); border-radius: 18px; padding: 22px; text-align: center; }
+  .empty-state p { color: #8C9689; font-size: 14px; line-height: 1.5; margin-bottom: 16px; }
+  #build-btn { width: 100%; padding: 15px; border-radius: 14px; border: none; background: #7E8FD1; color: #0D130F; font-size: 15px; font-weight: 700; font-family: inherit; cursor: pointer; }
+  #build-btn:disabled { opacity: 0.5; }
+  #error-note { color: #E86A5C; font-size: 13px; margin-top: 12px; display: none; }
+  .week-goal { background: linear-gradient(145deg, rgba(126,143,209,0.16), rgba(126,143,209,0.04)); border: 1px solid rgba(126,143,209,0.3); border-radius: 18px; padding: 20px; margin-bottom: 16px; font-family: 'Fraunces', serif; font-style: italic; font-size: 16px; line-height: 1.5; }
+  .action-row {
+    display: flex; align-items: center; gap: 12px; padding: 14px; margin-bottom: 8px;
+    background: #161D18; border: 1px solid rgba(243,239,230,0.08); border-radius: 14px; cursor: pointer;
+  }
+  .check { width: 20px; height: 20px; border-radius: 6px; border: 1.5px solid rgba(243,239,230,0.35); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+  .action-row.done .check { background: #7E8FD1; border-color: #7E8FD1; color: #0D130F; }
+  .action-row.done .action-text { text-decoration: line-through; opacity: 0.6; }
+  .action-text { flex: 1; font-size: 13.5px; }
+  .completion-banner { text-align: center; font-size: 13px; color: #8C9689; margin: 4px 0 16px; }
+
+  .nav-bar {
+    position: fixed; bottom: 0; left: 0; right: 0; display: flex;
+    background: rgba(22,29,24,0.92); backdrop-filter: blur(20px); border-top: 1px solid rgba(243,239,230,0.08);
+    padding: 10px 8px 22px;
+  }
+  .nav-tab { flex: 1; text-align: center; text-decoration: none; padding: 6px 0; }
+  .nav-tab-label { font-size: 11px; font-weight: 700; }
+</style>
+</head>
+<body>
+
+  <h1>Willow</h1>
+  <div class="sub">Sleep Coach</div>
+
+  <div class="qcard">
+    <div class="qcard-title">Sleep</div>
+    <div class="qcard-sub" id="sleep-date"></div>
+    <div id="sleep-content"><div class="empty-note">No data yet — connect your ring to load last night's real sleep.</div></div>
+  </div>
+
+  <a href="team.html?talk=sleep" class="action-btn">Talk to Willow</a>
+  <a href="wind-down.html" class="action-btn secondary">Wind down tools — noise &amp; bedtime story</a>
+
+  <div class="section-label">Your Plan</div>
+  <div id="plan-content"></div>
+
+  <div class="nav-bar">
+    <a href="dr-sage.html" class="nav-tab"><div class="nav-tab-label" style="color:#6B756E;">Dr. Sage</div></a>
+    <a href="specialists.html" class="nav-tab"><div class="nav-tab-label" style="color:#8FB596;">Specialists</div></a>
+  </div>
+
+<script>
+  // Real cached sleep, same sh_ring_latest snapshot dashboard.html
+  // writes to \u2014 no duplicated BLE connection on this page.
+  (function renderSleep() {
+    let snap;
+    try { snap = JSON.parse(localStorage.getItem('sh_ring_latest') || 'null'); }
+    catch (e) { snap = null; }
+    if (!snap || !snap.sleep) return;
+    document.getElementById('sleep-date').textContent = snap.sleep.date || '';
+    const h = Math.floor(snap.sleep.asleepMin / 60);
+    const m = snap.sleep.asleepMin % 60;
+    document.getElementById('sleep-content').innerHTML =
+      '<div class="metric-main">' + h + 'h ' + m + 'm</div>' +
+      '<div class="empty-note" style="margin-top:4px;">Last night</div>';
+  })();
+
+  // Real plan logic, ported directly from sleep-plan.html \u2014 same
+  // storage key (sh_willow_sleepplans), so an existing plan built
+  // there already shows up here unchanged, not duplicated or lost.
+  const SleepPlan = {
+    KEY: 'sh_willow_sleepplans',
+
+    loadHistory() {
+      try { return JSON.parse(localStorage.getItem(SleepPlan.KEY) || '[]'); }
+      catch (e) { return []; }
+    },
+
+    saveHistory(history) {
+      try { localStorage.setItem(SleepPlan.KEY, JSON.stringify(history.slice(-10))); }
+      catch (e) { /* non-critical */ }
+    },
+
+    current() {
+      const history = SleepPlan.loadHistory();
+      return history.length ? history[history.length - 1] : null;
+    },
+
+    summarizePrevious() {
+      const history = SleepPlan.loadHistory();
+      if (!history.length) return null;
+      const prev = history[history.length - 1];
+      const total = prev.actions.length;
+      const done = prev.actions.filter(a => a.done).length;
+      const pct = total ? Math.round((done / total) * 100) : 0;
+      return { weekGoal: prev.weekGoal, done, total, pct };
+    },
+
+    toggleAction(idx) {
+      const history = SleepPlan.loadHistory();
+      if (!history.length) return;
+      const current = history[history.length - 1];
+      if (!current.actions[idx]) return;
+      current.actions[idx].done = !current.actions[idx].done;
+      SleepPlan.saveHistory(history);
+      SleepPlan.render();
+    },
+
+    render() {
+      const content = document.getElementById('plan-content');
+      const plan = SleepPlan.current();
+
+      if (!plan) {
+        content.innerHTML = `
+          <div class="empty-state">
+            <p>Willow builds a real, concrete sleep plan from what you told her and your real sleep data — not generic advice. Genuinely different depending on what's actually not working for you.</p>
+            <button id="build-btn">Build my sleep plan</button>
+            <div id="error-note"></div>
+          </div>`;
+        document.getElementById('build-btn').addEventListener('click', SleepPlan.build);
+        return;
+      }
+
+      const done = plan.actions.filter(a => a.done).length;
+      const actionsHtml = plan.actions.map((a, i) => `
+        <div class="action-row ${a.done ? 'done' : ''}" data-idx="${i}">
+          <div class="check">${a.done ? '\u2713' : ''}</div>
+          <div class="action-text">${a.text}</div>
+        </div>`).join('');
+
+      content.innerHTML = `
+        <div class="week-goal">${plan.weekGoal}</div>
+        <div class="completion-banner">${done} of ${plan.actions.length} kept this week</div>
+        ${actionsHtml}
+        <button id="build-btn" style="margin-top:8px;">Build next week's plan</button>
+        <div id="error-note"></div>`;
+
+      content.querySelectorAll('.action-row').forEach(el => {
+        el.addEventListener('click', () => SleepPlan.toggleAction(Number(el.dataset.idx)));
+      });
+      document.getElementById('build-btn').addEventListener('click', SleepPlan.build);
+    },
+
+    async build() {
+      const btn = document.getElementById('build-btn');
+      const err = document.getElementById('error-note');
+      btn.disabled = true;
+      btn.textContent = 'Willow is building it\u2026';
+      err.style.display = 'none';
+
+      let profile;
+      try { profile = JSON.parse(localStorage.getItem('sh_team_profile') || '{}'); }
+      catch (e) { profile = {}; }
+      const sleepProfile = profile.sleep;
+
+      if (!sleepProfile || (!sleepProfile.bedtime && !sleepProfile.struggle)) {
+        err.textContent = 'Willow needs to know your real sleep pattern first \u2014 answer her questions in Meet the Team.';
+        err.style.display = 'block';
+        btn.disabled = false;
+        btn.textContent = 'Build my sleep plan';
+        return;
+      }
+
+      let snapshot;
+      try { snapshot = JSON.parse(localStorage.getItem('sh_ring_latest') || '{}'); }
+      catch (e) { snapshot = {}; }
+
+      let consistencyText = 'No real bedtime data synced yet.';
+      const periods = snapshot.sleepPeriods || [];
+      if (periods.length >= 3) {
+        const adjusted = periods.map(p => (p.startMins < 720 ? p.startMins + 1440 : p.startMins));
+        const mean = adjusted.reduce((a, b) => a + b, 0) / adjusted.length;
+        const variance = adjusted.reduce((s, v) => s + Math.pow(v - mean, 2), 0) / adjusted.length;
+        const stdDev = Math.round(Math.sqrt(variance));
+        consistencyText = `Real bedtime consistency: ${stdDev <= 30 ? 'very consistent' : stdDev <= 60 ? 'fairly consistent' : stdDev <= 90 ? 'somewhat variable' : 'highly variable'} (\u00b1${stdDev} min across ${periods.length} nights).`;
+      }
+
+      const prevSummary = SleepPlan.summarizePrevious();
+      const historyText = prevSummary
+        ? `Last week's plan was: "${prevSummary.weekGoal}" \u2014 they kept ${prevSummary.done} of ${prevSummary.total} actions (${prevSummary.pct}%). ${prevSummary.pct >= 70 ? 'They largely followed through \u2014 consider a real progression.' : prevSummary.pct <= 30 ? 'They struggled to follow it \u2014 this week should be simpler, fewer actions.' : 'Partial follow-through \u2014 keep this week realistic.'}`
+        : 'This is their first sleep plan \u2014 no prior week to build on yet.';
+
+      const nameProfile = profile.drSage?.preferredName;
+      const nameBlock = nameProfile ? `\n\nCall them ${nameProfile}.` : '';
+
+      const userMessage = `This person told you, when you first met: their usual bedtime is "${sleepProfile.bedtime || 'not specified'}" and their biggest sleep struggle is "${sleepProfile.struggle || 'not specified'}".\n\n${consistencyText}\n\n${historyText}${nameBlock}\n\nBuild a real, concrete sleep plan for this week \u2014 3 to 5 specific daily actions (not exercises, actual sleep behaviors: a bedtime target, a wind-down step, something to remove from the bedroom, etc.), directly addressing their stated struggle. Say it directly, don't hedge. Respond ONLY with valid JSON, no markdown: {"weekGoal": "1-2 sentences on this week's focus, stated directly, referencing last week's real follow-through if there was any", "actions": ["specific daily action", "..."]}`;
+
+      try {
+        const res = await fetch('/.netlify/functions/claude', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            system: 'You are Willow, a sleep coach. Getting a good night\u2019s rest is your only job, and most of the time, the most important one. Be direct and confident \u2014 tell them what to do, don\u2019t hedge. You are NOT a licensed doctor \u2014 you are a coach. You NEVER diagnose a sleep disorder, NEVER claim certainty about outcomes. You NEVER invent data you weren\u2019t given. Respond with ONLY the requested JSON, nothing else.',
+            messages: [{ role: 'user', content: userMessage }],
+            max_tokens: 400,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Request failed');
+        const text = (data.content?.[0]?.text || '').replace(/```json\s*|```\s*/g, '').trim();
+        const parsed = JSON.parse(text);
+        if (!parsed.weekGoal || !Array.isArray(parsed.actions) || !parsed.actions.length) throw new Error('Invalid response shape');
+
+        const newPlan = {
+          weekGoal: parsed.weekGoal,
+          actions: parsed.actions.slice(0, 6).map(text => ({ text: String(text).slice(0, 150), done: false })),
+          createdDate: new Date().toISOString().slice(0, 10),
+        };
+        const history = SleepPlan.loadHistory();
+        history.push(newPlan);
+        SleepPlan.saveHistory(history);
+        SleepPlan.render();
+      } catch (e) {
+        err.textContent = 'Couldn\u2019t build a valid plan right now \u2014 try again.';
+        err.style.display = 'block';
+        btn.disabled = false;
+        btn.textContent = 'Build my sleep plan';
+      }
+    },
+  };
+
+  SleepPlan.render();
+</script>
+</body>
+</html>
