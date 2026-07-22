@@ -1167,6 +1167,94 @@ const Scores = {
     }
   },
 
+  // ── MEAL REMINDER NOTIFICATIONS ─────────────────────────────
+  // Actively solicited, not just available \u2014 shown once, real
+  // permission request, real PushManager subscription, real
+  // storage server-side (save-push-subscription.js). Every state
+  // reflects what actually happened: denied stays denied, no
+  // silent re-prompting, no fake "enabled" state if the VAPID
+  // keys aren't configured yet.
+  urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const rawData = atob(base64);
+    return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
+  },
+
+  initMealReminderBanner() {
+    const banner = document.getElementById('meal-reminder-banner');
+    if (!banner) return;
+    const dismissed = localStorage.getItem('sh_meal_reminder_dismissed') === 'true';
+    const supported = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+    const alreadyDecided = supported && Notification.permission !== 'default';
+    banner.style.display = (!dismissed && supported && !alreadyDecided) ? 'block' : 'none';
+
+    if (supported && Notification.permission === 'granted' && localStorage.getItem('sh_meal_reminder_subscribed') === 'true') {
+      const status = document.getElementById('meal-reminder-status');
+      if (status) { status.textContent = 'Meal reminders are on.'; status.style.display = 'block'; }
+    }
+  },
+
+  dismissMealReminderBanner() {
+    localStorage.setItem('sh_meal_reminder_dismissed', 'true');
+    document.getElementById('meal-reminder-banner').style.display = 'none';
+  },
+
+  async enableMealReminders() {
+    const banner = document.getElementById('meal-reminder-banner');
+    const status = document.getElementById('meal-reminder-status');
+    const btn = document.getElementById('meal-reminder-enable-btn');
+    btn.disabled = true;
+    btn.textContent = 'Turning on\u2026';
+
+    const showStatus = (text) => { status.textContent = text; status.style.display = 'block'; };
+
+    if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
+      showStatus('Push notifications aren\u2019t supported in this browser.');
+      banner.style.display = 'none';
+      return;
+    }
+
+    try {
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') {
+        showStatus(permission === 'denied' ? 'Notifications are blocked \u2014 you can change this in your browser settings anytime.' : 'No problem \u2014 you can turn this on later.');
+        banner.style.display = 'none';
+        return;
+      }
+
+      const keyRes = await fetch('/.netlify/functions/get-vapid-public-key');
+      if (!keyRes.ok) {
+        showStatus('Meal reminders aren\u2019t fully set up on the server yet \u2014 try again later.');
+        banner.style.display = 'none';
+        return;
+      }
+      const { publicKey } = await keyRes.json();
+
+      const reg = await navigator.serviceWorker.register('/sw.js');
+      await navigator.serviceWorker.ready;
+      const subscription = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: Scores.urlBase64ToUint8Array(publicKey),
+      });
+
+      const saveRes = await fetch('/.netlify/functions/save-push-subscription', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subscription: subscription.toJSON(), reminderType: 'meal_reminder' }),
+      });
+      if (!saveRes.ok) throw new Error('Could not save subscription');
+
+      localStorage.setItem('sh_meal_reminder_subscribed', 'true');
+      showStatus('Meal reminders are on \u2014 around typical mealtimes.');
+      banner.style.display = 'none';
+    } catch (e) {
+      showStatus('Couldn\u2019t turn on reminders right now: ' + e.message);
+      btn.disabled = false;
+      btn.textContent = 'Turn on meal reminders';
+    }
+  },
+
   async handleEstimateNutritionClick() {
     const btn = document.getElementById('nutrition-estimate-btn');
     const input = document.getElementById('nutrition-input');
@@ -2406,8 +2494,14 @@ const Scores = {
     if (buildBtn) buildBtn.addEventListener('click', Scores.handleBuildPlanClick);
 
     Scores.renderNutritionSection();
+    Scores.initMealReminderBanner();
     const nutriBtn = document.getElementById('nutrition-estimate-btn');
     if (nutriBtn) nutriBtn.addEventListener('click', Scores.handleEstimateNutritionClick);
+
+    const reminderEnableBtn = document.getElementById('meal-reminder-enable-btn');
+    if (reminderEnableBtn) reminderEnableBtn.addEventListener('click', Scores.enableMealReminders);
+    const reminderDismissBtn = document.getElementById('meal-reminder-dismiss-btn');
+    if (reminderDismissBtn) reminderDismissBtn.addEventListener('click', Scores.dismissMealReminderBanner);
 
     const photoBtn = document.getElementById('nutrition-photo-btn');
     const photoInput = document.getElementById('nutrition-photo-input');
