@@ -35,6 +35,12 @@
   .member-title { font-size: 13.5px; color: #8C9689; margin-bottom: 22px; }
   .intro-text { font-family: 'Fraunces', serif; font-style: italic; font-size: 17px; line-height: 1.55; color: #D6D8D2; margin-bottom: 26px; max-width: 380px; }
 
+  .review-section { margin-bottom: 22px; }
+  .review-section-head { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px; }
+  .review-row { background: rgba(243,239,230,0.04); border: 1px solid rgba(243,239,230,0.08); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; }
+  .review-q { font-size: 12px; color: #8C9689; margin-bottom: 3px; }
+  .review-a { font-size: 13.5px; color: #F3EFE6; line-height: 1.4; }
+
   .question-block { width: 100%; max-width: 400px; margin-bottom: 10px; }
   .question-label { font-size: 15px; font-weight: 600; margin-bottom: 18px; }
 
@@ -840,7 +846,67 @@ const Team = {
     }
     Team.stepIndex++;
     Team.typedMode = false;
+
+    // Real checkpoint before the closing message \u2014 lets someone
+    // actually see everything they told the team in one place
+    // before Dr. Sage wraps up. Read-only: plans are already built
+    // progressively as each specialist step is left (see above), so
+    // this isn't an edit screen, just honest transparency on what
+    // was captured. Shown once per session (Team.reviewShown), not
+    // re-triggered if they somehow pass through here again.
+    const upcoming = Team.currentStep();
+    if (upcoming && upcoming.key === 'drSageClosing' && !Team.reviewShown) {
+      Team.reviewShown = true;
+      Team.renderReviewScreen();
+      return;
+    }
+
     Team.renderIntro();
+  },
+
+  reviewShown: false,
+
+  renderReviewScreen() {
+    document.documentElement.style.setProperty('--accent', '#8FB596');
+    const profile = Team.loadProfile();
+    const specialistSteps = Team.STEPS.filter(function(s) { return s.key !== 'drSageClosing'; });
+
+    const sectionsHtml = specialistSteps.map(function(step) {
+      const answered = step.questions
+        .map(function(q) {
+          const val = profile[step.key] && profile[step.key][q.key];
+          if (!val || !String(val).trim()) return null;
+          return '<div class="review-row"><div class="review-q">' + q.label + '</div><div class="review-a">' + val + '</div></div>';
+        })
+        .filter(Boolean)
+        .join('');
+      if (!answered) return ''; // nothing real answered for this specialist \u2014 skip the section entirely
+      return '<div class="review-section">' +
+        '<div class="review-section-head" style="color:' + step.accent + ';">' + step.name + '</div>' +
+        answered +
+        '</div>';
+    }).join('');
+
+    document.getElementById('card-area').innerHTML =
+      '<div class="member-title" style="margin-bottom:6px;">Before we finish</div>' +
+      '<div class="intro-text" style="margin-bottom:24px;">Here\u2019s everything you told the team \u2014 take a look before Dr. Sage wraps up.</div>' +
+      '<div id="review-list" style="width:100%; text-align:left; max-height:420px; overflow-y:auto; padding-right:4px;">' + sectionsHtml + '</div>';
+
+    const nextBtn = document.getElementById('next-btn');
+    nextBtn.textContent = 'Looks good, continue';
+    nextBtn.disabled = false;
+    // Team.advance() assumes it's mid-question-flow (checks
+    // Team.questionIndexInStep against the CURRENT step's real
+    // questions) \u2014 wrong assumption here, this is a synthetic
+    // screen with no questions of its own. Dedicated handler
+    // instead, restoring the normal wiring once used.
+    function onReviewContinue() {
+      nextBtn.removeEventListener('click', onReviewContinue);
+      nextBtn.addEventListener('click', Team.advance);
+      Team.renderIntro();
+    }
+    nextBtn.removeEventListener('click', Team.advance);
+    nextBtn.addEventListener('click', onReviewContinue);
   },
 
   // Real, testable reordering: asks which of the 4 specialists is
