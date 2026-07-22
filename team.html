@@ -337,11 +337,25 @@ const Team = {
 
     const initials = step.name[0];
     const personalizedIntro = Team.personalize(step.intro);
+
+    // Real, persistent explanation for any of THIS specialist's
+    // questions that got silently marked answered already, from
+    // something said to someone else earlier \u2014 shown right here,
+    // not just a one-time flash on a different card. Without this,
+    // a skipped question just looks like a missing/broken mic.
+    const coveredForThisStep = step.questions
+      .filter(function(q) { return Team.autoCoveredQuestions[step.key + '.' + q.key]; })
+      .map(function(q) { return q.label; });
+    const coveredNoteHtml = coveredForThisStep.length
+      ? '<div class="auto-skip-note" style="margin-top:16px;">You already covered ' + coveredForThisStep.length + ' of my question' + (coveredForThisStep.length > 1 ? 's' : '') + ' earlier \u2014 \u201c' + coveredForThisStep.join('\u201d, \u201c') + '\u201d \u2014 so I won\u2019t ask ' + (coveredForThisStep.length > 1 ? 'those' : 'that') + ' again.</div>'
+      : '';
+
     document.getElementById('card-area').innerHTML =
       '<div class="avatar-lg" id="speaking-avatar" style="background:' + step.color + ';">' + initials + '</div>' +
       '<div class="member-name">' + step.name + '</div>' +
       '<div class="member-title">' + step.title + '</div>' +
-      '<div class="intro-text">' + personalizedIntro + '</div>';
+      '<div class="intro-text">' + personalizedIntro + '</div>' +
+      coveredNoteHtml;
     document.getElementById('next-btn').textContent = 'Continue';
     document.getElementById('next-btn').disabled = false;
 
@@ -449,6 +463,14 @@ const Team = {
             keys.forEach(function(k) {
               const c = covered[k];
               Team.saveAnswer(c.stepKey, c.qKey, c.value);
+              // Tracked separately from Team.answered \u2014 needed so
+              // the specialist whose question got silently skipped
+              // can actually explain why on their own card, instead
+              // of the explanation only ever flashing once on
+              // whichever OTHER card the original answer was given.
+              // That gap is exactly what made this look like a
+              // broken mic instead of a real feature.
+              Team.autoCoveredQuestions[c.stepKey + '.' + c.qKey] = { fromLabel: q.label, value: c.value };
             });
             const area = document.getElementById('auto-skip-area');
             if (area) area.innerHTML = '<div class="auto-skip-note">That also covered ' + keys.length + ' other question' + (keys.length > 1 ? 's' : '') + ' \u2014 you won\u2019t be asked ' + (keys.length > 1 ? 'those' : 'that') + ' again.</div>';
@@ -463,6 +485,7 @@ const Team = {
   },
 
   followUpCount: {},
+  autoCoveredQuestions: {}, // stepKey.qKey -> { fromLabel, value }, populated by checkOverlap
   MAX_FOLLOWUPS_PER_QUESTION: 5, // a safety ceiling against a genuine runaway loop, not a pacing/cost limit -- real depth matters more than speed here
 
   async advance(fromSkip) {
