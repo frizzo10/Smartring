@@ -508,6 +508,21 @@ const Team = {
         const answer = profile[step.key] && profile[step.key][q.key];
         if (answer && answer.trim()) {
           Team.followUpCount[qFullKey] = count + 1;
+
+          // Hawthorn's goal question also gets a real, structured
+          // extraction attempt \u2014 metric, target number, target
+          // date \u2014 on top of the normal reaction below. Guarded so
+          // it only ever runs once, before a trackableGoal exists,
+          // so re-answering never wipes out real logged progress.
+          if (step.key === 'activity' && q.key === 'goal') {
+            const freshProfile = Team.loadProfile();
+            const alreadyHasGoal = freshProfile.activity && freshProfile.activity.trackableGoal;
+            if (!alreadyHasGoal) {
+              const awaitingBaseline = await Team.parseAndCaptureTrackableGoal(step, q, answer);
+              if (awaitingBaseline) return; // real baseline follow-up card now showing
+            }
+          }
+
           const result = await Team.reactToAnswer(step, q.label, answer);
           if (result && result.reaction) {
             await Team.showReaction(step, result.reaction);
@@ -639,6 +654,116 @@ const Team = {
     textArea.addEventListener('input', function() {
       document.getElementById('next-btn').disabled = !textArea.value.trim();
     });
+
+    const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRec) {
+      document.getElementById('followup-mic-btn').addEventListener('click', function() {
+        const status = document.getElementById('followup-status');
+        status.textContent = 'Listening\u2026';
+        const rec = new SpeechRec();
+        rec.continuous = false; rec.interimResults = false; rec.lang = 'en-US';
+        rec.onresult = function(e) {
+          const transcript = e.results[0][0].transcript;
+          document.getElementById('followup-preview').textContent = transcript;
+          textArea.value = transcript;
+          document.getElementById('next-btn').disabled = false;
+          status.textContent = 'Got it';
+        };
+        rec.onerror = function() { status.textContent = 'Didn\u2019t catch that \u2014 try typing'; };
+        rec.start();
+      });
+    } else {
+      document.getElementById('followup-mic-btn').disabled = true;
+      document.getElementById('followup-status').textContent = 'Voice not available \u2014 type below';
+    }
+  },
+
+  // ── TRACKABLE GOAL (Hawthorn) ─────────────────────────────────
+  // Free text in, AI extracts a real structured target \u2014 never
+  // invents a number or date that wasn't actually given. If a real
+  // starting baseline wasn't stated, asks for it directly rather
+  // than guessing one, since the whole point of the later
+  // trajectory chart is comparing REAL logged progress against a
+  // clearly-labeled target pace, not fabricating either side of it.
+  async parseAndCaptureTrackableGoal(step, q, answer) {
+    let parsed;
+    try {
+      const res = await fetch('/.netlify/functions/claude', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system: 'You extract a structured, trackable fitness goal from what someone said, if one is genuinely there. Only mark quantifiable true if they gave (or very clearly implied) a specific measurable metric AND a target number \u2014 never invent a number, unit, or date they did not give. A target date is optional; if given, convert it to a real ISO date (YYYY-MM-DD) \u2014 today is ' + new Date().toISOString().slice(0, 10) + ', so resolve relative phrases like "by summer" or "in 6 months" against that. Respond with ONLY valid JSON, no markdown.',
+          messages: [{ role: 'user', content: `They were asked "${q.label}" and said: "${answer}"\n\nExtract: {"quantifiable": true or false, "metric": "short name of what's being measured, e.g. 'Bench press 1-rep max' or '5K time'", "unit": "e.g. 'lbs', 'minutes', 'reps'", "targetValue": number or null, "targetDate": "YYYY-MM-DD" or null if no real timeframe was given, "currentValue": number or null \u2014 ONLY if they explicitly stated their current/starting number, never inferred or guessed}` }],
+          max_tokens: 200,
+        }),
+      });
+      if (!res.ok) return false;
+      const data = await res.json();
+      const text = (data.content?.[0]?.text || '').replace(/```json\s*|```\s*/g, '').trim();
+      parsed = JSON.parse(text);
+    } catch (e) { return false; } // no trackable goal this session \u2014 fine, Hawthorn still builds a real regimen from the plain text answer either way
+
+    if (!parsed || !parsed.quantifiable || parsed.targetValue == null || typeof parsed.targetValue !== 'number') return false;
+
+    if (parsed.currentValue != null && typeof parsed.currentValue === 'number') {
+      const today = new Date().toISOString().slice(0, 10);
+      Team.saveTrackableGoal({
+        metric: parsed.metric, unit: parsed.unit || '',
+        currentValue: parsed.currentValue, targetValue: parsed.targetValue,
+        targetDate: parsed.targetDate || null, startDate: today,
+        checkins: [{ date: today, value: parsed.currentValue }],
+      });
+      return false; // captured cleanly, no baseline card needed
+    }
+
+    Team.pendingTrackableGoal = { metric: parsed.metric, unit: parsed.unit || '', targetValue: parsed.targetValue, targetDate: parsed.targetDate || null };
+    Team.renderTrackableGoalBaselineFollowUp(step);
+    return true;
+  },
+
+  saveTrackableGoal(goal) {
+    const profile = Team.loadProfile();
+    profile.activity = profile.activity || {};
+    profile.activity.trackableGoal = goal;
+    Team.saveProfile(profile);
+  },
+
+  renderTrackableGoalBaselineFollowUp(step) {
+    document.documentElement.style.setProperty('--accent', step.accent);
+    const g = Team.pendingTrackableGoal;
+    const card = document.getElementById('card-area');
+    card.innerHTML = `
+      <div class="member-title" style="margin-bottom:16px;">Hawthorn wants to know more</div>
+      <div class="question-block"><div class="question-label">What's your current ${g.metric.toLowerCase()} right now?</div>
+        <button class="mic-btn" id="followup-mic-btn">\u{1F3A4}</button>
+        <div class="mic-status" id="followup-status">Tap to speak, or type below</div>
+        <div class="transcript-preview" id="followup-preview"></div>
+        <textarea id="followup-text" placeholder="A real number${g.unit ? ', in ' + g.unit : ''}\u2026" style="width:100%; min-height:60px; background:rgba(243,239,230,0.06); border:1px solid rgba(243,239,230,0.14); border-radius:10px; padding:10px; color:#F3EFE6; font-family:inherit; font-size:13px; margin:12px 0;"></textarea>
+      </div>
+    `;
+    document.getElementById('next-btn').textContent = 'Continue';
+    document.getElementById('next-btn').disabled = true;
+
+    const submitBaseline = function(value) {
+      const num = parseFloat(String(value).replace(/[^\d.]/g, ''));
+      if (!value || !value.trim() || isNaN(num)) return;
+      const today = new Date().toISOString().slice(0, 10);
+      Team.saveTrackableGoal({
+        metric: g.metric, unit: g.unit, currentValue: num, targetValue: g.targetValue, targetDate: g.targetDate,
+        startDate: today, checkins: [{ date: today, value: num }],
+      });
+      Team.pendingTrackableGoal = null;
+      document.getElementById('next-btn').removeEventListener('click', onNextClick);
+      document.getElementById('next-btn').addEventListener('click', Team.advance);
+      Team.advance();
+    };
+
+    function onNextClick() { submitBaseline(document.getElementById('followup-text').value); }
+    document.getElementById('next-btn').removeEventListener('click', Team.advance);
+    document.getElementById('next-btn').addEventListener('click', onNextClick);
+
+    const textArea = document.getElementById('followup-text');
+    textArea.addEventListener('input', function() { document.getElementById('next-btn').disabled = !textArea.value.trim(); });
 
     const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (SpeechRec) {
@@ -1144,7 +1269,7 @@ const Team = {
   SPECIALIST_CAPABILITIES: {
     sleep: "Before I get into it \u2014 here's what I actually do: I build you a real weekly sleep plan, and I adjust it week to week based on how you actually slept and what you actually followed through on, not just guesses. I've also got real wind-down tools \u2014 live white or brown noise, and an original bedtime story I write fresh and read to you \u2014 best started about ten minutes before you actually want to be asleep. You can come talk to me anytime, not just during a report.",
     stress: "Before I get into it \u2014 here's what I actually do: I build you a real weekly mindfulness plan, adjusted based on how the week actually went. I also lead real, live guided sessions \u2014 box breathing, a short yoga sequence, or an affirmation walk \u2014 whenever you want one. And you can talk to me anytime, at real length, not just for quick tips.",
-    activity: "Before I get into it \u2014 here's what I actually do: I build you a real weekly workout regimen, and I factor in your real recovery and sleep data when I set the intensity \u2014 a rough week means an easier regimen, not a harder one. I coordinate with Basil on nutrition timing too. You can come talk to me anytime.",
+    activity: "Before I get into it \u2014 here's what I actually do: I build you a real weekly workout regimen, and I factor in your real recovery and sleep data when I set the intensity \u2014 a rough week means an easier regimen, not a harder one. If you gave me a real number to aim for, I track your real progress toward it on a chart \u2014 not a promise of where you'll be, just the honest math on pace, next to what you're actually logging. I coordinate with Basil on nutrition timing too. You can come talk to me anytime.",
     nutrition: "Before I get into it \u2014 here's what I actually do: I build you a real weekly meal plan, coordinated with whatever Hawthorn's got you doing for exercise. I can also estimate a meal's nutrition from a real photo you send. You can come talk to me anytime.",
     drSage: "Before we get into it \u2014 here's what I actually do: I pull together everything the whole team knows about you into your real weekly report, and I'm the one who flags anything worth a real doctor's attention. I'll also tell you honestly if I think your goal itself needs recalibrating, based on how the real data's been going \u2014 you always get the final say on that. And I'm here for a general check-in anytime, not just during a scheduled report.",
   },
