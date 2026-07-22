@@ -1111,8 +1111,7 @@ const Team = {
 
     const profile = Team.loadProfile();
     const nutritionProfile = profile.nutrition;
-    if (!nutritionProfile || (!nutritionProfile.restrictions && !nutritionProfile.hardest)) return;
-    const restrictions = nutritionProfile.restrictions || 'none specified';
+    if (!nutritionProfile || (!nutritionProfile.pattern && !nutritionProfile.hardest)) return;
     const goalText = (profile.drSage && profile.drSage.goal && profile.drSage.goal.trim()) || null;
 
     document.getElementById('next-btn').textContent = 'Basil is building your plan\u2026';
@@ -1127,7 +1126,7 @@ const Team = {
       }
     } catch (e) { /* non-critical */ }
 
-    const userMessage = `This person's stated dietary preferences/restrictions: ${restrictions}.${goalText ? `\n\nTheir overall stated goal for using this app: "${goalText}". Every plan you build has to genuinely serve that goal, not just be generic meal variety \u2014 make the connection explicit in weekGoal.` : ''}\n\nNo real nutrition trend exists yet \u2014 this is day one, base this on their stated preferences only.\n\n${regimenText}\n\nBuild a real weekly meal plan \u2014 all 7 days, each with ONE real, specific, named meal and real ingredients. Genuinely varied across the week, no repeated meals. Respect their stated restrictions exactly. If Hawthorn's regimen is real, let it inform your choices. Say it directly, don't hedge. Respond ONLY with valid JSON, no markdown: {"weekGoal": "1-2 sentences on this week's focus, stated directly", "days": [{"day": "Monday dinner", "name": "specific dish name", "ingredients": ["real ingredient", "..."]}, ...all 7 days, Monday through Sunday]}`;
+    const userMessage = `This person told you their eating pattern most days is: "${nutritionProfile.pattern || 'not specified'}", and what they're hoping to change about their eating is: "${nutritionProfile.hardest || 'not specified'}". No dietary restrictions were captured for this person \u2014 don't invent any, and don't assume none exist either; just don't reference restrictions you were never told.${goalText ? `\n\nTheir overall stated goal for using this app: "${goalText}". Every plan you build has to genuinely serve that goal, not just be generic meal variety \u2014 make the connection explicit in weekGoal.` : ''}\n\nNo real nutrition trend exists yet \u2014 this is day one, base this on their stated preferences only.\n\n${regimenText}\n\nBuild a real weekly meal plan \u2014 all 7 days, each with ONE real, specific, named meal and real ingredients. Genuinely varied across the week, no repeated meals. If Hawthorn's regimen is real, let it inform your choices. Say it directly, don't hedge. Respond ONLY with valid JSON, no markdown: {"weekGoal": "1-2 sentences on this week's focus, stated directly", "days": [{"day": "Monday dinner", "name": "specific dish name", "ingredients": ["real ingredient", "..."]}, ...all 7 days, Monday through Sunday]}`;
 
     try {
       const res = await fetch('/.netlify/functions/claude', {
