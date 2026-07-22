@@ -108,7 +108,11 @@ const Meals = {
     let nutritionLog;
     try { nutritionLog = JSON.parse(localStorage.getItem('sh_nutrition_log') || '{}'); }
     catch (e) { nutritionLog = {}; }
-    const days = Object.keys(nutritionLog).sort().slice(-7).map(d => nutritionLog[d]).filter(d => d.calories != null);
+    const days = Object.keys(nutritionLog).sort().slice(-7).map(d => {
+      const entries = Array.isArray(nutritionLog[d]) ? nutritionLog[d] : (nutritionLog[d] ? [nutritionLog[d]] : []);
+      const sum = key => entries.reduce((s, e) => s + (e[key] || 0), 0);
+      return { calories: sum('calories'), protein: sum('protein'), carbs: sum('carbs'), fat: sum('fat') };
+    }).filter(d => d.calories > 0);
     let trendText = 'No real nutrition trend logged yet \u2014 base this on their stated preferences only.';
     if (days.length > 1) {
       const avg = (key) => Math.round(days.reduce((s, d) => s + (d[key] || 0), 0) / days.length);
