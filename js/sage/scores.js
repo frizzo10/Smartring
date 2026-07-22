@@ -758,6 +758,52 @@ const Scores = {
     catch (e) { /* non-critical */ }
   },
 
+  // The log used to store ONE entry per day, which silently
+  // overwrote itself on a second meal \u2014 the exact thing that
+  // made "log every time you eat" impossible. Now stores an array
+  // per day. This normalizer is what keeps existing people's
+  // already-saved single-entry days working: wraps the old shape
+  // in an array instead of discarding real historical data.
+  normalizeDayEntries(rawValue) {
+    if (!rawValue) return [];
+    return Array.isArray(rawValue) ? rawValue : [rawValue];
+  },
+
+  // Sums real logged entries for a day into one set of totals \u2014
+  // used everywhere a day's total matters (today's card, weekly
+  // trend, meal-plan coordination), while the entries themselves
+  // stay individually visible in the running list.
+  getDailyTotals(entries) {
+    if (!entries.length) return null;
+    const sum = (key) => entries.reduce((s, e) => s + (e[key] || 0), 0);
+    return {
+      calories: sum('calories'), protein: sum('protein'), carbs: sum('carbs'), fat: sum('fat'),
+      count: entries.length,
+      highlight: entries[entries.length - 1].highlight || '', // most recent real note, not a blended fabrication
+    };
+  },
+
+  // Real, computed streak \u2014 consecutive calendar days with at
+  // least one real logged entry, counting backward from today.
+  // If nothing's logged yet today, still counts a live streak
+  // through yesterday (common, honest streak UX \u2014 the streak
+  // isn't broken until a full day passes with nothing logged).
+  computeNutritionStreak(log) {
+    log = log || Scores.loadNutritionLog();
+    let streak = 0;
+    let cursor = new Date();
+    const hasEntry = (d) => {
+      const key = d.toISOString().slice(0, 10);
+      return Scores.normalizeDayEntries(log[key]).length > 0;
+    };
+    if (!hasEntry(cursor)) cursor.setDate(cursor.getDate() - 1); // today empty yet \u2014 check from yesterday instead
+    while (hasEntry(cursor)) {
+      streak++;
+      cursor.setDate(cursor.getDate() - 1);
+    }
+    return streak;
+  },
+
   parseNutritionResponse(text) {
     if (!text) return null;
     const cleaned = text.replace(/```json\s*|```\s*/g, '').trim();
@@ -937,9 +983,12 @@ const Scores = {
   saveConfirmedNutrition(entry) {
     const today = Scores.todayKey();
     const log = Scores.loadNutritionLog();
-    log[today] = { mealsText: entry.description, calories: entry.calories, protein: entry.protein, carbs: entry.carbs, fat: entry.fat, highlight: entry.highlight, loggedAt: new Date().toISOString(), source: 'photo' };
+    const entries = Scores.normalizeDayEntries(log[today]);
+    const saved = { mealsText: entry.description, calories: entry.calories, protein: entry.protein, carbs: entry.carbs, fat: entry.fat, highlight: entry.highlight, loggedAt: new Date().toISOString(), source: 'photo' };
+    entries.push(saved);
+    log[today] = entries;
     Scores.saveNutritionLog(log);
-    return log[today];
+    return saved;
   },
 
   // Resizes/compresses a photo client-side before sending \u2014 phone
@@ -1042,9 +1091,12 @@ const Scores = {
 
       const today = Scores.todayKey();
       const log = Scores.loadNutritionLog();
-      log[today] = { mealsText: mealsText.trim(), ...parsed, loggedAt: new Date().toISOString() };
+      const entries = Scores.normalizeDayEntries(log[today]);
+      const saved = { mealsText: mealsText.trim(), ...parsed, loggedAt: new Date().toISOString(), source: 'typed' };
+      entries.push(saved);
+      log[today] = entries;
       Scores.saveNutritionLog(log);
-      onDone({ entry: log[today] });
+      onDone({ entry: saved });
     } catch (e) {
       onDone({ error: 'Nutrition estimate unavailable right now: ' + e.message });
     }
@@ -1052,9 +1104,10 @@ const Scores = {
 
   computeNutritionToday(snapshot, log) {
     log = log || Scores.loadNutritionLog();
-    const entry = log[Scores.todayKey()];
-    if (!entry) return { ok: false };
-    return { ok: true, ...entry, date: Scores.todayKey() };
+    const entries = Scores.normalizeDayEntries(log[Scores.todayKey()]);
+    if (!entries.length) return { ok: false, entries: [] };
+    const totals = Scores.getDailyTotals(entries);
+    return { ok: true, ...totals, entries, date: Scores.todayKey() };
   },
 
   // Real multi-day trend, not just today's snapshot. The data
@@ -1066,7 +1119,9 @@ const Scores = {
   buildNutritionHistory(log) {
     log = log || Scores.loadNutritionLog();
     const dates = Object.keys(log).sort().slice(-7); // last 7 logged days
-    const days = dates.map(d => ({ date: d, ...log[d] })).filter(d => d.calories != null);
+    const days = dates
+      .map(d => ({ date: d, ...Scores.getDailyTotals(Scores.normalizeDayEntries(log[d])) }))
+      .filter(d => d.calories != null);
     if (!days.length) return { ok: false, days: [] };
 
     const avg = (key) => Math.round(days.reduce((sum, d) => sum + (d[key] || 0), 0) / days.length);
@@ -1085,16 +1140,30 @@ const Scores = {
     const today = Scores.computeNutritionToday();
     const resultEl = document.getElementById('nutrition-result');
     const subEl = document.getElementById('nutrition-status-sub');
+    const streakEl = document.getElementById('nutrition-streak');
     if (!resultEl) return;
+
+    const streak = Scores.computeNutritionStreak();
+    if (streakEl) {
+      streakEl.textContent = streak > 0 ? `${streak}-day logging streak` : '';
+      streakEl.style.display = streak > 0 ? 'block' : 'none';
+    }
+
     if (today.ok) {
       const history = Scores.buildNutritionHistory();
       const trendLine = history.ok && history.loggedDays > 1
         ? `<br><span style="opacity:0.7; font-size:12px;">${history.loggedDays}-day avg: ~${history.avgCalories} cal, ${history.avgProtein}g protein</span>` : '';
-      resultEl.innerHTML = `<strong>~${today.calories} cal</strong> \u00b7 ${today.protein}g protein \u00b7 ${today.carbs}g carbs \u00b7 ${today.fat}g fat${today.highlight ? `<br><span style="opacity:0.8">${today.highlight}</span>` : ''}${trendLine}`;
+      const entriesHtml = today.entries.map(e => `
+        <div style="display:flex; justify-content:space-between; gap:8px; padding:6px 0; border-top:1px solid rgba(243,239,230,0.08); font-size:12.5px;">
+          <span style="opacity:0.85;">${(e.mealsText || '').slice(0, 40)}${(e.mealsText || '').length > 40 ? '\u2026' : ''}</span>
+          <span style="opacity:0.6; flex-shrink:0;">${e.calories} cal</span>
+        </div>`).join('');
+      resultEl.innerHTML = `<strong>~${today.calories} cal today</strong> \u00b7 ${today.protein}g protein \u00b7 ${today.carbs}g carbs \u00b7 ${today.fat}g fat${today.highlight ? `<br><span style="opacity:0.8">${today.highlight}</span>` : ''}${trendLine}${entriesHtml}`;
       resultEl.style.display = 'block';
-      if (subEl) subEl.textContent = 'Today\u2019s estimate \u2014 log again to update it.';
+      if (subEl) subEl.textContent = `${today.entries.length} logged today \u2014 snap another anytime you eat.`;
     } else {
       resultEl.style.display = 'none';
+      if (subEl) subEl.textContent = '';
     }
   },
 
@@ -2350,6 +2419,16 @@ const Scores = {
     if (draftSaveBtn) draftSaveBtn.addEventListener('click', Scores.handleDraftSave);
     const draftCancelBtn = document.getElementById('draft-cancel-btn');
     if (draftCancelBtn) draftCancelBtn.addEventListener('click', Scores.handleDraftCancel);
+
+    const typeToggleBtn = document.getElementById('nutrition-type-toggle-btn');
+    const typeFallback = document.getElementById('nutrition-type-fallback');
+    if (typeToggleBtn && typeFallback) {
+      typeToggleBtn.addEventListener('click', () => {
+        const showing = typeFallback.style.display === 'block';
+        typeFallback.style.display = showing ? 'none' : 'block';
+        typeToggleBtn.textContent = showing ? 'No camera handy? Type it instead' : '\u2039 Hide';
+      });
+    }
 
     const reportBtn = document.getElementById('weekly-report-btn');
     if (reportBtn) reportBtn.addEventListener('click', () => Scores.handleWeeklyReportClick(snapshot));
