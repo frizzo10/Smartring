@@ -155,7 +155,13 @@ const MealPlan = {
     let nutritionLog;
     try { nutritionLog = JSON.parse(localStorage.getItem('sh_nutrition_log') || '{}'); }
     catch (e) { nutritionLog = {}; }
-    const loggedDays = Object.keys(nutritionLog).sort().slice(-7).map(d => nutritionLog[d]).filter(d => d.calories != null);
+    // A day can hold multiple real logged entries now (one per
+    // meal), not just one \u2014 sum each day's real entries first.
+    const loggedDays = Object.keys(nutritionLog).sort().slice(-7).map(d => {
+      const entries = Array.isArray(nutritionLog[d]) ? nutritionLog[d] : (nutritionLog[d] ? [nutritionLog[d]] : []);
+      const sum = key => entries.reduce((s, e) => s + (e[key] || 0), 0);
+      return { calories: sum('calories'), protein: sum('protein'), carbs: sum('carbs'), fat: sum('fat') };
+    }).filter(d => d.calories > 0);
     let trendText = 'No real nutrition trend logged yet \u2014 base this on their stated preferences only.';
     if (loggedDays.length > 1) {
       const avg = key => Math.round(loggedDays.reduce((s, d) => s + (d[key] || 0), 0) / loggedDays.length);
