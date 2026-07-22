@@ -21,9 +21,15 @@
   #error-note { color: #E86A5C; font-size: 13px; margin-top: 12px; display: none; }
   .week-goal { background: linear-gradient(145deg, rgba(159,201,107,0.16), rgba(159,201,107,0.04)); border: 1px solid rgba(159,201,107,0.3); border-radius: 18px; padding: 20px; margin-bottom: 16px; font-family: 'Fraunces', serif; font-style: italic; font-size: 16px; line-height: 1.5; }
   .day-row {
-    display: flex; align-items: flex-start; gap: 12px; padding: 14px; margin-bottom: 8px;
-    background: #161D18; border: 1px solid rgba(243,239,230,0.08); border-radius: 14px; cursor: pointer;
+    padding: 0; margin-bottom: 10px; background: #161D18; border: 1px solid rgba(243,239,230,0.08);
+    border-radius: 14px; overflow: hidden;
   }
+  .recipe-img { width: 100%; height: 140px; object-fit: cover; display: block; background: #1D2620; }
+  .recipe-img-placeholder {
+    width: 100%; height: 140px; background: #1D2620; display: flex; align-items: center; justify-content: center;
+    color: #6B756E; font-size: 11px;
+  }
+  .day-row-top { display: flex; align-items: flex-start; gap: 12px; padding: 14px; cursor: pointer; }
   .check { width: 20px; height: 20px; border-radius: 6px; border: 1.5px solid rgba(243,239,230,0.35); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 12px; margin-top: 2px; }
   .day-row.done .check { background: #9FC96B; border-color: #9FC96B; color: #0D130F; }
   .day-row.done .meal-name { text-decoration: line-through; opacity: 0.6; }
@@ -31,6 +37,13 @@
   .day-label { font-size: 11px; color: #8C9689; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 3px; }
   .meal-name { font-weight: 700; font-size: 13.5px; color: #9FC96B; }
   .meal-ing { font-size: 12px; color: #8C9689; margin-top: 2px; }
+  .recipe-toggle { font-size: 11px; color: #9FC96B; margin-top: 6px; cursor: pointer; text-decoration: underline; }
+  .recipe-steps {
+    display: none; padding: 0 14px 16px 46px; font-size: 12.5px; color: #D6D8D2; line-height: 1.6;
+  }
+  .recipe-steps.open { display: block; }
+  .recipe-steps ol { padding-left: 18px; }
+  .recipe-steps li { margin-bottom: 6px; }
   .completion-banner { text-align: center; font-size: 13px; color: #8C9689; margin: 4px 0 16px; }
   .coord-note { font-size: 11.5px; color: #8C9689; margin-bottom: 14px; padding: 10px 12px; background: rgba(243,239,230,0.04); border-radius: 10px; }
 </style>
@@ -81,6 +94,42 @@ const MealPlan = {
     return { weekGoal: prev.weekGoal, done, total, pct };
   },
 
+  // Real photo per dish, fetched lazily only when the plan is
+  // actually viewed (never at build time \u2014 an unviewed plan
+  // shouldn't spend an image-search call), and cached into storage
+  // permanently once fetched so the same dish never gets searched
+  // twice. Silently leaves the placeholder if the lookup fails or
+  // Pexels isn't configured yet \u2014 never blocks the real recipe
+  // content above it.
+  async fetchDayImages(plan) {
+    const history = MealPlan.loadHistory();
+    if (!history.length) return;
+    const stored = history[history.length - 1];
+    let changed = false;
+
+    for (let i = 0; i < plan.days.length; i++) {
+      if (plan.days[i].imageUrl) continue;
+      try {
+        const res = await fetch('/.netlify/functions/get-recipe-image?query=' + encodeURIComponent(plan.days[i].name));
+        if (!res.ok) continue;
+        const data = await res.json();
+        if (!data.url) continue;
+        const el = document.getElementById('recipe-img-' + i);
+        if (el) {
+          const img = document.createElement('img');
+          img.className = 'recipe-img';
+          img.src = data.url;
+          img.alt = plan.days[i].name;
+          img.loading = 'lazy';
+          el.replaceWith(img);
+        }
+        if (stored.days[i]) { stored.days[i].imageUrl = data.url; changed = true; }
+      } catch (e) { /* placeholder stays, never blocks the recipe itself */ }
+    }
+
+    if (changed) MealPlan.saveHistory(history);
+  },
+
   toggleDay(idx) {
     const history = MealPlan.loadHistory();
     if (!history.length) return;
@@ -109,12 +158,19 @@ const MealPlan = {
     const done = plan.days.filter(d => d.done).length;
     const daysHtml = plan.days.map((d, i) => `
       <div class="day-row ${d.done ? 'done' : ''}" data-idx="${i}">
-        <div class="check">${d.done ? '\u2713' : ''}</div>
-        <div class="day-body">
-          <div class="day-label">${d.day}</div>
-          <div class="meal-name">${d.name}</div>
-          <div class="meal-ing">${d.ingredients.join(', ')}</div>
+        ${d.imageUrl
+          ? `<img class="recipe-img" id="recipe-img-${i}" src="${d.imageUrl}" alt="${d.name}" loading="lazy">`
+          : `<div class="recipe-img-placeholder" id="recipe-img-${i}">Loading a real photo\u2026</div>`}
+        <div class="day-row-top" data-check="${i}">
+          <div class="check">${d.done ? '\u2713' : ''}</div>
+          <div class="day-body">
+            <div class="day-label">${d.day}</div>
+            <div class="meal-name">${d.name}</div>
+            <div class="meal-ing">${d.ingredients.join(', ')}</div>
+            ${d.steps && d.steps.length ? `<div class="recipe-toggle" data-toggle="${i}">Show recipe steps</div>` : ''}
+          </div>
         </div>
+        ${d.steps && d.steps.length ? `<div class="recipe-steps" id="recipe-steps-${i}"><ol>${d.steps.map(s => `<li>${s}</li>`).join('')}</ol></div>` : ''}
       </div>`).join('');
 
     content.innerHTML = `
@@ -125,9 +181,17 @@ const MealPlan = {
       <button id="build-btn" style="margin-top:8px;">Build next week's plan</button>
       <div id="error-note"></div>`;
 
-    content.querySelectorAll('.day-row').forEach(el => {
-      el.addEventListener('click', () => MealPlan.toggleDay(Number(el.dataset.idx)));
+    content.querySelectorAll('[data-check]').forEach(el => {
+      el.addEventListener('click', () => MealPlan.toggleDay(Number(el.dataset.check)));
     });
+    content.querySelectorAll('[data-toggle]').forEach(el => {
+      el.addEventListener('click', (e) => {
+        e.stopPropagation(); // don't also toggle done/undone
+        document.getElementById('recipe-steps-' + el.dataset.toggle).classList.toggle('open');
+      });
+    });
+
+    MealPlan.fetchDayImages(plan);
     document.getElementById('build-btn').addEventListener('click', MealPlan.build);
   },
 
@@ -186,7 +250,7 @@ const MealPlan = {
     const nameProfile = profile.drSage?.preferredName;
     const nameBlock = nameProfile ? `\n\nCall them ${nameProfile}.` : '';
 
-    const userMessage = `This person's stated dietary preferences/restrictions: ${restrictions}.\n\n${trendText}\n\n${regimenText}\n\n${historyText}${nameBlock}\n\nBuild a real weekly meal plan \u2014 all 7 days, each with ONE real, specific, named meal and real ingredients. Genuinely varied across the week, no repeated meals. Respect their stated restrictions exactly. If Hawthorn's regimen is real, let it inform your choices. Say it directly, don't hedge. Respond ONLY with valid JSON, no markdown: {"weekGoal": "1-2 sentences on this week's focus, stated directly", "days": [{"day": "Monday dinner", "name": "specific dish name", "ingredients": ["real ingredient", "..."]}, ...all 7 days, Monday through Sunday]}`;
+    const userMessage = `This person's stated dietary preferences/restrictions: ${restrictions}.\n\n${trendText}\n\n${regimenText}\n\n${historyText}${nameBlock}\n\nBuild a real weekly meal plan \u2014 all 7 days, each with ONE real, specific, named meal, real ingredients, and real cooking steps (3-5 concrete steps, actually enough to cook it, not vague). Genuinely varied across the week, no repeated meals. Respect their stated restrictions exactly. If Hawthorn's regimen is real, let it inform your choices. Say it directly, don't hedge. Respond ONLY with valid JSON, no markdown: {"weekGoal": "1-2 sentences on this week's focus, stated directly", "days": [{"day": "Monday dinner", "name": "specific dish name", "ingredients": ["real ingredient", "..."], "steps": ["real cooking step", "..."]}, ...all 7 days, Monday through Sunday]}`;
 
     try {
       const res = await fetch('/.netlify/functions/claude', {
@@ -195,7 +259,7 @@ const MealPlan = {
         body: JSON.stringify({
           system: 'You are Basil, a nutrition coach focused on helping people eat better. Be direct and specific \u2014 real dish names and real ingredients. You are NOT a licensed dietitian \u2014 you are a coach. You NEVER diagnose, NEVER claim a meal will produce a specific health outcome, and you ALWAYS respect stated dietary restrictions exactly. You NEVER invent data you weren\u2019t given. Respond with ONLY the requested JSON, nothing else.',
           messages: [{ role: 'user', content: userMessage }],
-          max_tokens: 1400,
+          max_tokens: 2600,
         }),
       });
       const data = await res.json();
@@ -206,10 +270,12 @@ const MealPlan = {
 
       const newPlan = {
         weekGoal: parsed.weekGoal,
-        days: parsed.days.slice(0, 5).map(d => ({
+        days: parsed.days.slice(0, 7).map(d => ({
           day: String(d.day || '').slice(0, 40),
           name: String(d.name || '').slice(0, 80),
           ingredients: Array.isArray(d.ingredients) ? d.ingredients.slice(0, 8).map(i => String(i).slice(0, 60)) : [],
+          steps: Array.isArray(d.steps) ? d.steps.slice(0, 6).map(s => String(s).slice(0, 200)) : [],
+          imageUrl: null, // fetched lazily on render, see MealPlan.fetchDayImages \u2014 not fetched here so an un-viewed plan never spends an image-search call
           done: false,
         })).filter(d => d.day && d.name),
         coordinatedWithRegimen,
