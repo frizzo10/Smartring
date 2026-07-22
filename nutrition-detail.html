@@ -75,9 +75,24 @@
     catch (e) { return {}; }
   }
 
+  // A day can now hold multiple real logged entries (one per
+  // meal photographed/typed), not just one \u2014 this normalizes
+  // both the old single-entry format and the new array format,
+  // then sums a day's real entries into one total.
+  function normalizeDayEntries(raw) {
+    if (!raw) return [];
+    return Array.isArray(raw) ? raw : [raw];
+  }
+
+  function dayTotals(entries) {
+    const sum = (key) => entries.reduce((s, e) => s + (e[key] || 0), 0);
+    const mealsText = entries.map(e => e.mealsText).filter(Boolean).join('; ');
+    return { calories: sum('calories'), protein: sum('protein'), carbs: sum('carbs'), fat: sum('fat'), count: entries.length, mealsText };
+  }
+
   function computeTrend(log) {
     const dates = Object.keys(log).sort();
-    const clean = dates.map(d => ({ date: d, ...log[d] })).filter(d => d.calories != null);
+    const clean = dates.map(d => ({ date: d, ...dayTotals(normalizeDayEntries(log[d])) })).filter(d => d.calories != null && d.calories > 0);
     if (!clean.length) return null;
     const latest = clean[clean.length - 1];
     return { clean, latest };
