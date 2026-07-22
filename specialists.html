@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<title>Your Team — myDrSage</title>
+<meta name="theme-color" content="#0D130F">
+<script>
+  // Same real gate as every other entry-capable page \u2014
+  // onboarding is mandatory first, even here.
+  (function() {
+    try {
+      var profile = JSON.parse(localStorage.getItem('sh_team_profile') || '{}');
+      if (!profile.drSage || !profile.drSage.goal) {
+        window.location.replace('team.html');
+      }
+    } catch (e) {
+      window.location.replace('team.html');
+    }
+  })();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;1,9..144,400;1,9..144,500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #0D130F; color: #F3EFE6; padding: 60px 18px 90px;
+  }
+  h1 { font-family: 'Fraunces', serif; font-weight: 500; font-size: 26px; margin-bottom: 4px; }
+  .sub { font-size: 13px; color: #8C9689; margin-bottom: 24px; }
+  .specialist-card {
+    display: flex; align-items: center; gap: 14px; background: #161D18; border-radius: 16px;
+    padding: 18px; margin-bottom: 12px; text-decoration: none; color: #F3EFE6;
+  }
+  .seal { width: 52px; height: 52px; border-radius: 50%; flex-shrink: 0; }
+  .specialist-name { font-size: 16px; font-weight: 700; }
+  .specialist-role { font-size: 12px; color: #8C9689; margin-top: 2px; }
+
+  .nav-bar {
+    position: fixed; bottom: 0; left: 0; right: 0; display: flex;
+    background: rgba(22,29,24,0.92); backdrop-filter: blur(20px); border-top: 1px solid rgba(243,239,230,0.08);
+    padding: 10px 8px 22px;
+  }
+  .nav-tab { flex: 1; text-align: center; text-decoration: none; padding: 6px 0; }
+  .nav-tab-label { font-size: 11px; font-weight: 700; }
+</style>
+</head>
+<body>
+
+  <h1>Your Team</h1>
+  <div class="sub">Tap a specialist for their plan, their real data, and to talk.</div>
+
+  <a href="sleep-plan.html" class="specialist-card">
+    <div class="seal" style="background:linear-gradient(145deg,#98A5DE,#4C5AA0);"></div>
+    <div><div class="specialist-name">Willow</div><div class="specialist-role">Sleep Coach</div></div>
+  </a>
+  <a href="mindfulness-plan.html" class="specialist-card">
+    <div class="seal" style="background:linear-gradient(145deg,#CBA8D6,#7A5589);"></div>
+    <div><div class="specialist-name">Lotus</div><div class="specialist-role">Mindfulness Coach</div></div>
+  </a>
+  <a href="regimen.html" class="specialist-card">
+    <div class="seal" style="background:linear-gradient(145deg,#E6A183,#A85936);"></div>
+    <div><div class="specialist-name">Hawthorn</div><div class="specialist-role">Exercise Coach</div></div>
+  </a>
+  <a href="meal-plan.html" class="specialist-card">
+    <div class="seal" style="background:linear-gradient(145deg,#B6D68A,#6B8F45);"></div>
+    <div><div class="specialist-name">Basil</div><div class="specialist-role">Nutrition Coach</div></div>
+  </a>
+
+  <div class="nav-bar">
+    <a href="dr-sage.html" class="nav-tab"><div class="nav-tab-label" style="color:#6B756E;">Dr. Sage</div></a>
+    <a href="specialists.html" class="nav-tab"><div class="nav-tab-label" style="color:#8FB596;">Specialists</div></a>
+  </div>
+
+</body>
+</html>
