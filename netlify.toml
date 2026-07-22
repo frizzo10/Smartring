@@ -32,3 +32,6 @@
 
 [functions.keepalive]
   schedule = "0 12 */3 * *"
+
+[functions.send-meal-reminders]
+  schedule = "30 12,23 * * *"
