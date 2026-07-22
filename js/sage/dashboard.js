@@ -196,6 +196,29 @@ const Dashboard = {
     svgEl.setAttribute('viewBox', `0 0 ${w} ${h}`);
   },
 
+  // ── PERSONALIZED STEP TARGET ─────────────────────────────────
+  // Not a fixed 10,000 \u2014 that number was never this person's,
+  // it's a generic marketing figure that happens to be a round
+  // number. Real target: their own rolling average over their
+  // last real days (up to 14), with a modest 10% stretch, rounded
+  // to the nearest 250 so it doesn't look falsely precise. Returns
+  // null with no real history yet \u2014 never guesses a number from
+  // nothing, not even from onboarding self-report, since this
+  // needs to be the ring's own real measured baseline.
+  getPersonalizedStepTarget() {
+    let snap;
+    try { snap = JSON.parse(localStorage.getItem('sh_ring_latest') || '{}'); }
+    catch (e) { return null; }
+    const today = new Date().toISOString().slice(0, 10);
+    const history = (snap.activityHistory || [])
+      .filter(a => a.totalSteps != null && a.date !== today) // exclude today, it's in progress
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .slice(-14);
+    if (history.length < 3) return null; // not enough real days to call this a personalized baseline yet
+    const avg = history.reduce((sum, a) => sum + a.totalSteps, 0) / history.length;
+    return Math.round((avg * 1.1) / 250) * 250;
+  },
+
   // ── ACTIVITY ─────────────────────────────────────────────────
   // Takes plain totals so both the live BLE path and the cached-
   // snapshot path on page load can call the exact same renderer.
@@ -207,10 +230,25 @@ const Dashboard = {
     document.getElementById('activity-dist').textContent = (totalDistM / 1000).toFixed(2);
     document.getElementById('activity-empty').style.display = 'none';
 
+    const target = Dashboard.getPersonalizedStepTarget();
+    const label = document.getElementById('activity-step-goal-label');
+    const crown = document.getElementById('activity-crown');
+    let fraction;
+    if (target) {
+      const closed = totalSteps >= target;
+      label.textContent = closed ? `Ring closed \u2014 past your real ${target.toLocaleString()} target` : `of your real ${target.toLocaleString()} step target`;
+      crown.textContent = closed ? '\u2728' : '\ud83d\udc51';
+      fraction = totalSteps / target;
+    } else {
+      label.textContent = 'Still learning your real baseline';
+      crown.textContent = '\ud83d\udc51';
+      fraction = 0; // no fabricated progress against a target that doesn't exist yet
+    }
+
     Dashboard.drawArc(
       document.getElementById('activity-arc-bg'),
       document.getElementById('activity-arc-fg'),
-      totalSteps / 10000
+      fraction
     );
   },
 
