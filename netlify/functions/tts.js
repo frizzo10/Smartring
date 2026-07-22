@@ -35,6 +35,24 @@ function escapeXml(text) {
 }
 
 exports.handler = async (event) => {
+  // Real CORS preflight handling — needed because this is now
+  // called cross-origin from the marketing site too, and a JSON
+  // POST triggers a real browser preflight OPTIONS request first.
+  // Without this, the browser blocks the actual request before it
+  // ever reaches the code below, even though the final response
+  // already had Access-Control-Allow-Origin set.
+  if (event.httpMethod === 'OPTIONS') {
+    return {
+      statusCode: 204,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
+      },
+      body: '',
+    };
+  }
+
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method not allowed' };
   }
