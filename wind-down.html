@@ -89,14 +89,14 @@
 
   <div id="stage">
     <div id="picker">
-      <div class="picker-intro">"Two things I can do right now to help you drift off — pick one."</div>
+      <div class="picker-intro">"Start this about ten minutes before you actually want to be asleep \u2014 not right as you're already trying to drift off. Pick one."</div>
       <div class="wd-tile" data-tool="noise">
         <div class="tile-icon">🌊</div>
-        <div><div class="tile-name">White / Brown Noise</div><div class="tile-desc">Real, continuous sound — no recordings, generated live. Loops until you stop it or a timer ends it.</div></div>
+        <div><div class="tile-name">White / Brown Noise</div><div class="tile-desc">Real, continuous sound — no recordings, generated live. Start it ten minutes before bed and let it run.</div></div>
       </div>
       <div class="wd-tile" data-tool="story">
         <div class="tile-icon">📖</div>
-        <div><div class="tile-name">Bedtime Story</div><div class="tile-desc">An original story, written fresh each time, read aloud slowly by me.</div></div>
+        <div><div class="tile-name">Bedtime Story</div><div class="tile-desc">About ten minutes, start to finish. An original story, written fresh each time, read aloud slowly by me.</div></div>
       </div>
     </div>
 
@@ -107,8 +107,8 @@
         <button class="noise-type-btn" data-type="white">White noise</button>
       </div>
       <div class="timer-row" id="timer-row">
-        <button class="timer-btn" data-min="15">15 min</button>
-        <button class="timer-btn selected" data-min="30">30 min</button>
+        <button class="timer-btn selected" data-min="10">10 min</button>
+        <button class="timer-btn" data-min="30">30 min</button>
         <button class="timer-btn" data-min="60">60 min</button>
         <button class="timer-btn" data-min="0">Until I stop it</button>
       </div>
@@ -244,9 +244,9 @@ const Story = {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          system: 'You are Willow, a sleep coach, writing a bedtime story meant to help someone fall asleep. Write a WHOLLY ORIGINAL story \u2014 never reference, adapt, retell, or allude to any existing book, film, fairy tale, or copyrighted story of any kind. Deliberately gentle and uneventful: soft imagery, slow pacing, nothing exciting, no conflict, no cliffhangers, no jump scares, nothing suspenseful. 4-5 short paragraphs. Respond with ONLY the story text, no title, no markdown, paragraphs separated by a blank line.',
+          system: 'You are Willow, a sleep coach, writing a bedtime story meant to help someone fall asleep. Write a WHOLLY ORIGINAL story \u2014 never reference, adapt, retell, or allude to any existing book, film, fairy tale, or copyrighted story of any kind. Deliberately gentle and uneventful: soft imagery, slow pacing, nothing exciting, no conflict, no cliffhangers, no jump scares, nothing suspenseful. Aim for roughly ten minutes of spoken narration \u2014 about 1,100-1,300 words, in 9-11 short paragraphs. Respond with ONLY the story text, no title, no markdown, paragraphs separated by a blank line.',
           messages: [{ role: 'user', content: `Write me a calming original bedtime story now.${name ? ` If it fits naturally, you can address ${name} gently at the very start, but don't force it.` : ''}` }],
-          max_tokens: 600,
+          max_tokens: 2200,
         }),
       });
       const data = await res.json();
@@ -291,7 +291,7 @@ const Story = {
    PICKER / WIRING
    ───────────────────────────────────────────────────────── */
 let selectedNoiseType = 'brown';
-let selectedTimerMin = 30;
+let selectedTimerMin = 10;
 
 function showTool(tool) {
   document.getElementById('picker').style.display = 'none';
