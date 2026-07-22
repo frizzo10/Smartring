@@ -56,6 +56,26 @@
   .exercise-detail { color: #8C9689; }
 
   .completion-banner { text-align: center; font-size: 13px; color: #8C9689; margin: 4px 0 16px; }
+
+  .trajectory-card { background: #161D18; border: 1px solid rgba(217,131,92,0.28); border-radius: 18px; padding: 20px; margin-bottom: 16px; }
+  .trajectory-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #D9835C; margin-bottom: 4px; }
+  .trajectory-goal { font-family: 'Fraunces', serif; font-size: 16px; margin-bottom: 14px; }
+  svg.traj-chart { width: 100%; height: 130px; display: block; margin-bottom: 10px; }
+  .traj-legend { display: flex; gap: 16px; font-size: 11px; color: #8C9689; margin-bottom: 14px; }
+  .traj-legend span::before { content: ''; display: inline-block; width: 10px; height: 2px; margin-right: 5px; vertical-align: middle; }
+  .traj-legend .real::before { background: #D9835C; }
+  .traj-legend .pace::before { background: #8C9689; border-top: 1px dashed #8C9689; }
+  .traj-pace-note { font-size: 13px; line-height: 1.5; margin-bottom: 16px; }
+  .traj-checkpoints { font-size: 12px; color: #8C9689; line-height: 1.7; margin-bottom: 16px; }
+  .traj-log-row { display: flex; gap: 8px; }
+  .traj-log-row input {
+    flex: 1; background: rgba(243,239,230,0.06); border: 1px solid rgba(243,239,230,0.14);
+    border-radius: 10px; padding: 11px; color: #F3EFE6; font-family: inherit; font-size: 13px;
+  }
+  .traj-log-row button {
+    padding: 11px 16px; border-radius: 10px; border: none; background: #D9835C;
+    color: #0D130F; font-family: inherit; font-size: 13px; font-weight: 700; cursor: pointer;
+  }
 </style>
 </head>
 <body>
@@ -113,12 +133,14 @@ const Regimen = {
 
     if (!regimen) {
       content.innerHTML = `
+        ${Regimen.renderTrajectory()}
         <div class="empty-state">
           <p>Hawthorn builds a real, structured plan from what you told him during Meet the Team \u2014 not a generic template. Genuinely different for a novice than an athlete.</p>
           <button id="build-btn">Build my regimen</button>
           <div id="error-note"></div>
         </div>`;
       document.getElementById('build-btn').addEventListener('click', Regimen.build);
+      Regimen.wireTrajectory();
       return;
     }
 
@@ -138,6 +160,7 @@ const Regimen = {
       </div>`).join('');
 
     content.innerHTML = `
+      ${Regimen.renderTrajectory()}
       <div class="week-goal">${regimen.weekGoal}</div>
       <div class="completion-banner">${done} of ${total} done this week</div>
       ${daysHtml}
@@ -148,6 +171,138 @@ const Regimen = {
       el.addEventListener('click', () => Regimen.toggleExercise(Number(el.dataset.day), Number(el.dataset.ex)));
     });
     document.getElementById('build-btn').addEventListener('click', Regimen.build);
+    Regimen.wireTrajectory();
+  },
+
+  loadTrackableGoal() {
+    let profile;
+    try { profile = JSON.parse(localStorage.getItem('sh_team_profile') || '{}'); }
+    catch (e) { profile = {}; }
+    return profile.activity && profile.activity.trackableGoal ? profile.activity.trackableGoal : null;
+  },
+
+  saveTrackableGoal(goal) {
+    let profile;
+    try { profile = JSON.parse(localStorage.getItem('sh_team_profile') || '{}'); }
+    catch (e) { profile = {}; }
+    profile.activity = profile.activity || {};
+    profile.activity.trackableGoal = goal;
+    try { localStorage.setItem('sh_team_profile', JSON.stringify(profile)); } catch (e) { /* non-critical */ }
+  },
+
+  // ── TRAJECTORY CHART ─────────────────────────────────────────
+  // Two honest, clearly distinct series, never blended into one
+  // misleading line: the real logged check-ins (solid, actual
+  // dates and values someone typed in), and a target-pace line
+  // (dashed) that is JUST linear interpolation from the real
+  // starting baseline to the real target \u2014 explicitly labeled as
+  // a pace reference, never presented as a prediction of what
+  // will actually happen. The 1/6/12-month checkpoints are the
+  // same interpolation, just called out as text for readability
+  // rather than crammed into tiny SVG labels.
+  renderTrajectory() {
+    const goal = Regimen.loadTrackableGoal();
+    if (!goal) return '';
+
+    const w = 300, h = 130, pad = 12;
+    const start = new Date(goal.startDate);
+    const target = goal.targetDate ? new Date(goal.targetDate) : null;
+    const checkins = goal.checkins || [];
+
+    let maxDate = target || new Date(checkins.length ? checkins[checkins.length - 1].date : goal.startDate);
+    checkins.forEach(c => { const d = new Date(c.date); if (d > maxDate) maxDate = d; });
+    const totalMs = Math.max(maxDate - start, 86400000);
+
+    const values = checkins.map(c => c.value).concat([goal.currentValue, goal.targetValue]);
+    let minV = Math.min(...values), maxV = Math.max(...values);
+    if (minV === maxV) { minV -= 1; maxV += 1; }
+    const vPad = (maxV - minV) * 0.1;
+    minV -= vPad; maxV += vPad;
+    const vRange = maxV - minV;
+
+    const xFor = (dateStr) => pad + ((new Date(dateStr) - start) / totalMs) * (w - 2 * pad);
+    const yFor = (value) => h - pad - ((value - minV) / vRange) * (h - 2 * pad);
+
+    let svg = '';
+    let checkpointsHtml = '';
+    let paceNoteHtml = '';
+
+    if (target) {
+      const x1 = xFor(goal.startDate), y1 = yFor(goal.currentValue);
+      const x2 = xFor(goal.targetDate), y2 = yFor(goal.targetValue);
+      svg += `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="#8C9689" stroke-width="1.5" stroke-dasharray="4,3"/>`;
+
+      const totalRealMs = target - start;
+      const checkpointLabels = [{ label: '1 month', days: 30 }, { label: '6 months', days: 182 }, { label: '1 year', days: 365 }];
+      const rows = [];
+      checkpointLabels.forEach(cp => {
+        const cpMs = cp.days * 86400000;
+        if (cpMs <= totalRealMs) {
+          const frac = cpMs / totalRealMs;
+          const cpValue = goal.currentValue + (goal.targetValue - goal.currentValue) * frac;
+          const cpDate = new Date(start.getTime() + cpMs);
+          svg += `<circle cx="${xFor(cpDate.toISOString().slice(0, 10)).toFixed(1)}" cy="${yFor(cpValue).toFixed(1)}" r="2.5" fill="#8C9689"/>`;
+          rows.push(`<div>Target pace at ${cp.label}: ~${Math.round(cpValue * 10) / 10} ${goal.unit}</div>`);
+        }
+      });
+      if (rows.length) checkpointsHtml = `<div class="traj-checkpoints">${rows.join('')}</div>`;
+
+      // Real comparison, computed \u2014 not AI-judged \u2014 between
+      // today's target pace and the most recent real check-in.
+      const today = new Date();
+      if (today <= target && checkins.length) {
+        const todayFrac = Math.max(0, Math.min(1, (today - start) / totalRealMs));
+        const paceToday = goal.currentValue + (goal.targetValue - goal.currentValue) * todayFrac;
+        const latest = checkins[checkins.length - 1].value;
+        const goingUp = goal.targetValue >= goal.currentValue;
+        const diff = goingUp ? latest - paceToday : paceToday - latest;
+        const pctOfRange = Math.abs(goal.targetValue - goal.currentValue) > 0 ? Math.abs(diff) / Math.abs(goal.targetValue - goal.currentValue) * 100 : 0;
+        let verdict;
+        if (pctOfRange < 5) verdict = `right on pace toward ${goal.targetValue} ${goal.unit} by ${goal.targetDate}.`;
+        else if (diff > 0) verdict = `ahead of pace \u2014 real number to beat today is ~${Math.round(paceToday * 10) / 10} ${goal.unit}, you're at ${latest}.`;
+        else verdict = `behind pace \u2014 real number to be at today is ~${Math.round(paceToday * 10) / 10} ${goal.unit}, you're at ${latest}. That's fixable, not a failure.`;
+        paceNoteHtml = `<div class="traj-pace-note">You're ${verdict}</div>`;
+      }
+    }
+
+    if (checkins.length) {
+      const points = checkins.map(c => `${xFor(c.date).toFixed(1)},${yFor(c.value).toFixed(1)}`).join(' ');
+      svg += `<polyline points="${points}" fill="none" stroke="#D9835C" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>`;
+      checkins.forEach(c => { svg += `<circle cx="${xFor(c.date).toFixed(1)}" cy="${yFor(c.value).toFixed(1)}" r="3" fill="#D9835C"/>`; });
+    }
+
+    return `
+      <div class="trajectory-card">
+        <div class="trajectory-title">Your Trajectory</div>
+        <div class="trajectory-goal">${goal.metric}: ${goal.currentValue} \u2192 ${goal.targetValue} ${goal.unit}${goal.targetDate ? ` by ${goal.targetDate}` : ''}</div>
+        <svg class="traj-chart" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">${svg}</svg>
+        <div class="traj-legend"><span class="real">Real logged progress</span>${target ? '<span class="pace">Target pace (not a promise \u2014 just the math)</span>' : ''}</div>
+        ${paceNoteHtml}
+        ${checkpointsHtml}
+        <div class="traj-log-row">
+          <input type="text" id="traj-log-input" placeholder="Log today's ${goal.metric.toLowerCase()}\u2026" inputmode="decimal">
+          <button id="traj-log-btn">Log it</button>
+        </div>
+      </div>`;
+  },
+
+  wireTrajectory() {
+    const btn = document.getElementById('traj-log-btn');
+    if (!btn) return;
+    btn.addEventListener('click', () => {
+      const input = document.getElementById('traj-log-input');
+      const num = parseFloat(String(input.value).replace(/[^\d.]/g, ''));
+      if (!input.value.trim() || isNaN(num)) return;
+      const goal = Regimen.loadTrackableGoal();
+      if (!goal) return;
+      goal.checkins = goal.checkins || [];
+      const today = new Date().toISOString().slice(0, 10);
+      const existingToday = goal.checkins.find(c => c.date === today);
+      if (existingToday) existingToday.value = num; // real update, not a duplicate point for the same real day
+      else goal.checkins.push({ date: today, value: num });
+      Regimen.saveTrackableGoal(goal);
+      Regimen.render();
+    });
   },
 
   async build() {
