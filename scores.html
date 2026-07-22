@@ -278,11 +278,10 @@
 
   <div class="section-label">Nutrition</div>
   <div class="score-card" style="background:#14181f; border:1px solid rgba(243,239,230,0.15); cursor:default;">
-    <div class="score-sub" id="nutrition-status-sub">What did you eat today? A quick description is enough \u2014 estimates are AI-generated, not measured.</div>
-    <textarea id="nutrition-input" placeholder="e.g. oatmeal with banana for breakfast, chicken salad for lunch, salmon and rice for dinner" style="width:100%; margin-top:12px; background:rgba(243,239,230,0.06); border:1px solid rgba(243,239,230,0.18); border-radius:10px; padding:10px; color:#F3EFE6; font-family:inherit; font-size:13px; min-height:60px; resize:vertical;"></textarea>
-    <button id="nutrition-estimate-btn" class="trend-btn">Estimate nutrition</button>
+    <div id="nutrition-streak" style="display:none; font-size:12px; font-weight:700; color:#9FC96B; margin-bottom:8px;"></div>
+    <div class="score-sub" id="nutrition-status-sub">Snap a photo every time you eat \u2014 that's the habit. A few seconds, no measuring, no typing.</div>
     <input type="file" id="nutrition-photo-input" accept="image/*" capture="environment" style="display:none;">
-    <button id="nutrition-photo-btn" class="trend-btn" style="margin-top:8px;">📷 Snap a photo instead</button>
+    <button id="nutrition-photo-btn" class="trend-btn" style="margin-top:12px; padding:16px; font-size:15px; background:#9FC96B; color:#0D130F; border:none;">📷 Snap what you're eating</button>
     <div id="nutrition-photo-status" style="display:none; font-size:12px; color:#8C9689; margin-top:8px;"></div>
     <div id="nutrition-photo-draft" style="display:none; margin-top:12px; background:rgba(0,0,0,0.2); border-radius:12px; padding:14px;">
       <div style="font-size:11px; color:#8C9689; margin-bottom:8px; text-transform:uppercase; letter-spacing:0.04em;">Basil's estimate \u2014 check it looks right, then save</div>
@@ -296,6 +295,13 @@
       <button id="draft-save-btn" class="trend-btn">Looks good, save it</button>
       <button id="draft-cancel-btn" class="trend-btn" style="margin-top:6px; background:transparent; border:1px solid rgba(243,239,230,0.18);">Discard</button>
     </div>
+
+    <button id="nutrition-type-toggle-btn" style="display:block; width:100%; text-align:center; background:transparent; border:none; color:#8C9689; font-size:12.5px; text-decoration:underline; margin-top:10px; cursor:pointer; padding:4px;">No camera handy? Type it instead</button>
+    <div id="nutrition-type-fallback" style="display:none;">
+      <textarea id="nutrition-input" placeholder="e.g. oatmeal with banana for breakfast" style="width:100%; margin-top:8px; background:rgba(243,239,230,0.06); border:1px solid rgba(243,239,230,0.18); border-radius:10px; padding:10px; color:#F3EFE6; font-family:inherit; font-size:13px; min-height:60px; resize:vertical;"></textarea>
+      <button id="nutrition-estimate-btn" class="trend-btn" style="background:transparent; border:1px solid rgba(243,239,230,0.18);">Estimate nutrition</button>
+    </div>
+
     <button class="trend-btn" onclick="window.location.href='meals.html';" style="margin-top:8px;">🥗 Meal ideas from Basil</button>
     <button class="trend-btn" onclick="window.location.href='meal-plan.html';" style="margin-top:8px; background:transparent; border:1px solid rgba(243,239,230,0.18);">Your meal plan →</button>
     <button class="trend-btn" onclick="window.location.href='nutrition-detail.html';" style="margin-top:8px; background:transparent; border:1px solid rgba(243,239,230,0.18);">See real logged data →</button>
