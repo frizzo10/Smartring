@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<title>Hawthorn — myDrSage</title>
+<meta name="theme-color" content="#0D130F">
+<script>
+  (function() {
+    try {
+      var profile = JSON.parse(localStorage.getItem('sh_team_profile') || '{}');
+      if (!profile.drSage || !profile.drSage.goal) {
+        window.location.replace('team.html');
+      }
+    } catch (e) {
+      window.location.replace('team.html');
+    }
+  })();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;1,9..144,400;1,9..144,500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #0D130F; color: #F3EFE6; padding: 0 0 40px;
+  }
+  #top-bar { display: flex; align-items: center; gap: 10px; padding: 18px 20px 0; }
+  #back-btn {
+    width: 36px; height: 36px; border-radius: 10px; border: 1px solid rgba(243,239,230,0.15);
+    background: transparent; color: #F3EFE6; font-size: 18px; display: flex;
+    align-items: center; justify-content: center;
+  }
+  #top-bar h1 { font-family: 'Fraunces', serif; font-weight: 500; font-size: 21px; }
+  #content { padding: 20px; }
+
+  .empty-state { background: #161D18; border: 1px solid rgba(243,239,230,0.08); border-radius: 18px; padding: 22px; text-align: center; }
+  .empty-state p { color: #8C9689; font-size: 14px; line-height: 1.5; margin-bottom: 16px; }
+
+  #build-btn {
+    width: 100%; padding: 15px; border-radius: 14px; border: none;
+    background: #D9835C; color: #0D130F; font-size: 15px; font-weight: 700;
+    font-family: inherit; cursor: pointer;
+  }
+  #build-btn:disabled { opacity: 0.5; }
+  #error-note { color: #E86A5C; font-size: 13px; margin-top: 12px; display: none; }
+
+  .week-goal {
+    background: linear-gradient(145deg, rgba(217,131,92,0.16), rgba(217,131,92,0.04));
+    border: 1px solid rgba(217,131,92,0.3); border-radius: 18px; padding: 20px; margin-bottom: 16px;
+    font-family: 'Fraunces', serif; font-style: italic; font-size: 16.5px; line-height: 1.5;
+  }
+  .day-card { background: #161D18; border: 1px solid rgba(243,239,230,0.08); border-radius: 16px; padding: 18px; margin-bottom: 12px; }
+  .day-title { font-weight: 700; font-size: 15px; color: #D9835C; }
+  .day-focus { font-size: 12.5px; color: #8C9689; margin-bottom: 12px; }
+  .exercise-row {
+    display: flex; align-items: center; gap: 10px; padding: 10px 0;
+    border-top: 1px solid rgba(243,239,230,0.06); font-size: 13.5px; cursor: pointer;
+  }
+  .exercise-row:first-of-type { border-top: none; }
+  .exercise-check {
+    width: 20px; height: 20px; border-radius: 6px; border: 1.5px solid rgba(243,239,230,0.35);
+    flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 12px;
+  }
+  .exercise-row.done .exercise-check { background: #D9835C; border-color: #D9835C; color: #0D130F; }
+  .exercise-row.done .exercise-name { text-decoration: line-through; opacity: 0.6; }
+  .exercise-name { flex: 1; }
+  .exercise-detail { color: #8C9689; }
+
+  .completion-banner { text-align: center; font-size: 13px; color: #8C9689; margin: 4px 0 16px; }
+
+  .commit-card { background: #161D18; border: 1px solid rgba(217,131,92,0.28); border-radius: 18px; padding: 20px; }
+  .commit-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #D9835C; margin-bottom: 10px; }
+  .commit-prompt { font-family: 'Fraunces', serif; font-style: italic; font-size: 16px; line-height: 1.5; color: #D6D8D2; margin-bottom: 18px; }
+  .commit-card textarea {
+    width: 100%; min-height: 60px; background: rgba(243,239,230,0.06); border: 1px solid rgba(243,239,230,0.14);
+    border-radius: 10px; padding: 10px; color: #F3EFE6; font-family: inherit; font-size: 13px; margin: 12px 0;
+  }
+  .commit-card button#commit-submit-btn {
+    width: 100%; padding: 15px; border-radius: 14px; border: none; background: #D9835C;
+    color: #0D130F; font-size: 15px; font-weight: 700; font-family: inherit; cursor: pointer;
+  }
+  .commit-card button#commit-submit-btn:disabled { opacity: 0.5; }
+
+  .commitment-note {
+    font-family: 'Fraunces', serif; font-style: italic; font-size: 14px; color: #D9835C;
+    text-align: center; margin-bottom: 6px; padding: 0 16px;
+  }
+
+  .mic-btn {
+    width: 72px; height: 72px; border-radius: 50%; border: none; margin: 0 auto 14px; display: block;
+    background: #D9835C; font-size: 26px; cursor: pointer;
+  }
+  .mic-status { font-size: 12.5px; color: #8C9689; text-align: center; margin-bottom: 14px; min-height: 16px; }
+  .transcript-preview { font-size: 13.5px; color: #D9835C; font-style: italic; text-align: center; margin-bottom: 10px; min-height: 18px; }
+
+  .trajectory-card { background: #161D18; border: 1px solid rgba(217,131,92,0.28); border-radius: 18px; padding: 20px; margin-bottom: 16px; }
+  .trajectory-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #D9835C; margin-bottom: 4px; }
+  .trajectory-goal { font-family: 'Fraunces', serif; font-size: 16px; margin-bottom: 14px; }
+  svg.traj-chart { width: 100%; height: 130px; display: block; margin-bottom: 10px; }
+  .traj-legend { display: flex; gap: 16px; font-size: 11px; color: #8C9689; margin-bottom: 14px; }
+  .traj-legend span::before { content: ''; display: inline-block; width: 10px; height: 2px; margin-right: 5px; vertical-align: middle; }
+  .traj-legend .real::before { background: #D9835C; }
+  .traj-legend .pace::before { background: #8C9689; border-top: 1px dashed #8C9689; }
+  .traj-pace-note { font-size: 13px; line-height: 1.5; margin-bottom: 16px; }
+  .traj-checkpoints { font-size: 12px; color: #8C9689; line-height: 1.7; margin-bottom: 16px; }
+  .traj-log-row { display: flex; gap: 8px; }
+  .traj-log-row input {
+    flex: 1; background: rgba(243,239,230,0.06); border: 1px solid rgba(243,239,230,0.14);
+    border-radius: 10px; padding: 11px; color: #F3EFE6; font-family: inherit; font-size: 13px;
+  }
+  .traj-log-row button {
+    padding: 11px 16px; border-radius: 10px; border: none; background: #D9835C;
+    color: #0D130F; font-family: inherit; font-size: 13px; font-weight: 700; cursor: pointer;
+  }
+  .traj-auto-note { font-size: 12px; color: #8C9689; text-align: center; padding: 8px 0 2px; }
+  body { padding-bottom: 90px; }
+  .hw-activity-card { background: #161D18; border: 1px solid rgba(217,131,92,0.28); border-radius: 16px; padding: 18px; margin: 20px 20px 0; }
+  .hw-activity-title { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+  .hw-activity-sub { font-size: 11.5px; color: #8C9689; margin-bottom: 10px; }
+  .hw-activity-main { font-size: 22px; font-weight: 700; color: #D9835C; }
+  .hw-action-btn {
+    display: block; margin: 12px 20px 0; text-align: center; padding: 15px; border-radius: 14px; border: none;
+    background: #D9835C; color: #0D130F; font-family: inherit; font-size: 14.5px; font-weight: 700; text-decoration: none;
+  }
+  .hw-nav-bar {
+    position: fixed; bottom: 0; left: 0; right: 0; display: flex;
+    background: rgba(22,29,24,0.92); backdrop-filter: blur(20px); border-top: 1px solid rgba(243,239,230,0.08);
+    padding: 10px 8px 22px;
+  }
+  .hw-nav-tab { flex: 1; text-align: center; text-decoration: none; padding: 6px 0; }
+</style>
+</head>
+<body>
+
+  <div style="padding:22px 20px 0;">
+    <div style="font-family:'Fraunces',serif;font-weight:500;font-size:26px;color:#F3EFE6;margin-bottom:4px;">Hawthorn</div>
+    <div style="font-size:13px;color:#8C9689;">Exercise Coach</div>
+  </div>
+
+  <div class="hw-activity-card">
+    <div class="hw-activity-title">Activity</div>
+    <div class="hw-activity-sub" id="hw-activity-date"></div>
+    <div id="hw-activity-content"><div class="empty-note">No data yet — connect your ring to load today's steps.</div></div>
+  </div>
+
+  <a href="team.html?talk=activity" class="hw-action-btn">Talk to Hawthorn</a>
+
+  <div style="margin:24px 20px 0;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#D9835C;">Your Plan</div>
+  <div id="content"></div>
+
+  <div class="hw-nav-bar">
+    <a href="dr-sage.html" class="hw-nav-tab"><div style="font-size:11px;font-weight:700;color:#6B756E;">Dr. Sage</div></a>
+    <a href="specialists.html" class="hw-nav-tab"><div style="font-size:11px;font-weight:700;color:#8FB596;">Specialists</div></a>
+  </div>
+
+<script>
+const Regimen = {
+  KEY: 'sh_hawthorn_regimens',
+
+  loadHistory() {
+    try { return JSON.parse(localStorage.getItem(Regimen.KEY) || '[]'); }
+    catch (e) { return []; }
+  },
+
+  saveHistory(history) {
+    try { localStorage.setItem(Regimen.KEY, JSON.stringify(history)); }
+    catch (e) { /* non-critical */ }
+  },
+
+  current() {
+    const history = Regimen.loadHistory();
+    return history.length ? history[history.length - 1] : null;
+  },
+
+  summarizePrevious() {
+    const history = Regimen.loadHistory();
+    if (!history.length) return null;
+    const prev = history[history.length - 1];
+    let total = 0, done = 0;
+    prev.days.forEach(d => d.exercises.forEach(e => { total++; if (e.done) done++; }));
+    const pct = total ? Math.round((done / total) * 100) : 0;
+    return { weekGoal: prev.weekGoal, completionPct: pct, done, total, createdDate: prev.createdDate };
+  },
+
+  toggleExercise(dayIdx, exIdx) {
+    const history = Regimen.loadHistory();
+    if (!history.length) return;
+    const current = history[history.length - 1];
+    const ex = current.days[dayIdx]?.exercises[exIdx];
+    if (!ex) return;
+    ex.done = !ex.done;
+    Regimen.saveHistory(history);
+    Regimen.render();
+  },
+
+  render() {
+    const content = document.getElementById('content');
+    const regimen = Regimen.current();
+
+    if (!regimen) {
+      content.innerHTML = `
+        ${Regimen.renderTrajectory()}
+        <div class="empty-state">
+          <p>Hawthorn builds a real, structured plan from what you told him during Meet the Team \u2014 not a generic template. Genuinely different for a novice than an athlete.</p>
+          <button id="build-btn">Build my regimen</button>
+          <div id="error-note"></div>
+        </div>`;
+      document.getElementById('build-btn').addEventListener('click', Regimen.build);
+      Regimen.wireTrajectory();
+      return;
+    }
+
+    let total = 0, done = 0;
+    regimen.days.forEach(d => d.exercises.forEach(e => { total++; if (e.done) done++; }));
+
+    if (!regimen.commitment) {
+      content.innerHTML = `
+        ${Regimen.renderTrajectory()}
+        <div class="week-goal">${regimen.weekGoal}</div>
+        <div class="commit-card">
+          <div class="commit-title">Before you dive in</div>
+          <div class="commit-prompt">In your own words \u2014 what are you actually committing to this week?</div>
+          <button class="mic-btn" id="commit-mic-btn">\u{1F3A4}</button>
+          <div class="mic-status" id="commit-status">Tap to speak, or type below</div>
+          <div class="transcript-preview" id="commit-preview"></div>
+          <textarea id="commit-text" placeholder="Type your commitment\u2026"></textarea>
+          <button id="commit-submit-btn" disabled>I\u2019m committing to this</button>
+        </div>`;
+      Regimen.wireTrajectory();
+      Regimen.wireCommitCapture();
+      return;
+    }
+
+    const daysHtml = regimen.days.map((d, dayIdx) => `
+      <div class="day-card">
+        <div class="day-title">${d.day}</div>
+        <div class="day-focus">${d.focus}</div>
+        ${d.exercises.map((e, exIdx) => `
+          <div class="exercise-row ${e.done ? 'done' : ''}" data-day="${dayIdx}" data-ex="${exIdx}">
+            <span class="exercise-check">${e.done ? '\u2713' : ''}</span>
+            <span class="exercise-name">${e.name}</span>
+            <span class="exercise-detail">${e.detail}</span>
+          </div>`).join('')}
+      </div>`).join('');
+
+    content.innerHTML = `
+      ${Regimen.renderTrajectory()}
+      <div class="week-goal">${regimen.weekGoal}</div>
+      <div class="commitment-note">\u201c${regimen.commitment}\u201d</div>
+      <div class="completion-banner">${done} of ${total} done this week</div>
+      ${daysHtml}
+      <button id="build-btn" style="margin-top:8px;">Build next week's regimen</button>
+      <div id="error-note"></div>`;
+
+    content.querySelectorAll('.exercise-row').forEach(el => {
+      el.addEventListener('click', () => Regimen.toggleExercise(Number(el.dataset.day), Number(el.dataset.ex)));
+    });
+    document.getElementById('build-btn').addEventListener('click', Regimen.build);
+    Regimen.wireTrajectory();
+  },
+
+  saveCommitment(text) {
+    const history = Regimen.loadHistory();
+    if (!history.length) return;
+    history[history.length - 1].commitment = text;
+    Regimen.saveHistory(history);
+  },
+
+  // Same real commitment-device pattern as Dr. Sage's end-of-
+  // onboarding promise \u2014 articulating it in your own words, voice
+  // or typed, before diving into the actual week. Gates the day-
+  // by-day list once per newly built regimen, not every visit.
+  wireCommitCapture() {
+    const textArea = document.getElementById('commit-text');
+    const submitBtn = document.getElementById('commit-submit-btn');
+    if (!textArea) return;
+    textArea.addEventListener('input', () => { submitBtn.disabled = !textArea.value.trim(); });
+
+    const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRec) {
+      document.getElementById('commit-mic-btn').addEventListener('click', () => {
+        const status = document.getElementById('commit-status');
+        status.textContent = 'Listening\u2026';
+        const rec = new SpeechRec();
+        rec.continuous = false; rec.interimResults = false; rec.lang = 'en-US';
+        rec.onresult = (e) => {
+          const transcript = e.results[0][0].transcript;
+          document.getElementById('commit-preview').textContent = transcript;
+          textArea.value = transcript;
+          submitBtn.disabled = false;
+          status.textContent = 'Got it';
+        };
+        rec.onerror = () => { status.textContent = 'Didn\u2019t catch that \u2014 try typing'; };
+        rec.start();
+      });
+    } else {
+      document.getElementById('commit-mic-btn').disabled = true;
+      document.getElementById('commit-status').textContent = 'Voice not available \u2014 type below';
+    }
+
+    submitBtn.addEventListener('click', () => {
+      const text = textArea.value.trim();
+      if (!text) return;
+      Regimen.saveCommitment(text);
+      Regimen.render();
+    });
+  },
+
+  loadTrackableGoal() {
+    let profile;
+    try { profile = JSON.parse(localStorage.getItem('sh_team_profile') || '{}'); }
+    catch (e) { profile = {}; }
+    const goal = profile.activity && profile.activity.trackableGoal ? profile.activity.trackableGoal : null;
+    if (goal && goal.isStepsBased) Regimen.syncStepsGoalFromRing(goal);
+    return goal;
+  },
+
+  // Fitness tracker first: a steps goal never needs manual
+  // logging, because the ring already measures it automatically.
+  // Merges any real ring days not yet reflected in checkins \u2014
+  // never invents a day, never duplicates one already there.
+  syncStepsGoalFromRing(goal) {
+    let ringHistory = [];
+    try {
+      const snap = JSON.parse(localStorage.getItem('sh_ring_latest') || 'null');
+      ringHistory = (snap && Array.isArray(snap.activityHistory)) ? snap.activityHistory.filter(a => a.totalSteps != null) : [];
+    } catch (e) { return; }
+    if (!ringHistory.length) return;
+
+    goal.checkins = goal.checkins || [];
+    const existingDates = new Set(goal.checkins.map(c => c.date));
+    let changed = false;
+    ringHistory.forEach(a => {
+      if (existingDates.has(a.date)) {
+        const entry = goal.checkins.find(c => c.date === a.date);
+        if (entry.value !== a.totalSteps) { entry.value = a.totalSteps; changed = true; } // real update, e.g. a partial day that's since completed
+      } else {
+        goal.checkins.push({ date: a.date, value: a.totalSteps });
+        existingDates.add(a.date);
+        changed = true;
+      }
+    });
+    if (changed) {
+      goal.checkins.sort((a, b) => a.date.localeCompare(b.date));
+      Regimen.saveTrackableGoal(goal);
+    }
+  },
+
+  saveTrackableGoal(goal) {
+    let profile;
+    try { profile = JSON.parse(localStorage.getItem('sh_team_profile') || '{}'); }
+    catch (e) { profile = {}; }
+    profile.activity = profile.activity || {};
+    profile.activity.trackableGoal = goal;
+    try { localStorage.setItem('sh_team_profile', JSON.stringify(profile)); } catch (e) { /* non-critical */ }
+  },
+
+  // ── TRAJECTORY CHART ─────────────────────────────────────────
+  // Two honest, clearly distinct series, never blended into one
+  // misleading line: the real logged check-ins (solid, actual
+  // dates and values someone typed in), and a target-pace line
+  // (dashed) that is JUST linear interpolation from the real
+  // starting baseline to the real target \u2014 explicitly labeled as
+  // a pace reference, never presented as a prediction of what
+  // will actually happen. The 1/6/12-month checkpoints are the
+  // same interpolation, just called out as text for readability
+  // rather than crammed into tiny SVG labels.
+  renderTrajectory() {
+    const goal = Regimen.loadTrackableGoal();
+    if (!goal) return '';
+
+    const w = 300, h = 130, pad = 12;
+    const start = new Date(goal.startDate);
+    const target = goal.targetDate ? new Date(goal.targetDate) : null;
+    const checkins = goal.checkins || [];
+
+    let maxDate = target || new Date(checkins.length ? checkins[checkins.length - 1].date : goal.startDate);
+    checkins.forEach(c => { const d = new Date(c.date); if (d > maxDate) maxDate = d; });
+    const totalMs = Math.max(maxDate - start, 86400000);
+
+    const values = checkins.map(c => c.value).concat([goal.currentValue, goal.targetValue]);
+    let minV = Math.min(...values), maxV = Math.max(...values);
+    if (minV === maxV) { minV -= 1; maxV += 1; }
+    const vPad = (maxV - minV) * 0.1;
+    minV -= vPad; maxV += vPad;
+    const vRange = maxV - minV;
+
+    const xFor = (dateStr) => pad + ((new Date(dateStr) - start) / totalMs) * (w - 2 * pad);
+    const yFor = (value) => h - pad - ((value - minV) / vRange) * (h - 2 * pad);
+
+    let svg = '';
+    let checkpointsHtml = '';
+    let paceNoteHtml = '';
+
+    if (target) {
+      const x1 = xFor(goal.startDate), y1 = yFor(goal.currentValue);
+      const x2 = xFor(goal.targetDate), y2 = yFor(goal.targetValue);
+      svg += `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="#8C9689" stroke-width="1.5" stroke-dasharray="4,3"/>`;
+
+      const totalRealMs = target - start;
+      const checkpointLabels = [{ label: '1 month', days: 30 }, { label: '6 months', days: 182 }, { label: '1 year', days: 365 }];
+      const rows = [];
+      checkpointLabels.forEach(cp => {
+        const cpMs = cp.days * 86400000;
+        if (cpMs <= totalRealMs) {
+          const frac = cpMs / totalRealMs;
+          const cpValue = goal.currentValue + (goal.targetValue - goal.currentValue) * frac;
+          const cpDate = new Date(start.getTime() + cpMs);
+          svg += `<circle cx="${xFor(cpDate.toISOString().slice(0, 10)).toFixed(1)}" cy="${yFor(cpValue).toFixed(1)}" r="2.5" fill="#8C9689"/>`;
+          rows.push(`<div>Target pace at ${cp.label}: ~${Math.round(cpValue * 10) / 10} ${goal.unit}</div>`);
+        }
+      });
+      if (rows.length) checkpointsHtml = `<div class="traj-checkpoints">${rows.join('')}</div>`;
+
+      // Real comparison, computed \u2014 not AI-judged \u2014 between
+      // today's target pace and the most recent real check-in.
+      const today = new Date();
+      if (today <= target && checkins.length) {
+        const todayFrac = Math.max(0, Math.min(1, (today - start) / totalRealMs));
+        const paceToday = goal.currentValue + (goal.targetValue - goal.currentValue) * todayFrac;
+        const latest = checkins[checkins.length - 1].value;
+        const goingUp = goal.targetValue >= goal.currentValue;
+        const diff = goingUp ? latest - paceToday : paceToday - latest;
+        const pctOfRange = Math.abs(goal.targetValue - goal.currentValue) > 0 ? Math.abs(diff) / Math.abs(goal.targetValue - goal.currentValue) * 100 : 0;
+        let verdict;
+        if (pctOfRange < 5) verdict = `right on pace toward ${goal.targetValue} ${goal.unit} by ${goal.targetDate}.`;
+        else if (diff > 0) verdict = `ahead of pace \u2014 real number to beat today is ~${Math.round(paceToday * 10) / 10} ${goal.unit}, you're at ${latest}.`;
+        else verdict = `behind pace \u2014 real number to be at today is ~${Math.round(paceToday * 10) / 10} ${goal.unit}, you're at ${latest}. That's fixable, not a failure.`;
+        paceNoteHtml = `<div class="traj-pace-note">You're ${verdict}</div>`;
+      }
+    }
+
+    if (checkins.length) {
+      const points = checkins.map(c => `${xFor(c.date).toFixed(1)},${yFor(c.value).toFixed(1)}`).join(' ');
+      svg += `<polyline points="${points}" fill="none" stroke="#D9835C" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>`;
+      checkins.forEach(c => { svg += `<circle cx="${xFor(c.date).toFixed(1)}" cy="${yFor(c.value).toFixed(1)}" r="3" fill="#D9835C"/>`; });
+    }
+
+    return `
+      <div class="trajectory-card">
+        <div class="trajectory-title">Your Trajectory</div>
+        <div class="trajectory-goal">${goal.metric}: ${goal.currentValue} \u2192 ${goal.targetValue} ${goal.unit}${goal.targetDate ? ` by ${goal.targetDate}` : ''}</div>
+        <svg class="traj-chart" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">${svg}</svg>
+        <div class="traj-legend"><span class="real">Real ${goal.isStepsBased ? 'ring-synced' : 'logged'} progress</span>${target ? '<span class="pace">Target pace (not a promise \u2014 just the math)</span>' : ''}</div>
+        ${paceNoteHtml}
+        ${checkpointsHtml}
+        ${goal.isStepsBased
+          ? '<div class="traj-auto-note">Synced automatically from your ring \u2014 no logging needed.</div>'
+          : `<div class="traj-log-row">
+              <input type="text" id="traj-log-input" placeholder="Log today's ${goal.metric.toLowerCase()}\u2026" inputmode="decimal">
+              <button id="traj-log-btn">Log it</button>
+            </div>`}
+      </div>`;
+  },
+
+  wireTrajectory() {
+    const btn = document.getElementById('traj-log-btn');
+    if (!btn) return;
+    btn.addEventListener('click', () => {
+      const input = document.getElementById('traj-log-input');
+      const num = parseFloat(String(input.value).replace(/[^\d.]/g, ''));
+      if (!input.value.trim() || isNaN(num)) return;
+      const goal = Regimen.loadTrackableGoal();
+      if (!goal) return;
+      goal.checkins = goal.checkins || [];
+      const today = new Date().toISOString().slice(0, 10);
+      const existingToday = goal.checkins.find(c => c.date === today);
+      if (existingToday) existingToday.value = num; // real update, not a duplicate point for the same real day
+      else goal.checkins.push({ date: today, value: num });
+      Regimen.saveTrackableGoal(goal);
+      Regimen.render();
+    });
+  },
+
+  async build() {
+    const btn = document.getElementById('build-btn');
+    const err = document.getElementById('error-note');
+    btn.disabled = true;
+    btn.textContent = 'Hawthorn is building it\u2026';
+    err.style.display = 'none';
+
+    let profile;
+    try { profile = JSON.parse(localStorage.getItem('sh_team_profile') || '{}'); }
+    catch (e) { profile = {}; }
+    const activityProfile = profile.activity;
+
+    if (!activityProfile || (!activityProfile.current && !activityProfile.goal)) {
+      err.textContent = 'Hawthorn needs to know your starting point first \u2014 answer his questions in Meet the Team.';
+      err.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = 'Build my regimen';
+      return;
+    }
+
+    let snapshot;
+    try { snapshot = JSON.parse(localStorage.getItem('sh_ring_latest') || '{}'); }
+    catch (e) { snapshot = {}; }
+
+    const activityHist = (snapshot.activityHistory || []).filter(a => a.totalSteps != null);
+    let trendText = 'No real step trend synced yet \u2014 base this on their stated starting point only, and say so.';
+    if (activityHist.length >= 2) {
+      const sorted = [...activityHist].sort((a, b) => a.date.localeCompare(b.date));
+      const latest = sorted[sorted.length - 1];
+      const prior = sorted.slice(0, -1);
+      const avgPrior = Math.round(prior.reduce((s, a) => s + a.totalSteps, 0) / prior.length);
+      trendText = `Real recent step data: ${latest.totalSteps} steps most recent day, averaging ${avgPrior}/day prior. This is a fitness tracker first and foremost \u2014 use this as real evidence of their actual current baseline, not just a footnote. If daily steps are consistently low (under ~5,000), their real everyday movement is minimal regardless of what they said their goal is \u2014 build in real walking volume, don't assume a structured-workout foundation already exists. If daily steps are already high and consistent, that's real evidence of an active baseline you can build real strength/conditioning work on top of, not from scratch.`;
+    } else if (activityHist.length === 1) {
+      trendText = `One real day of step data so far: ${activityHist[0].totalSteps} steps. Not enough for a trend yet, but real \u2014 mention it if it's genuinely useful context, don't overweight a single day.`;
+    }
+
+    // Real TODAY readiness, not just activity history \u2014 the gap
+    // this closes. A low-recovery week and a high-recovery week
+    // should not produce the same regimen. Uses the same real HRV
+    // and sleep data scores.js already computes from, just read
+    // directly here since this page has no dependency on scores.js
+    // loading first.
+    let readinessText = 'No real recovery/sleep signal available yet \u2014 do not assume either direction.';
+    const hrvHistory = (snapshot.hrvHistory || []).filter(h => h.rmssd != null);
+    const sleep = snapshot.sleep;
+    const readinessParts = [];
+    if (hrvHistory.length >= 2) {
+      const latest = hrvHistory[hrvHistory.length - 1];
+      const prior = hrvHistory.slice(0, -1).map(h => h.rmssd);
+      const avgPrior = prior.reduce((a, b) => a + b, 0) / prior.length;
+      const pctVsBaseline = Math.round(((latest.rmssd - avgPrior) / avgPrior) * 100);
+      readinessParts.push(`Resting-check trend is ${pctVsBaseline > 0 ? '+' : ''}${pctVsBaseline}% vs their own recent baseline`);
+    }
+    if (sleep && sleep.asleepMin) {
+      readinessParts.push(`slept ${Math.round(sleep.asleepMin / 60 * 10) / 10} hrs last night`);
+    }
+    if (readinessParts.length) {
+      readinessText = `Real readiness signal: ${readinessParts.join(', ')}. If this looks like a genuinely low-recovery or short-sleep state, this week should be lighter, not heavier \u2014 if it looks strong, this is a real chance to push. Don't invent certainty either way beyond what's given here.`;
+    }
+
+    const prevSummary = Regimen.summarizePrevious();
+    const historyText = prevSummary
+      ? `Last week's regimen was: "${prevSummary.weekGoal}" \u2014 they completed ${prevSummary.done} of ${prevSummary.total} exercises (${prevSummary.completionPct}%). ${prevSummary.completionPct >= 70 ? 'They largely followed through \u2014 consider a real progression, not a repeat.' : prevSummary.completionPct <= 30 ? 'They struggled to follow it \u2014 this week should be simpler and more achievable, not more ambitious.' : 'Partial follow-through \u2014 keep this week realistic given that.'}`
+      : 'This is their first regimen \u2014 no prior week to build on yet.';
+
+    const preferredName = profile.drSage?.preferredName;
+    const nameBlock = preferredName && preferredName.trim() ? `\n\nCall them ${preferredName.trim()} \u2014 that's what they asked to be called.` : '';
+    const userMessage = `This person told you, when you first met: "${activityProfile.current || 'not specified'}" is what exercise currently looks like for them, and their goal is: "${activityProfile.goal || 'not specified'}".${nameBlock}\n\n${trendText}\n\n${readinessText}\n\n${historyText}\n\nBuild a real, structured 3-day regimen for this week, appropriate to their actual stated experience, genuinely responsive to how last week went if there was one, AND genuinely responsive to their real current readiness \u2014 not the same intensity regardless of how their body is actually doing right now. Say it directly \u2014 tell them what to do, don't hedge. Use real, named, honest bodyweight or simple-equipment exercises \u2014 nothing requiring gear you have no evidence they own. Respond ONLY with valid JSON, no markdown: {"weekGoal": "1-2 sentences on this week's focus, stated directly and confidently, referencing last week's real follow-through and today's real readiness if either is available", "days": [{"day": "Day 1", "focus": "e.g. Full body", "exercises": [{"name": "exercise name", "detail": "sets/reps or duration, appropriate to their level"}]}, ...2-3 days]}`;
+
+    try {
+      const res = await fetch('/.netlify/functions/claude', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system: 'You are Hawthorn, an exercise coach who builds real training regimens from real data. Be direct and confident \u2014 tell them what to do, don\u2019t hedge on the plan itself. You are NOT a licensed doctor or physical therapist \u2014 you are a coach. You NEVER diagnose, NEVER claim certainty about outcomes, and you scale difficulty honestly to what the person actually told you about their experience \u2014 a stated novice never gets an athlete\u2019s program with easier-sounding labels slapped on it. If given real data about how last week went, you genuinely adjust \u2014 progress it if they followed through, simplify it if they didn\u2019t, rather than repeating the same plan regardless. You NEVER invent data you weren\u2019t given. Respond with ONLY the requested JSON, nothing else.',
+          messages: [{ role: 'user', content: userMessage }],
+          max_tokens: 500,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Request failed');
+      const text = (data.content?.[0]?.text || '').replace(/```json\s*|```\s*/g, '').trim();
+      const parsed = JSON.parse(text);
+      if (!parsed.weekGoal || !Array.isArray(parsed.days) || !parsed.days.length) throw new Error('Invalid response shape');
+
+      const newRegimen = {
+        weekGoal: parsed.weekGoal,
+        days: parsed.days.map(d => ({
+          day: d.day, focus: d.focus,
+          exercises: (d.exercises || []).map(e => ({ name: e.name, detail: e.detail, done: false })),
+        })),
+        createdDate: new Date().toISOString().slice(0, 10),
+      };
+      const history = Regimen.loadHistory();
+      history.push(newRegimen);
+      Regimen.saveHistory(history.slice(-10));
+      Regimen.render();
+    } catch (e) {
+      err.textContent = 'Couldn\u2019t build a valid regimen right now \u2014 try again.';
+      err.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = 'Build my regimen';
+    }
+  },
+};
+
+Regimen.render();
+  // Real cached activity + the same personalized target logic as
+  // dashboard.html (own rolling average, never a fixed 10,000) —
+  // no duplicated BLE connection, just reading the shared snapshot.
+  (function renderActivity() {
+    let snap;
+    try { snap = JSON.parse(localStorage.getItem('sh_ring_latest') || 'null'); }
+    catch (e) { snap = null; }
+    if (!snap || !snap.activity) return;
+    document.getElementById('hw-activity-date').textContent = snap.activity.date || '';
+
+    const today = new Date().toISOString().slice(0, 10);
+    const history = (snap.activityHistory || [])
+      .filter(a => a.totalSteps != null && a.date !== today)
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .slice(-14);
+    let target = null;
+    if (history.length >= 3) {
+      const avg = history.reduce((sum, a) => sum + a.totalSteps, 0) / history.length;
+      target = Math.round((avg * 1.1) / 250) * 250;
+    }
+
+    const steps = snap.activity.totalSteps;
+    document.getElementById('hw-activity-content').innerHTML =
+      '<div class="hw-activity-main">' + steps.toLocaleString() + '</div>' +
+      '<div class="empty-note" style="margin-top:4px;">' + (target ? 'of your real ' + target.toLocaleString() + ' step target' : 'Still learning your real baseline') + '</div>';
+  })();
+</script>
+</body>
+</html>
