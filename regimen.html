@@ -101,6 +101,7 @@
     padding: 11px 16px; border-radius: 10px; border: none; background: #D9835C;
     color: #0D130F; font-family: inherit; font-size: 13px; font-weight: 700; cursor: pointer;
   }
+  .traj-auto-note { font-size: 12px; color: #8C9689; text-align: center; padding: 8px 0 2px; }
 </style>
 </head>
 <body>
@@ -269,7 +270,40 @@ const Regimen = {
     let profile;
     try { profile = JSON.parse(localStorage.getItem('sh_team_profile') || '{}'); }
     catch (e) { profile = {}; }
-    return profile.activity && profile.activity.trackableGoal ? profile.activity.trackableGoal : null;
+    const goal = profile.activity && profile.activity.trackableGoal ? profile.activity.trackableGoal : null;
+    if (goal && goal.isStepsBased) Regimen.syncStepsGoalFromRing(goal);
+    return goal;
+  },
+
+  // Fitness tracker first: a steps goal never needs manual
+  // logging, because the ring already measures it automatically.
+  // Merges any real ring days not yet reflected in checkins \u2014
+  // never invents a day, never duplicates one already there.
+  syncStepsGoalFromRing(goal) {
+    let ringHistory = [];
+    try {
+      const snap = JSON.parse(localStorage.getItem('sh_ring_latest') || 'null');
+      ringHistory = (snap && Array.isArray(snap.activityHistory)) ? snap.activityHistory.filter(a => a.totalSteps != null) : [];
+    } catch (e) { return; }
+    if (!ringHistory.length) return;
+
+    goal.checkins = goal.checkins || [];
+    const existingDates = new Set(goal.checkins.map(c => c.date));
+    let changed = false;
+    ringHistory.forEach(a => {
+      if (existingDates.has(a.date)) {
+        const entry = goal.checkins.find(c => c.date === a.date);
+        if (entry.value !== a.totalSteps) { entry.value = a.totalSteps; changed = true; } // real update, e.g. a partial day that's since completed
+      } else {
+        goal.checkins.push({ date: a.date, value: a.totalSteps });
+        existingDates.add(a.date);
+        changed = true;
+      }
+    });
+    if (changed) {
+      goal.checkins.sort((a, b) => a.date.localeCompare(b.date));
+      Regimen.saveTrackableGoal(goal);
+    }
   },
 
   saveTrackableGoal(goal) {
@@ -367,13 +401,15 @@ const Regimen = {
         <div class="trajectory-title">Your Trajectory</div>
         <div class="trajectory-goal">${goal.metric}: ${goal.currentValue} \u2192 ${goal.targetValue} ${goal.unit}${goal.targetDate ? ` by ${goal.targetDate}` : ''}</div>
         <svg class="traj-chart" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">${svg}</svg>
-        <div class="traj-legend"><span class="real">Real logged progress</span>${target ? '<span class="pace">Target pace (not a promise \u2014 just the math)</span>' : ''}</div>
+        <div class="traj-legend"><span class="real">Real ${goal.isStepsBased ? 'ring-synced' : 'logged'} progress</span>${target ? '<span class="pace">Target pace (not a promise \u2014 just the math)</span>' : ''}</div>
         ${paceNoteHtml}
         ${checkpointsHtml}
-        <div class="traj-log-row">
-          <input type="text" id="traj-log-input" placeholder="Log today's ${goal.metric.toLowerCase()}\u2026" inputmode="decimal">
-          <button id="traj-log-btn">Log it</button>
-        </div>
+        ${goal.isStepsBased
+          ? '<div class="traj-auto-note">Synced automatically from your ring \u2014 no logging needed.</div>'
+          : `<div class="traj-log-row">
+              <input type="text" id="traj-log-input" placeholder="Log today's ${goal.metric.toLowerCase()}\u2026" inputmode="decimal">
+              <button id="traj-log-btn">Log it</button>
+            </div>`}
       </div>`;
   },
 
@@ -427,7 +463,9 @@ const Regimen = {
       const latest = sorted[sorted.length - 1];
       const prior = sorted.slice(0, -1);
       const avgPrior = Math.round(prior.reduce((s, a) => s + a.totalSteps, 0) / prior.length);
-      trendText = `Real recent step data: ${latest.totalSteps} steps most recent day, averaging ${avgPrior}/day prior.`;
+      trendText = `Real recent step data: ${latest.totalSteps} steps most recent day, averaging ${avgPrior}/day prior. This is a fitness tracker first and foremost \u2014 use this as real evidence of their actual current baseline, not just a footnote. If daily steps are consistently low (under ~5,000), their real everyday movement is minimal regardless of what they said their goal is \u2014 build in real walking volume, don't assume a structured-workout foundation already exists. If daily steps are already high and consistent, that's real evidence of an active baseline you can build real strength/conditioning work on top of, not from scratch.`;
+    } else if (activityHist.length === 1) {
+      trendText = `One real day of step data so far: ${activityHist[0].totalSteps} steps. Not enough for a trend yet, but real \u2014 mention it if it's genuinely useful context, don't overweight a single day.`;
     }
 
     // Real TODAY readiness, not just activity history \u2014 the gap
