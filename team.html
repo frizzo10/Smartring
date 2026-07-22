@@ -1080,6 +1080,10 @@ const Team = {
       framingText = "Most of onboarding got skipped, so there's honestly nothing real for the team to build yet \u2014 that's okay, you can build each plan yourself from Scores whenever you're ready.";
     }
 
+    // Capabilities first, always, before any report \u2014 this is
+    // Dr. Sage's real first report moment, right after onboarding.
+    framingText = Team.SPECIALIST_CAPABILITIES.drSage + ' ' + framingText;
+
     Team.currentRealPlans = realPlans;
     Team.currentFramingText = framingText;
     Team.renderPlanCardsView();
@@ -1131,6 +1135,20 @@ const Team = {
   // actually built.
   planConversationHistory: [],
 
+  // Deliberately hardcoded, not AI-generated \u2014 an AI asked to
+  // list "everything I can do" every time risks quietly drifting
+  // from what's actually built (overstating, or inventing
+  // something that sounds plausible but isn't real). This stays
+  // exactly accurate to the real features, and needs a manual
+  // update here whenever a specialist's real capabilities change.
+  SPECIALIST_CAPABILITIES: {
+    sleep: "Before I get into it \u2014 here's what I actually do: I build you a real weekly sleep plan, and I adjust it week to week based on how you actually slept and what you actually followed through on, not just guesses. You can come talk to me anytime, not just during a report.",
+    stress: "Before I get into it \u2014 here's what I actually do: I build you a real weekly mindfulness plan, adjusted based on how the week actually went. I also lead real, live guided sessions \u2014 box breathing, a short yoga sequence, or an affirmation walk \u2014 whenever you want one. And you can talk to me anytime, at real length, not just for quick tips.",
+    activity: "Before I get into it \u2014 here's what I actually do: I build you a real weekly workout regimen, and I factor in your real recovery and sleep data when I set the intensity \u2014 a rough week means an easier regimen, not a harder one. I coordinate with Basil on nutrition timing too. You can come talk to me anytime.",
+    nutrition: "Before I get into it \u2014 here's what I actually do: I build you a real weekly meal plan, coordinated with whatever Hawthorn's got you doing for exercise. I can also estimate a meal's nutrition from a real photo you send. You can come talk to me anytime.",
+    drSage: "Before we get into it \u2014 here's what I actually do: I pull together everything the whole team knows about you into your real weekly report, and I'm the one who flags anything worth a real doctor's attention. I'll also tell you honestly if I think your goal itself needs recalibrating, based on how the real data's been going \u2014 you always get the final say on that. And I'm here for a general check-in anytime, not just during a scheduled report.",
+  },
+
   async openPlanConversation(domain) {
     const p = Team.currentRealPlans.find(pl => pl.domain === domain);
     if (!p) return;
@@ -1178,6 +1196,19 @@ const Team = {
 
   async pushPlanConversationOpening(p) {
     const status = document.getElementById('plan-chat-status');
+
+    // Capabilities first, always, before any report \u2014 real and
+    // hardcoded (see SPECIALIST_CAPABILITIES above), spoken and
+    // shown as its own message, awaited so it actually finishes
+    // before the report begins.
+    const voiceKey = p.domain === 'sleep' ? 'sleep' : p.domain === 'stress' ? 'stress' : p.domain === 'activity' ? 'activity' : 'nutrition';
+    const capabilitiesText = Team.SPECIALIST_CAPABILITIES[p.domain];
+    if (capabilitiesText) {
+      Team.planConversationHistory.push({ role: 'specialist', content: capabilitiesText });
+      Team.renderPlanChatMessages();
+      await Team.speak(capabilitiesText, voiceKey, null);
+    }
+
     status.textContent = `${p.name} is looking this over\u2026`;
 
     const planText = JSON.stringify(p.plan);
@@ -1439,6 +1470,16 @@ const Team = {
     document.getElementById('plan-chat-send-btn').addEventListener('click', Team.sendDrSageGeneralMessage);
 
     const status = document.getElementById('plan-chat-status');
+
+    // Same real, hardcoded capabilities-first pattern as the four
+    // domain specialists \u2014 see SPECIALIST_CAPABILITIES.
+    const capabilitiesText = Team.SPECIALIST_CAPABILITIES.drSage;
+    if (capabilitiesText) {
+      Team.planConversationHistory.push({ role: 'specialist', content: capabilitiesText });
+      Team.renderPlanChatMessages();
+      await Team.speak(capabilitiesText, 'drSage', null);
+    }
+
     status.textContent = 'Dr. Sage is getting your file\u2026';
     const profile = Team.loadProfile();
     const rawName = profile?.drSage?.preferredName;
