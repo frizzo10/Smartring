@@ -385,6 +385,7 @@ const Team = {
         '<div class="member-title" style="margin-bottom:20px;">' + step.name + '</div>' +
         '<div class="question-block"><div class="question-label">' + q.label + '</div>' +
         '<div class="option-row" id="option-row">' + chips + '</div></div>';
+      Team.speak(q.label, step.voiceKey, null); // the question itself, not just the intro
       document.querySelectorAll('.option-chip').forEach(function(el) {
         el.addEventListener('click', function() {
           document.querySelectorAll('.option-chip').forEach(function(c) { c.classList.remove('selected'); });
@@ -412,6 +413,7 @@ const Team = {
       '<div class="member-title" style="margin-bottom:20px;">' + step.name + '</div>' +
       '<div class="question-block"><div class="question-label">' + q.label + '</div>' +
       sensitiveNoteHtml + micOrType + '<div id="auto-skip-area"></div></div>';
+    Team.speak(q.label, step.voiceKey, null); // the question itself, not just the intro
 
     document.getElementById('mode-toggle').addEventListener('click', function() {
       Team.typedMode = !Team.typedMode;
