@@ -685,6 +685,18 @@ const Team = {
   // than guessing one, since the whole point of the later
   // trajectory chart is comparing REAL logged progress against a
   // clearly-labeled target pace, not fabricating either side of it.
+  // Real ring-synced daily step history, if any exists yet \u2014
+  // this is what lets a steps-based trackable goal skip asking
+  // for a baseline (and later, skip manual logging entirely) and
+  // use actual hardware data instead. Returns [] if no ring has
+  // ever synced, which is a real, honest, common case.
+  loadRingStepHistory() {
+    try {
+      const snap = JSON.parse(localStorage.getItem('sh_ring_latest') || 'null');
+      return (snap && Array.isArray(snap.activityHistory)) ? snap.activityHistory.filter(a => a.totalSteps != null) : [];
+    } catch (e) { return []; }
+  },
+
   async parseAndCaptureTrackableGoal(step, q, answer) {
     let parsed;
     try {
@@ -692,9 +704,9 @@ const Team = {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          system: 'You extract a structured, trackable fitness goal from what someone said, if one is genuinely there. Only mark quantifiable true if they gave (or very clearly implied) a specific measurable metric AND a target number \u2014 never invent a number, unit, or date they did not give. A target date is optional; if given, convert it to a real ISO date (YYYY-MM-DD) \u2014 today is ' + new Date().toISOString().slice(0, 10) + ', so resolve relative phrases like "by summer" or "in 6 months" against that. Respond with ONLY valid JSON, no markdown.',
-          messages: [{ role: 'user', content: `They were asked "${q.label}" and said: "${answer}"\n\nExtract: {"quantifiable": true or false, "metric": "short name of what's being measured, e.g. 'Bench press 1-rep max' or '5K time'", "unit": "e.g. 'lbs', 'minutes', 'reps'", "targetValue": number or null, "targetDate": "YYYY-MM-DD" or null if no real timeframe was given, "currentValue": number or null \u2014 ONLY if they explicitly stated their current/starting number, never inferred or guessed}` }],
-          max_tokens: 200,
+          system: 'You extract a structured, trackable fitness goal from what someone said, if one is genuinely there. Only mark quantifiable true if they gave (or very clearly implied) a specific measurable metric AND a target number \u2014 never invent a number, unit, or date they did not give. A target date is optional; if given, convert it to a real ISO date (YYYY-MM-DD) \u2014 today is ' + new Date().toISOString().slice(0, 10) + ', so resolve relative phrases like "by summer" or "in 6 months" against that. Mark isStepsBased true only if the metric is specifically daily step count / walking volume \u2014 this app\u2019s ring already tracks that automatically, so it matters. Respond with ONLY valid JSON, no markdown.',
+          messages: [{ role: 'user', content: `They were asked "${q.label}" and said: "${answer}"\n\nExtract: {"quantifiable": true or false, "metric": "short name of what's being measured, e.g. 'Bench press 1-rep max', '5K time', or 'Daily steps'", "unit": "e.g. 'lbs', 'minutes', 'reps', 'steps'", "targetValue": number or null, "targetDate": "YYYY-MM-DD" or null if no real timeframe was given, "currentValue": number or null \u2014 ONLY if they explicitly stated their current/starting number, never inferred or guessed, "isStepsBased": true or false}` }],
+          max_tokens: 220,
         }),
       });
       if (!res.ok) return false;
@@ -705,18 +717,35 @@ const Team = {
 
     if (!parsed || !parsed.quantifiable || parsed.targetValue == null || typeof parsed.targetValue !== 'number') return false;
 
+    const today = new Date().toISOString().slice(0, 10);
+
+    // Steps goals never need a manually-typed baseline if the ring
+    // has already synced real data \u2014 use the most recent real day
+    // instead of asking a question the hardware already answered.
+    if (parsed.isStepsBased && (parsed.currentValue == null || typeof parsed.currentValue !== 'number')) {
+      const ringHistory = Team.loadRingStepHistory();
+      if (ringHistory.length) {
+        const latest = ringHistory[ringHistory.length - 1];
+        parsed.currentValue = latest.totalSteps;
+      }
+    }
+
     if (parsed.currentValue != null && typeof parsed.currentValue === 'number') {
-      const today = new Date().toISOString().slice(0, 10);
+      const checkins = parsed.isStepsBased
+        ? Team.loadRingStepHistory().map(a => ({ date: a.date, value: a.totalSteps })) // real ring history, not just today
+        : [{ date: today, value: parsed.currentValue }];
+      if (!checkins.length) checkins.push({ date: today, value: parsed.currentValue });
       Team.saveTrackableGoal({
         metric: parsed.metric, unit: parsed.unit || '',
         currentValue: parsed.currentValue, targetValue: parsed.targetValue,
         targetDate: parsed.targetDate || null, startDate: today,
-        checkins: [{ date: today, value: parsed.currentValue }],
+        isStepsBased: !!parsed.isStepsBased,
+        checkins,
       });
       return false; // captured cleanly, no baseline card needed
     }
 
-    Team.pendingTrackableGoal = { metric: parsed.metric, unit: parsed.unit || '', targetValue: parsed.targetValue, targetDate: parsed.targetDate || null };
+    Team.pendingTrackableGoal = { metric: parsed.metric, unit: parsed.unit || '', targetValue: parsed.targetValue, targetDate: parsed.targetDate || null, isStepsBased: !!parsed.isStepsBased };
     Team.renderTrackableGoalBaselineFollowUp(step);
     return true;
   },
@@ -750,7 +779,7 @@ const Team = {
       const today = new Date().toISOString().slice(0, 10);
       Team.saveTrackableGoal({
         metric: g.metric, unit: g.unit, currentValue: num, targetValue: g.targetValue, targetDate: g.targetDate,
-        startDate: today, checkins: [{ date: today, value: num }],
+        startDate: today, isStepsBased: !!g.isStepsBased, checkins: [{ date: today, value: num }],
       });
       Team.pendingTrackableGoal = null;
       document.getElementById('next-btn').removeEventListener('click', onNextClick);
@@ -1269,7 +1298,7 @@ const Team = {
   SPECIALIST_CAPABILITIES: {
     sleep: "Before I get into it \u2014 here's what I actually do: I build you a real weekly sleep plan, and I adjust it week to week based on how you actually slept and what you actually followed through on, not just guesses. I've also got real wind-down tools \u2014 live white or brown noise, and an original bedtime story I write fresh and read to you \u2014 best started about ten minutes before you actually want to be asleep. You can come talk to me anytime, not just during a report.",
     stress: "Before I get into it \u2014 here's what I actually do: I build you a real weekly mindfulness plan, adjusted based on how the week actually went. I also lead real, live guided sessions \u2014 box breathing, a short yoga sequence, or an affirmation walk \u2014 whenever you want one. And you can talk to me anytime, at real length, not just for quick tips.",
-    activity: "Before I get into it \u2014 here's what I actually do: I build you a real weekly workout regimen, and I factor in your real recovery and sleep data when I set the intensity \u2014 a rough week means an easier regimen, not a harder one. If you gave me a real number to aim for, I track your real progress toward it on a chart \u2014 not a promise of where you'll be, just the honest math on pace, next to what you're actually logging. Before each new week, I'll actually ask you to commit to it in your own words, out loud or typed \u2014 not just skip past it. I coordinate with Basil on nutrition timing too. You can come talk to me anytime.",
+    activity: "Before I get into it \u2014 here's what I actually do: I build you a real weekly workout regimen, and I factor in your real recovery, sleep, and step data when I set the intensity \u2014 a rough week means an easier regimen, not a harder one. If your goal is steps, I track it automatically from your ring \u2014 no logging needed. Any other real number, I track it on a chart against real math on pace, not a promise. Before each new week, I'll actually ask you to commit to it in your own words, out loud or typed \u2014 not just skip past it. I coordinate with Basil on nutrition timing too. You can come talk to me anytime.",
     nutrition: "Before I get into it \u2014 here's what I actually do: I build you a real weekly meal plan, coordinated with whatever Hawthorn's got you doing for exercise. I can also estimate a meal's nutrition from a real photo you send. You can come talk to me anytime.",
     drSage: "Before we get into it \u2014 here's what I actually do: I pull together everything the whole team knows about you into your real weekly report, and I'm the one who flags anything worth a real doctor's attention. I'll also tell you honestly if I think your goal itself needs recalibrating, based on how the real data's been going \u2014 you always get the final say on that. And I'm here for a general check-in anytime, not just during a scheduled report.",
   },
