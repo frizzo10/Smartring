@@ -57,6 +57,31 @@
 
   .completion-banner { text-align: center; font-size: 13px; color: #8C9689; margin: 4px 0 16px; }
 
+  .commit-card { background: #161D18; border: 1px solid rgba(217,131,92,0.28); border-radius: 18px; padding: 20px; }
+  .commit-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #D9835C; margin-bottom: 10px; }
+  .commit-prompt { font-family: 'Fraunces', serif; font-style: italic; font-size: 16px; line-height: 1.5; color: #D6D8D2; margin-bottom: 18px; }
+  .commit-card textarea {
+    width: 100%; min-height: 60px; background: rgba(243,239,230,0.06); border: 1px solid rgba(243,239,230,0.14);
+    border-radius: 10px; padding: 10px; color: #F3EFE6; font-family: inherit; font-size: 13px; margin: 12px 0;
+  }
+  .commit-card button#commit-submit-btn {
+    width: 100%; padding: 15px; border-radius: 14px; border: none; background: #D9835C;
+    color: #0D130F; font-size: 15px; font-weight: 700; font-family: inherit; cursor: pointer;
+  }
+  .commit-card button#commit-submit-btn:disabled { opacity: 0.5; }
+
+  .commitment-note {
+    font-family: 'Fraunces', serif; font-style: italic; font-size: 14px; color: #D9835C;
+    text-align: center; margin-bottom: 6px; padding: 0 16px;
+  }
+
+  .mic-btn {
+    width: 72px; height: 72px; border-radius: 50%; border: none; margin: 0 auto 14px; display: block;
+    background: #D9835C; font-size: 26px; cursor: pointer;
+  }
+  .mic-status { font-size: 12.5px; color: #8C9689; text-align: center; margin-bottom: 14px; min-height: 16px; }
+  .transcript-preview { font-size: 13.5px; color: #D9835C; font-style: italic; text-align: center; margin-bottom: 10px; min-height: 18px; }
+
   .trajectory-card { background: #161D18; border: 1px solid rgba(217,131,92,0.28); border-radius: 18px; padding: 20px; margin-bottom: 16px; }
   .trajectory-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #D9835C; margin-bottom: 4px; }
   .trajectory-goal { font-family: 'Fraunces', serif; font-size: 16px; margin-bottom: 14px; }
@@ -147,6 +172,24 @@ const Regimen = {
     let total = 0, done = 0;
     regimen.days.forEach(d => d.exercises.forEach(e => { total++; if (e.done) done++; }));
 
+    if (!regimen.commitment) {
+      content.innerHTML = `
+        ${Regimen.renderTrajectory()}
+        <div class="week-goal">${regimen.weekGoal}</div>
+        <div class="commit-card">
+          <div class="commit-title">Before you dive in</div>
+          <div class="commit-prompt">In your own words \u2014 what are you actually committing to this week?</div>
+          <button class="mic-btn" id="commit-mic-btn">\u{1F3A4}</button>
+          <div class="mic-status" id="commit-status">Tap to speak, or type below</div>
+          <div class="transcript-preview" id="commit-preview"></div>
+          <textarea id="commit-text" placeholder="Type your commitment\u2026"></textarea>
+          <button id="commit-submit-btn" disabled>I\u2019m committing to this</button>
+        </div>`;
+      Regimen.wireTrajectory();
+      Regimen.wireCommitCapture();
+      return;
+    }
+
     const daysHtml = regimen.days.map((d, dayIdx) => `
       <div class="day-card">
         <div class="day-title">${d.day}</div>
@@ -162,6 +205,7 @@ const Regimen = {
     content.innerHTML = `
       ${Regimen.renderTrajectory()}
       <div class="week-goal">${regimen.weekGoal}</div>
+      <div class="commitment-note">\u201c${regimen.commitment}\u201d</div>
       <div class="completion-banner">${done} of ${total} done this week</div>
       ${daysHtml}
       <button id="build-btn" style="margin-top:8px;">Build next week's regimen</button>
@@ -172,6 +216,53 @@ const Regimen = {
     });
     document.getElementById('build-btn').addEventListener('click', Regimen.build);
     Regimen.wireTrajectory();
+  },
+
+  saveCommitment(text) {
+    const history = Regimen.loadHistory();
+    if (!history.length) return;
+    history[history.length - 1].commitment = text;
+    Regimen.saveHistory(history);
+  },
+
+  // Same real commitment-device pattern as Dr. Sage's end-of-
+  // onboarding promise \u2014 articulating it in your own words, voice
+  // or typed, before diving into the actual week. Gates the day-
+  // by-day list once per newly built regimen, not every visit.
+  wireCommitCapture() {
+    const textArea = document.getElementById('commit-text');
+    const submitBtn = document.getElementById('commit-submit-btn');
+    if (!textArea) return;
+    textArea.addEventListener('input', () => { submitBtn.disabled = !textArea.value.trim(); });
+
+    const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRec) {
+      document.getElementById('commit-mic-btn').addEventListener('click', () => {
+        const status = document.getElementById('commit-status');
+        status.textContent = 'Listening\u2026';
+        const rec = new SpeechRec();
+        rec.continuous = false; rec.interimResults = false; rec.lang = 'en-US';
+        rec.onresult = (e) => {
+          const transcript = e.results[0][0].transcript;
+          document.getElementById('commit-preview').textContent = transcript;
+          textArea.value = transcript;
+          submitBtn.disabled = false;
+          status.textContent = 'Got it';
+        };
+        rec.onerror = () => { status.textContent = 'Didn\u2019t catch that \u2014 try typing'; };
+        rec.start();
+      });
+    } else {
+      document.getElementById('commit-mic-btn').disabled = true;
+      document.getElementById('commit-status').textContent = 'Voice not available \u2014 type below';
+    }
+
+    submitBtn.addEventListener('click', () => {
+      const text = textArea.value.trim();
+      if (!text) return;
+      Regimen.saveCommitment(text);
+      Regimen.render();
+    });
   },
 
   loadTrackableGoal() {
