@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<title>Dr. Sage — myDrSage</title>
+<meta name="theme-color" content="#0D130F">
+<script>
+  // Same real gate as every other entry-capable page \u2014
+  // onboarding is mandatory first, even here.
+  (function() {
+    try {
+      var profile = JSON.parse(localStorage.getItem('sh_team_profile') || '{}');
+      if (!profile.drSage || !profile.drSage.goal) {
+        window.location.replace('team.html');
+      }
+    } catch (e) {
+      window.location.replace('team.html');
+    }
+  })();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;1,9..144,400;1,9..144,500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #0D130F; color: #F3EFE6; padding: 60px 18px 90px;
+  }
+  h1 { font-family: 'Fraunces', serif; font-weight: 500; font-size: 26px; margin-bottom: 4px; }
+  .sub { font-size: 13px; color: #8C9689; margin-bottom: 24px; }
+  .qcard { background: #161D18; border: 1px solid rgba(143,181,150,0.28); border-radius: 16px; padding: 18px; margin-bottom: 14px; }
+  .qcard-title { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+  .qcard-sub { font-size: 11.5px; color: #8C9689; margin-bottom: 10px; }
+  .metric-main { font-size: 22px; font-weight: 700; }
+  .empty-note { font-size: 12.5px; color: #8C9689; line-height: 1.5; }
+  .action-btn {
+    display: block; width: 100%; text-align: center; padding: 15px; border-radius: 14px; border: none;
+    background: #8FB596; color: #0D130F; font-family: inherit; font-size: 14.5px; font-weight: 700;
+    text-decoration: none; margin-bottom: 10px; cursor: pointer;
+  }
+  .action-btn.secondary { background: transparent; border: 1px solid rgba(243,239,230,0.18); color: #F3EFE6; }
+  .referral-row {
+    display: flex; align-items: center; gap: 12px; background: #161D18; border-radius: 14px; padding: 14px;
+    margin-bottom: 10px; text-decoration: none; color: #F3EFE6;
+  }
+  .referral-seal { width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0; }
+  .referral-text { font-size: 12.5px; line-height: 1.4; flex: 1; }
+
+  .nav-bar {
+    position: fixed; bottom: 0; left: 0; right: 0; display: flex;
+    background: rgba(22,29,24,0.92); backdrop-filter: blur(20px); border-top: 1px solid rgba(243,239,230,0.08);
+    padding: 10px 8px 22px;
+  }
+  .nav-tab { flex: 1; text-align: center; text-decoration: none; padding: 6px 0; }
+  .nav-tab-label { font-size: 11px; font-weight: 700; }
+</style>
+</head>
+<body>
+
+  <h1>Dr. Sage</h1>
+  <div class="sub">Holistic Wellness Doctor — coordinator</div>
+
+  <div class="qcard">
+    <div class="qcard-title">Heart Rate</div>
+    <div class="qcard-sub" id="hr-date"></div>
+    <div id="hr-content"><div class="empty-note">No data yet — connect your ring to load today's heart rate log.</div></div>
+  </div>
+
+  <div class="qcard">
+    <div class="qcard-title">Temperature</div>
+    <div class="qcard-sub">Not available yet</div>
+    <div class="empty-note">The R02 doesn't have a temperature sensor — this needs the R09, which does. It's on its way, but its Bluetooth protocol hasn't been reverse-engineered yet. This card will start showing real readings once that's done — nothing estimated or faked in the meantime.</div>
+  </div>
+
+  <a href="team.html?talk=drsage" class="action-btn">Talk to Dr. Sage</a>
+  <a href="scores.html" class="action-btn secondary">Your weekly report</a>
+
+  <div style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:#C9A75C; margin:26px 0 12px;">Referrals</div>
+  <div id="referrals-list"></div>
+
+  <div class="nav-bar">
+    <a href="dr-sage.html" class="nav-tab"><div class="nav-tab-label" style="color:#8FB596;">Dr. Sage</div></a>
+    <a href="specialists.html" class="nav-tab"><div class="nav-tab-label" style="color:#6B756E;">Specialists</div></a>
+  </div>
+
+<script>
+  // Real cached heart rate, read from the same sh_ring_latest
+  // snapshot dashboard.html writes to \u2014 no separate BLE
+  // connection duplicated here, just reading what's already real.
+  (function renderHeartRate() {
+    let snap;
+    try { snap = JSON.parse(localStorage.getItem('sh_ring_latest') || 'null'); }
+    catch (e) { snap = null; }
+    if (!snap || !snap.hrLog) return;
+    document.getElementById('hr-date').textContent = snap.heartDate || '';
+    document.getElementById('hr-content').innerHTML =
+      '<div class="metric-main">' + snap.hrLog.avg + ' bpm</div>' +
+      '<div class="empty-note" style="margin-top:4px;">Range ' + snap.hrLog.min + '\u2013' + snap.hrLog.max + ' bpm today</div>';
+  })();
+
+  // Real referrals \u2014 checks which specialists actually have a
+  // real plan built, using the exact same storage keys their own
+  // pages read from. Never invents a referral for a specialist
+  // with nothing real behind it yet.
+  (function renderReferrals() {
+    const specialists = [
+      { key: 'sh_willow_sleepplans', name: 'Willow', role: 'Sleep Coach', color: 'linear-gradient(145deg,#98A5DE,#4C5AA0)', href: 'team.html?talk=sleep' },
+      { key: 'sh_lotus_mindfulnessplans', name: 'Lotus', role: 'Mindfulness Coach', color: 'linear-gradient(145deg,#CBA8D6,#7A5589)', href: 'team.html?talk=stress' },
+      { key: 'sh_hawthorn_regimens', name: 'Hawthorn', role: 'Exercise Coach', color: 'linear-gradient(145deg,#E6A183,#A85936)', href: 'team.html?talk=activity' },
+      { key: 'sh_basil_mealplans', name: 'Basil', role: 'Nutrition Coach', color: 'linear-gradient(145deg,#B6D68A,#6B8F45)', href: 'team.html?talk=nutrition' },
+    ];
+    const list = document.getElementById('referrals-list');
+    const real = specialists.filter(function(s) {
+      try { return JSON.parse(localStorage.getItem(s.key) || '[]').length > 0; }
+      catch (e) { return false; }
+    });
+    if (!real.length) {
+      list.innerHTML = '<div class="empty-note">No real referrals yet \u2014 these show up once a specialist has actually built you a real plan.</div>';
+      return;
+    }
+    list.innerHTML = real.map(function(s) {
+      return '<a class="referral-row" href="' + s.href + '"><div class="referral-seal" style="background:' + s.color + ';"></div><div class="referral-text">Dr. Sage referred you to ' + s.name + ', your ' + s.role + ' — tap to talk</div></a>';
+    }).join('');
+  })();
+</script>
+</body>
+</html>
