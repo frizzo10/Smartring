@@ -9,7 +9,7 @@
 
 [[redirects]]
   from = "/"
-  to = "/dashboard.html"
+  to = "/dr-sage.html"
   status = 302
   force = true
 
