@@ -683,6 +683,45 @@ const Scores = {
     });
   },
 
+  // ── NOTES ──────────────────────────────────────────────────
+  // A real free-text reflection, separate from the existing
+  // habit-chip journal above (which stays as-is \u2014 different
+  // thing, boolean toggles vs. someone's own words). One note per
+  // day, overwritable if edited later the same day. Real tie-in:
+  // referenced by count in the weekly report, not just displayed
+  // and forgotten.
+  NOTES_KEY: 'sh_daily_notes',
+
+  loadNotes() {
+    try { return JSON.parse(localStorage.getItem(Scores.NOTES_KEY) || '{}'); }
+    catch (e) { return {}; }
+  },
+
+  saveNote(text) {
+    const notes = Scores.loadNotes();
+    const today = Scores.todayKey();
+    if (text.trim()) notes[today] = { text: text.trim(), savedAt: new Date().toISOString() };
+    else delete notes[today]; // saving empty clears today's note, doesn't leave a blank entry
+    try { localStorage.setItem(Scores.NOTES_KEY, JSON.stringify(notes)); }
+    catch (e) { /* non-critical */ }
+    Scores.renderNotes();
+  },
+
+  renderNotes() {
+    const notes = Scores.loadNotes();
+    const today = Scores.todayKey();
+    const input = document.getElementById('notes-input');
+    if (input && document.activeElement !== input) input.value = (notes[today] && notes[today].text) || '';
+
+    const dates = Object.keys(notes).sort().reverse().filter(d => d !== today).slice(0, 5);
+    const history = document.getElementById('notes-history');
+    if (!history) return;
+    history.innerHTML = dates.map(d => {
+      const label = new Date(d + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+      return `<div class="note-row"><div class="note-date">${label}</div><div class="note-text">${notes[d].text}</div></div>`;
+    }).join('');
+  },
+
   // ── STATUS STATEMENTS ─────────────────────────────────────
   // Pure template formatting over already-computed numbers.
   // No AI call, no network — same trust level as the score
@@ -2415,6 +2454,13 @@ const Scores = {
       ? `Real self-reported: ${sickDays ? sickDays + ' sick day(s)' : ''}${sickDays && travelDays ? ', ' : ''}${travelDays ? travelDays + ' traveling day(s)' : ''} this week \u2014 weigh the rest of the data with that in mind, don't judge a disrupted week like a normal one.`
       : null;
 
+    // Real notes, in their own words \u2014 the most recent one gets
+    // quoted directly (never summarized/paraphrased into something
+    // they didn't say), not just counted.
+    const allNotes = Scores.loadNotes();
+    const noteDatesThisWeek = Object.keys(allNotes).filter(function(d) { return new Date(d) >= sevenDaysAgo; }).sort();
+    const latestNoteText = noteDatesThisWeek.length ? allNotes[noteDatesThisWeek[noteDatesThisWeek.length - 1]].text : null;
+
     return {
       goal,
       recovery: recovery.ok ? recovery.score : null,
@@ -2427,6 +2473,8 @@ const Scores = {
       regimenAdherence: regimenAdherence ? `${regimenAdherence.done}/${regimenAdherence.total} exercises done (${regimenAdherence.pct}%)` : 'no active regimen',
       mealPlanStatus,
       activityStatusNote,
+      noteDaysThisWeek: noteDatesThisWeek.length,
+      latestNoteText,
     };
   },
 
@@ -2494,6 +2542,7 @@ const Scores = {
     lines.push(`Exercise regimen: ${data.regimenAdherence}`);
     lines.push(`Meal plan: ${data.mealPlanStatus}`);
     if (data.activityStatusNote) lines.push(data.activityStatusNote);
+    if (data.latestNoteText) lines.push(`Their most recent real note, in their own words: "${data.latestNoteText}" (${data.noteDaysThisWeek} note(s) this week). If it's genuinely relevant to the report, you can reference it directly \u2014 never paraphrase it into something they didn't say.`);
 
     const userMessage = `Here is this person's real week \u2014 both what they logged themselves and what the ring recorded:\n\n${lines.join('\n')}\n\nWrite their weekly report. Cover three things directly: (1) real progress toward their stated goal, or honestly say there isn't enough data to judge yet if that's true \u2014 never invent progress that isn't supported by the numbers above; (2) name any real deficiencies plainly, using the actual numbers given (e.g. "you logged 2 of 7 days"), stated as fact, never as a judgment of their character or effort; (3) one clear, direct focus for the coming week. Keep it to 5-6 sentences, spoken naturally \u2014 this will be read aloud. Respond with plain text only, no JSON, no markdown.`;
 
@@ -2636,6 +2685,10 @@ const Scores = {
       btn.addEventListener('click', () => Scores.saveActivityStatus(btn.dataset.status));
     });
     Scores.renderActivityStatus();
+
+    const notesSaveBtn = document.getElementById('notes-save-btn');
+    if (notesSaveBtn) notesSaveBtn.addEventListener('click', () => Scores.saveNote(document.getElementById('notes-input').value));
+    Scores.renderNotes();
 
     const trendBtns = [
       ['recovery-trend-btn', 'recovery', 'recovery-trend-response'],
