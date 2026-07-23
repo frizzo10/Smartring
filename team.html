@@ -244,8 +244,25 @@ const Team = {
     Team.answered[stepKey + '.' + qKey] = true;
   },
 
+  currentAudio: null,
+
+  // Real fix for overlapping/double-speak audio: previously every
+  // speak() call created its own independent Audio object with no
+  // awareness of a still-playing previous one \u2014 if a reaction
+  // fired while an intro was still finishing, or a screen changed
+  // while something was mid-sentence, both played simultaneously
+  // and were unintelligible together. Now every speak() call stops
+  // whatever's currently playing first.
+  stopSpeaking() {
+    if (Team.currentAudio) {
+      try { Team.currentAudio.pause(); } catch (e) { /* already stopped */ }
+      Team.currentAudio = null;
+    }
+  },
+
   async speak(text, voiceKey, avatarEl) {
     if (!text || !text.trim()) return;
+    Team.stopSpeaking();
     try {
       const res = await fetch('/.netlify/functions/tts', {
         method: 'POST',
@@ -256,10 +273,12 @@ const Team = {
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const audio = new Audio(url);
+      Team.currentAudio = audio;
       if (avatarEl) avatarEl.classList.add('speaking');
       audio.addEventListener('ended', () => {
         URL.revokeObjectURL(url);
         if (avatarEl) avatarEl.classList.remove('speaking');
+        if (Team.currentAudio === audio) Team.currentAudio = null;
       });
       await audio.play();
     } catch (e) { /* spoken intro is a nice-to-have, never a blocker */ }
@@ -330,6 +349,7 @@ const Team = {
   },
 
   renderIntro() {
+    Team.stopSpeaking();
     const step = Team.currentStep();
     if (!step) { Team.renderFinalAffirmation(); return; }
     document.documentElement.style.setProperty('--accent', step.accent);
@@ -375,6 +395,7 @@ const Team = {
   },
 
   renderQuestion() {
+    Team.stopSpeaking();
     const step = Team.currentStep();
     const q = step.questions[Team.questionIndexInStep];
     document.documentElement.style.setProperty('--accent', step.accent);
@@ -867,6 +888,7 @@ const Team = {
   reviewShown: false,
 
   renderReviewScreen() {
+    Team.stopSpeaking();
     document.documentElement.style.setProperty('--accent', '#8FB596');
     const profile = Team.loadProfile();
     const specialistSteps = Team.STEPS.filter(function(s) { return s.key !== 'drSageClosing'; });
@@ -1306,6 +1328,7 @@ const Team = {
   },
 
   renderPlanCardsView() {
+    Team.stopSpeaking();
     const card = document.getElementById('card-area');
     const realPlans = Team.currentRealPlans;
     const framingText = Team.currentFramingText;
@@ -1365,7 +1388,27 @@ const Team = {
     drSage: "Before we get into it \u2014 here's what I actually do: I pull together everything the whole team knows about you into your real weekly report, and I'm the one who flags anything worth a real doctor's attention. I'll also tell you honestly if I think your goal itself needs recalibrating, based on how the real data's been going \u2014 you always get the final say on that. And I'm here for a general check-in anytime, not just during a scheduled report.",
   },
 
+  // Shared real mic wiring for both chat surfaces (specialist plan
+  // chat and Dr. Sage's general chat) \u2014 previously only Lotus's
+  // separate dedicated page and the onboarding questions had real
+  // voice input; these two chat surfaces were text-only.
+  wireChatMic(micBtnId, inputId) {
+    const micBtn = document.getElementById(micBtnId);
+    const input = document.getElementById(inputId);
+    if (!micBtn || !input) return;
+    const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRec) { micBtn.disabled = true; micBtn.style.opacity = '0.4'; return; }
+    micBtn.addEventListener('click', function() {
+      micBtn.style.background = '#E86A5C';
+      Team.startListening(
+        function(transcript) { input.value = transcript; micBtn.style.background = 'rgba(243,239,230,0.08)'; },
+        function() { micBtn.style.background = 'rgba(243,239,230,0.08)'; }
+      );
+    });
+  },
+
   async openPlanConversation(domain) {
+    Team.stopSpeaking();
     const p = Team.currentRealPlans.find(pl => pl.domain === domain);
     if (!p) return;
     Team.planConversationHistory = [];
@@ -1384,11 +1427,15 @@ const Team = {
         <div id="plan-chat-messages" style="display:flex; flex-direction:column; gap:8px; margin-bottom:10px; max-height:220px; overflow-y:auto;"></div>
         <div id="plan-chat-status" style="font-size:12px; color:#8C9689; margin-bottom:8px;"></div>
         <textarea id="plan-chat-input" placeholder="Ask ${p.name} anything about this\u2026" style="width:100%; min-height:44px; background:rgba(243,239,230,0.06); border:1px solid rgba(243,239,230,0.14); border-radius:10px; padding:10px; color:#F3EFE6; font-family:inherit; font-size:13px; margin-bottom:8px;"></textarea>
-        <button id="plan-chat-send-btn" style="width:100%; padding:13px; border-radius:12px; border:none; background:${p.color}; color:#F3EFE6; font-size:14px; font-weight:700; font-family:inherit; cursor:pointer;">Send</button>
+        <div style="display:flex; gap:8px;">
+          <button id="plan-chat-mic-btn" style="width:44px; height:44px; border-radius:10px; border:none; background:rgba(243,239,230,0.08); color:#F3EFE6; font-size:17px; cursor:pointer; flex-shrink:0;">\u{1F3A4}</button>
+          <button id="plan-chat-send-btn" style="flex:1; padding:13px; border-radius:12px; border:none; background:${p.color}; color:#F3EFE6; font-size:14px; font-weight:700; font-family:inherit; cursor:pointer;">Send</button>
+        </div>
       </div>
     `;
     document.getElementById('back-to-plans-btn').addEventListener('click', Team.directTalkMode ? function() { window.location.href = 'dashboard.html'; } : Team.renderPlanCardsView);
     document.getElementById('plan-chat-send-btn').addEventListener('click', () => Team.sendPlanConversationMessage(domain));
+    Team.wireChatMic('plan-chat-mic-btn', 'plan-chat-input');
 
     await Team.pushPlanConversationOpening(p);
   },
@@ -1667,6 +1714,7 @@ const Team = {
   // has visibility into what the whole team has already built,
   // same crisis safety net as every other real chat surface here.
   async openDrSageGeneralChat() {
+    Team.stopSpeaking();
     Team.planConversationHistory = [];
     const card = document.getElementById('card-area');
     card.innerHTML =
@@ -1679,11 +1727,15 @@ const Team = {
       '<div id="plan-chat-messages" style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px;max-height:280px;overflow-y:auto;"></div>' +
       '<div id="plan-chat-status" style="font-size:12px;color:#8C9689;margin-bottom:8px;"></div>' +
       '<textarea id="plan-chat-input" placeholder="Ask Dr. Sage anything\u2026" style="width:100%;min-height:44px;background:rgba(243,239,230,0.06);border:1px solid rgba(243,239,230,0.14);border-radius:10px;padding:10px;color:#F3EFE6;font-family:inherit;font-size:13px;margin-bottom:8px;"></textarea>' +
-      '<button id="plan-chat-send-btn" style="width:100%;padding:13px;border-radius:12px;border:none;background:#8FB596;color:#0D130F;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;">Send</button>' +
+      '<div style="display:flex;gap:8px;">' +
+      '<button id="plan-chat-mic-btn" style="width:44px;height:44px;border-radius:10px;border:none;background:rgba(243,239,230,0.08);color:#F3EFE6;font-size:17px;cursor:pointer;flex-shrink:0;">\u{1F3A4}</button>' +
+      '<button id="plan-chat-send-btn" style="flex:1;padding:13px;border-radius:12px;border:none;background:#8FB596;color:#0D130F;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;">Send</button>' +
+      '</div>' +
       '</div>';
 
     document.getElementById('back-to-plans-btn').addEventListener('click', function() { window.location.href = 'dashboard.html'; });
     document.getElementById('plan-chat-send-btn').addEventListener('click', Team.sendDrSageGeneralMessage);
+    Team.wireChatMic('plan-chat-mic-btn', 'plan-chat-input');
 
     const status = document.getElementById('plan-chat-status');
 
