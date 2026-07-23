@@ -215,10 +215,22 @@
         ? `Last week's plan was: "${prevSummary.weekGoal}" \u2014 they kept ${prevSummary.done} of ${prevSummary.total} actions (${prevSummary.pct}%). ${prevSummary.pct >= 70 ? 'They largely followed through \u2014 consider a real progression.' : prevSummary.pct <= 30 ? 'They struggled to follow it \u2014 this week should be simpler, fewer actions.' : 'Partial follow-through \u2014 keep this week realistic.'}`
         : 'This is their first sleep plan \u2014 no prior week to build on yet.';
 
+      let caffeineText = 'No real caffeine data logged yet.';
+      try {
+        const wcLog = JSON.parse(localStorage.getItem('sh_water_caffeine') || '{}');
+        const todayKey = new Date().toISOString().slice(0, 10);
+        const todayLog = wcLog[todayKey];
+        if (todayLog && todayLog.caffeineLog && todayLog.caffeineLog.length) {
+          const last = todayLog.caffeineLog[todayLog.caffeineLog.length - 1];
+          const hoursAgo = Math.round((Date.now() - new Date(last.time).getTime()) / 3600000 * 10) / 10;
+          caffeineText = `Real caffeine logged today: ${todayLog.caffeineMg}mg total, last one (${last.label}) ${hoursAgo}h ago.`;
+        }
+      } catch (e) { /* non-critical */ }
+
       const nameProfile = profile.drSage?.preferredName;
       const nameBlock = nameProfile ? `\n\nCall them ${nameProfile}.` : '';
 
-      const userMessage = `This person told you, when you first met: their usual bedtime is "${sleepProfile.bedtime || 'not specified'}" and their biggest sleep struggle is "${sleepProfile.struggle || 'not specified'}".\n\n${consistencyText}\n\n${historyText}${nameBlock}\n\nBuild a real, concrete sleep plan for this week \u2014 3 to 5 specific daily actions (not exercises, actual sleep behaviors: a bedtime target, a wind-down step, something to remove from the bedroom, etc.), directly addressing their stated struggle. Say it directly, don't hedge. Respond ONLY with valid JSON, no markdown: {"weekGoal": "1-2 sentences on this week's focus, stated directly, referencing last week's real follow-through if there was any", "actions": ["specific daily action", "..."]}`;
+      const userMessage = `This person told you, when you first met: their usual bedtime is "${sleepProfile.bedtime || 'not specified'}" and their biggest sleep struggle is "${sleepProfile.struggle || 'not specified'}".\n\n${consistencyText}\n\n${caffeineText}\n\n${historyText}${nameBlock}\n\nBuild a real, concrete sleep plan for this week \u2014 3 to 5 specific daily actions (not exercises, actual sleep behaviors: a bedtime target, a wind-down step, something to remove from the bedroom, etc.), directly addressing their stated struggle. If real caffeine timing is genuinely late relative to their bedtime, that's worth a real action about it \u2014 don't invent a caffeine problem if there isn't real data showing one. Say it directly, don't hedge. Respond ONLY with valid JSON, no markdown: {"weekGoal": "1-2 sentences on this week's focus, stated directly, referencing last week's real follow-through if there was any", "actions": ["specific daily action", "..."]}`;
 
       try {
         const res = await fetch('/.netlify/functions/claude', {
