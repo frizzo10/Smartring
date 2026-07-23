@@ -96,7 +96,7 @@
   <div id="start-gate" style="min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:40px 30px; text-align:center;">
     <div style="width:72px; height:72px; border-radius:50%; background:linear-gradient(145deg,#A9CDAE,#5F7F63); margin-bottom:24px; display:flex; align-items:center; justify-content:center; font-size:28px; font-weight:700; color:#F3EFE6;">DS</div>
     <div style="font-size:22px; font-weight:700; margin-bottom:10px;">Meet Your Team</div>
-    <div style="font-size:14.5px; color:#8C9689; line-height:1.5; max-width:280px; margin-bottom:32px;">Dr. Sage and the team speak out loud as you go — your browser needs one tap first before any audio can play.</div>
+    <div style="font-size:14.5px; color:#8C9689; line-height:1.5; max-width:280px; margin-bottom:32px;">Dr. Sage and the team speak out loud as you go — just tap and go.</div>
     <button id="start-gate-btn" style="width:100%; max-width:280px; padding:16px; border-radius:14px; border:none; background:#8FB596; color:#0D130F; font-size:15px; font-weight:700; font-family:inherit; cursor:pointer;">Begin</button>
   </div>
 
@@ -1678,7 +1678,7 @@ const Team = {
     gate.innerHTML =
       '<div style="width:72px;height:72px;border-radius:50%;background:' + step.color + ';margin-bottom:24px;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:700;color:#F3EFE6;">' + step.name[0] + '</div>' +
       '<div style="font-size:22px;font-weight:700;margin-bottom:10px;">Talk to ' + step.name + '</div>' +
-      '<div style="font-size:14.5px;color:#8C9689;line-height:1.5;max-width:280px;margin-bottom:32px;">' + step.name + ' speaks out loud \u2014 your browser needs one tap first before any audio can play.</div>' +
+      '<div style="font-size:14.5px;color:#8C9689;line-height:1.5;max-width:280px;margin-bottom:32px;">' + step.name + ' speaks out loud \u2014 just tap and go.</div>' +
       '<button id="start-gate-btn" style="width:100%;max-width:280px;padding:16px;border-radius:14px;border:none;background:#8FB596;color:#0D130F;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;">Begin</button>';
 
     document.getElementById('start-gate-btn').addEventListener('click', function() {
