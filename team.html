@@ -149,9 +149,9 @@ const Team = {
         { key: 'energy', label: 'How would you describe your energy most days?', type: 'options',
           options: ['Steady', 'Up and down', 'Usually low', 'Depends on the day'] },
         { key: 'goal', label: "What's the main thing you're hoping to get out of this?", type: 'text' },
-        { key: 'medicalHistory', label: 'Any diagnosed conditions we should know about?', type: 'options', optional: true,
+        { key: 'medicalHistory', label: 'Any diagnosed conditions we should know about?', type: 'options', optional: true, multiSelect: true,
           options: ['None', 'Diabetes', 'Hypertension', 'Thyroid', 'Other'],
-          sensitiveNote: 'Totally optional. This helps me know what to pay closer attention to \u2014 it\u2019s never used to diagnose anything.' },
+          sensitiveNote: 'Totally optional, and pick as many as apply. This helps me know what to pay closer attention to \u2014 it\u2019s never used to diagnose anything.' },
         { key: 'familyHistory', label: 'Any family health history worth noting?', type: 'text', optional: true,
           sensitiveNote: 'Also optional. Same idea \u2014 context for your team, not a medical record.' },
       ],
@@ -404,24 +404,42 @@ const Team = {
     const existing = (profile[step.key] && profile[step.key][q.key]) || '';
 
     if (q.type === 'options') {
+      const selectedValues = q.multiSelect ? existing.split(', ').filter(Boolean) : [existing];
       const chips = q.options.map(function(opt) {
-        const selected = existing === opt ? 'selected' : '';
+        const selected = selectedValues.indexOf(opt) !== -1 ? 'selected' : '';
         return '<div class="option-chip ' + selected + '" data-value="' + opt + '">' + opt + '</div>';
       }).join('');
+      const sensitiveNoteHtml = q.sensitiveNote ? '<div class="sensitive-note">' + q.sensitiveNote + '</div>' : '';
       document.getElementById('card-area').innerHTML =
         '<div class="member-title" style="margin-bottom:20px;">' + step.name + '</div>' +
         '<div class="question-block"><div class="question-label">' + q.label + '</div>' +
+        sensitiveNoteHtml +
         '<div class="option-row" id="option-row">' + chips + '</div></div>';
       Team.speak(q.label, step.voiceKey, null); // the question itself, not just the intro
-      document.querySelectorAll('.option-chip').forEach(function(el) {
-        el.addEventListener('click', function() {
-          document.querySelectorAll('.option-chip').forEach(function(c) { c.classList.remove('selected'); });
-          el.classList.add('selected');
-          Team.saveAnswer(step.key, q.key, el.dataset.value);
-          document.getElementById('next-btn').disabled = false;
+
+      if (q.multiSelect) {
+        // Real multi-select \u2014 someone can genuinely have more than
+        // one diagnosed condition. Toggles instead of exclusive-
+        // select, joins the real selections into one saved string.
+        document.querySelectorAll('.option-chip').forEach(function(el) {
+          el.addEventListener('click', function() {
+            el.classList.toggle('selected');
+            const chosen = Array.from(document.querySelectorAll('.option-chip.selected')).map(function(c) { return c.dataset.value; });
+            Team.saveAnswer(step.key, q.key, chosen.join(', '));
+            document.getElementById('next-btn').disabled = q.optional ? false : !chosen.length;
+          });
         });
-      });
-      document.getElementById('next-btn').disabled = !existing;
+      } else {
+        document.querySelectorAll('.option-chip').forEach(function(el) {
+          el.addEventListener('click', function() {
+            document.querySelectorAll('.option-chip').forEach(function(c) { c.classList.remove('selected'); });
+            el.classList.add('selected');
+            Team.saveAnswer(step.key, q.key, el.dataset.value);
+            document.getElementById('next-btn').disabled = false;
+          });
+        });
+      }
+      document.getElementById('next-btn').disabled = q.optional ? false : !existing;
       document.getElementById('next-btn').textContent = 'Continue';
       return;
     }
@@ -645,6 +663,7 @@ const Team = {
   },
 
   renderFollowUp(step, q, followUpQuestion, originalAnswer) {
+    Team.stopSpeaking();
     document.documentElement.style.setProperty('--accent', step.accent);
     const card = document.getElementById('card-area');
     card.innerHTML = `
@@ -656,6 +675,7 @@ const Team = {
         <textarea id="followup-text" placeholder="Type your answer\u2026" style="width:100%; min-height:60px; background:rgba(243,239,230,0.06); border:1px solid rgba(243,239,230,0.14); border-radius:10px; padding:10px; color:#F3EFE6; font-family:inherit; font-size:13px; margin:12px 0;"></textarea>
       </div>
     `;
+    Team.speak(followUpQuestion, step.voiceKey, null); // was missing entirely \u2014 the follow-up question rendered silently, never spoken
     document.getElementById('next-btn').textContent = 'Continue';
     document.getElementById('next-btn').disabled = true;
 
@@ -782,18 +802,21 @@ const Team = {
   },
 
   renderTrackableGoalBaselineFollowUp(step) {
+    Team.stopSpeaking();
     document.documentElement.style.setProperty('--accent', step.accent);
     const g = Team.pendingTrackableGoal;
     const card = document.getElementById('card-area');
+    const questionText = `What's your current ${g.metric.toLowerCase()} right now?`;
     card.innerHTML = `
       <div class="member-title" style="margin-bottom:16px;">Hawthorn wants to know more</div>
-      <div class="question-block"><div class="question-label">What's your current ${g.metric.toLowerCase()} right now?</div>
+      <div class="question-block"><div class="question-label">${questionText}</div>
         <button class="mic-btn" id="followup-mic-btn">\u{1F3A4}</button>
         <div class="mic-status" id="followup-status">Tap to speak, or type below</div>
         <div class="transcript-preview" id="followup-preview"></div>
         <textarea id="followup-text" placeholder="A real number${g.unit ? ', in ' + g.unit : ''}\u2026" style="width:100%; min-height:60px; background:rgba(243,239,230,0.06); border:1px solid rgba(243,239,230,0.14); border-radius:10px; padding:10px; color:#F3EFE6; font-family:inherit; font-size:13px; margin:12px 0;"></textarea>
       </div>
     `;
+    Team.speak(questionText, step.voiceKey, null); // same missing-speak bug as renderFollowUp
     document.getElementById('next-btn').textContent = 'Continue';
     document.getElementById('next-btn').disabled = true;
 
