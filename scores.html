@@ -86,6 +86,18 @@
   #card-journal { background: #161D18; border: 1px solid rgba(243,239,230,0.1); cursor: default; }
 
   #card-water-caffeine { background: #161D18; border: 1px solid rgba(126,143,209,0.28); cursor: default; }
+  #card-notes { background: #161D18; border: 1px solid rgba(185,143,201,0.28); cursor: default; }
+  #notes-input {
+    width: 100%; min-height: 70px; background: rgba(243,239,230,0.06); border: 1px solid rgba(243,239,230,0.14);
+    border-radius: 10px; padding: 10px; color: #F3EFE6; font-family: inherit; font-size: 13px; margin-top: 10px; resize: vertical;
+  }
+  #notes-save-btn {
+    width: 100%; margin-top: 8px; padding: 12px; border-radius: 10px; border: none;
+    background: #B98FC9; color: #0D130F; font-family: inherit; font-size: 13px; font-weight: 700; cursor: pointer;
+  }
+  .note-row { padding: 10px 0; border-top: 1px solid rgba(243,239,230,0.08); }
+  .note-date { font-size: 11px; color: #8C9689; margin-bottom: 3px; }
+  .note-text { font-size: 13px; color: #D6D8D2; line-height: 1.5; }
   .wc-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
   .wc-row:last-child { margin-bottom: 0; }
   .wc-label { font-size: 13px; font-weight: 700; }
@@ -385,6 +397,14 @@
       <button class="wc-btn" data-status="traveling">✈️ Traveling</button>
       <button class="wc-btn" data-status="sick">🤒 Sick</button>
     </div>
+  </div>
+
+  <div class="section-label">Notes</div>
+  <div id="card-notes" class="score-card">
+    <div class="score-sub">A real reflection, in your own words \u2014 not a chip to tap. Dr. Sage can reference these in your weekly report.</div>
+    <textarea id="notes-input" placeholder="How's it going today\u2026"></textarea>
+    <button id="notes-save-btn">Save note</button>
+    <div id="notes-history"></div>
   </div>
 
   <script src="js/sage/scores.js"></script>
