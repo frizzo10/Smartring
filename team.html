@@ -284,15 +284,67 @@ const Team = {
     } catch (e) { /* spoken intro is a nice-to-have, never a blocker */ }
   },
 
+  currentRecognition: null,
+
+  // Real fix for a known Safari/WebKit quirk: after several
+  // Speech Recognition uses in a row, the underlying audio session
+  // can get stuck \u2014 .start() succeeds (shows "Listening\u2026") but
+  // no result and no error ever fires, leaving the person stranded
+  // with no path forward. This can't be prevented outright (it's a
+  // real browser-level issue, not something in this code), but two
+  // real mitigations: (1) explicitly abort any leftover previous
+  // recognition instance before starting a new one, since letting
+  // instances pile up makes the stuck state more likely, and (2) a
+  // hard timeout \u2014 if nothing happens within 8 seconds, treat it
+  // as failed and surface a real error instead of hanging forever.
   startListening(onResult, onError) {
     const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRec) { onError('not_supported'); return null; }
+
+    if (Team.currentRecognition) {
+      try { Team.currentRecognition.abort(); } catch (e) { /* already stopped */ }
+      Team.currentRecognition = null;
+    }
+
     const rec = new SpeechRec();
     rec.continuous = false;
     rec.interimResults = false;
     rec.lang = 'en-US';
-    rec.onresult = (e) => onResult(e.results[0][0].transcript);
-    rec.onerror = (e) => onError(e.error);
+
+    let settled = false;
+    const timeoutId = setTimeout(function() {
+      if (settled) return;
+      settled = true;
+      try { rec.abort(); } catch (e) { /* already stopped */ }
+      if (Team.currentRecognition === rec) Team.currentRecognition = null;
+      onError('timeout');
+    }, 8000);
+
+    rec.onresult = (e) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeoutId);
+      if (Team.currentRecognition === rec) Team.currentRecognition = null;
+      onResult(e.results[0][0].transcript);
+    };
+    rec.onerror = (e) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeoutId);
+      if (Team.currentRecognition === rec) Team.currentRecognition = null;
+      onError(e.error);
+    };
+    rec.onend = () => {
+      // Fires even on a silent failure with neither onresult nor
+      // onerror \u2014 the real backstop for the stuck-listening case.
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeoutId);
+      if (Team.currentRecognition === rec) Team.currentRecognition = null;
+      onError('no_speech_detected');
+    };
+
+    Team.currentRecognition = rec;
     rec.start();
     return rec;
   },
@@ -699,22 +751,21 @@ const Team = {
       document.getElementById('next-btn').disabled = !textArea.value.trim();
     });
 
-    const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (SpeechRec) {
+    if (Team.speechSupported) {
       document.getElementById('followup-mic-btn').addEventListener('click', function() {
         const status = document.getElementById('followup-status');
         status.textContent = 'Listening\u2026';
-        const rec = new SpeechRec();
-        rec.continuous = false; rec.interimResults = false; rec.lang = 'en-US';
-        rec.onresult = function(e) {
-          const transcript = e.results[0][0].transcript;
-          document.getElementById('followup-preview').textContent = transcript;
-          textArea.value = transcript;
-          document.getElementById('next-btn').disabled = false;
-          status.textContent = 'Got it';
-        };
-        rec.onerror = function() { status.textContent = 'Didn\u2019t catch that \u2014 try typing'; };
-        rec.start();
+        Team.startListening(
+          function(transcript) {
+            document.getElementById('followup-preview').textContent = transcript;
+            textArea.value = transcript;
+            document.getElementById('next-btn').disabled = false;
+            status.textContent = 'Got it';
+          },
+          function(err) {
+            status.textContent = err === 'timeout' || err === 'no_speech_detected' ? 'Didn\u2019t catch that \u2014 try again or type below' : 'Didn\u2019t catch that \u2014 try typing';
+          }
+        );
       });
     } else {
       document.getElementById('followup-mic-btn').disabled = true;
@@ -841,22 +892,21 @@ const Team = {
     const textArea = document.getElementById('followup-text');
     textArea.addEventListener('input', function() { document.getElementById('next-btn').disabled = !textArea.value.trim(); });
 
-    const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (SpeechRec) {
+    if (Team.speechSupported) {
       document.getElementById('followup-mic-btn').addEventListener('click', function() {
         const status = document.getElementById('followup-status');
         status.textContent = 'Listening\u2026';
-        const rec = new SpeechRec();
-        rec.continuous = false; rec.interimResults = false; rec.lang = 'en-US';
-        rec.onresult = function(e) {
-          const transcript = e.results[0][0].transcript;
-          document.getElementById('followup-preview').textContent = transcript;
-          textArea.value = transcript;
-          document.getElementById('next-btn').disabled = false;
-          status.textContent = 'Got it';
-        };
-        rec.onerror = function() { status.textContent = 'Didn\u2019t catch that \u2014 try typing'; };
-        rec.start();
+        Team.startListening(
+          function(transcript) {
+            document.getElementById('followup-preview').textContent = transcript;
+            textArea.value = transcript;
+            document.getElementById('next-btn').disabled = false;
+            status.textContent = 'Got it';
+          },
+          function(err) {
+            status.textContent = err === 'timeout' || err === 'no_speech_detected' ? 'Didn\u2019t catch that \u2014 try again or type below' : 'Didn\u2019t catch that \u2014 try typing';
+          }
+        );
       });
     } else {
       document.getElementById('followup-mic-btn').disabled = true;
@@ -1642,22 +1692,21 @@ const Team = {
     const submitBtn = document.getElementById('promise-submit-btn');
     textArea.addEventListener('input', () => { submitBtn.disabled = !textArea.value.trim(); });
 
-    const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (SpeechRec) {
+    if (Team.speechSupported) {
       document.getElementById('promise-mic-btn').addEventListener('click', () => {
         const status = document.getElementById('promise-status');
         status.textContent = 'Listening\u2026';
-        const rec = new SpeechRec();
-        rec.continuous = false; rec.interimResults = false; rec.lang = 'en-US';
-        rec.onresult = (e) => {
-          const transcript = e.results[0][0].transcript;
-          document.getElementById('promise-preview').textContent = transcript;
-          textArea.value = transcript;
-          submitBtn.disabled = false;
-          status.textContent = 'Got it';
-        };
-        rec.onerror = () => { status.textContent = 'Didn\u2019t catch that \u2014 try typing'; };
-        rec.start();
+        Team.startListening(
+          (transcript) => {
+            document.getElementById('promise-preview').textContent = transcript;
+            textArea.value = transcript;
+            submitBtn.disabled = false;
+            status.textContent = 'Got it';
+          },
+          (err) => {
+            status.textContent = err === 'timeout' || err === 'no_speech_detected' ? 'Didn\u2019t catch that \u2014 try again or type below' : 'Didn\u2019t catch that \u2014 try typing';
+          }
+        );
       });
     } else {
       document.getElementById('promise-mic-btn').disabled = true;
