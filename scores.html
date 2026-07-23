@@ -84,6 +84,19 @@
 
   /* journal */
   #card-journal { background: #161D18; border: 1px solid rgba(243,239,230,0.1); cursor: default; }
+
+  #card-water-caffeine { background: #161D18; border: 1px solid rgba(126,143,209,0.28); cursor: default; }
+  .wc-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .wc-row:last-child { margin-bottom: 0; }
+  .wc-label { font-size: 13px; font-weight: 700; }
+  .wc-count { font-size: 12px; color: #8C9689; }
+  .wc-btns { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+  .wc-btn {
+    padding: 8px 12px; border-radius: 18px; border: 1px solid rgba(243,239,230,0.15);
+    background: rgba(243,239,230,0.04); color: #F3EFE6; font-size: 12px; font-weight: 600; cursor: pointer;
+  }
+  .wc-btn.water { border-color: rgba(126,143,209,0.35); }
+  .wc-btn.caffeine { border-color: rgba(217,131,92,0.35); }
   .journal-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 14px; }
   .journal-item {
     background: rgba(243,239,230,0.05); border: 1px solid transparent; border-radius: 12px;
@@ -337,6 +350,39 @@
       <div class="journal-item" data-key="stressfulDay"><span class="j-icon">😣</span>Stressful day</div>
     </div>
     <div id="journal-saved-note"></div>
+  </div>
+
+  <div class="section-label">Water &amp; Caffeine</div>
+  <div id="card-water-caffeine" class="score-card">
+    <div class="wc-row">
+      <div><div class="wc-label">💧 Water</div><div class="wc-count" id="water-count">0 cups today</div></div>
+    </div>
+    <div class="wc-btns">
+      <button class="wc-btn water" data-cups="1">+1 cup</button>
+      <button class="wc-btn water" data-cups="2">+2 cups</button>
+      <button class="wc-btn water" id="water-reset-btn" style="background:transparent; opacity:0.6;">Reset today</button>
+    </div>
+    <div class="wc-row" style="margin-top:18px;">
+      <div><div class="wc-label">☕ Caffeine</div><div class="wc-count" id="caffeine-count">0mg today</div></div>
+    </div>
+    <div class="wc-btns">
+      <button class="wc-btn caffeine" data-mg="95" data-label="Coffee">Coffee (~95mg)</button>
+      <button class="wc-btn caffeine" data-mg="47" data-label="Tea">Tea (~47mg)</button>
+      <button class="wc-btn caffeine" data-mg="80" data-label="Energy drink">Energy drink (~80mg)</button>
+      <button class="wc-btn caffeine" data-mg="40" data-label="Soda">Soda (~40mg)</button>
+      <button class="wc-btn caffeine" id="caffeine-reset-btn" style="background:transparent; opacity:0.6;">Reset today</button>
+    </div>
+    <div class="empty-note" id="caffeine-timing-note" style="margin-top:10px;"></div>
+  </div>
+
+  <div class="section-label">Today</div>
+  <div id="card-activity-status" class="score-card" style="cursor:default;">
+    <div class="score-sub">Let the team know if today's a normal day \u2014 they'll adjust what they expect.</div>
+    <div class="wc-btns" id="activity-status-btns" style="margin-top:12px;">
+      <button class="wc-btn" data-status="normal">Normal</button>
+      <button class="wc-btn" data-status="traveling">✈️ Traveling</button>
+      <button class="wc-btn" data-status="sick">🤒 Sick</button>
+    </div>
   </div>
 
   <script src="js/sage/scores.js"></script>
