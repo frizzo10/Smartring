@@ -581,6 +581,108 @@ const Scores = {
     });
   },
 
+  // ── WATER & CAFFEINE ──────────────────────────────────────
+  // Real quantity tracking, not the old yes/no journal toggle
+  // (kept as-is elsewhere for backward compatibility with the
+  // weekly report). Caffeine specifically tracks a last-intake
+  // TIME too, since that's what actually matters for Willow's
+  // sleep coaching \u2014 amount alone doesn't tell her anything
+  // about whether it's too close to bed.
+  WATER_CAFFEINE_KEY: 'sh_water_caffeine',
+
+  loadWaterCaffeine() {
+    try { return JSON.parse(localStorage.getItem(Scores.WATER_CAFFEINE_KEY) || '{}'); }
+    catch (e) { return {}; }
+  },
+
+  saveWaterCaffeine(log) {
+    try { localStorage.setItem(Scores.WATER_CAFFEINE_KEY, JSON.stringify(log)); }
+    catch (e) { /* non-critical */ }
+  },
+
+  addWater(cups) {
+    const log = Scores.loadWaterCaffeine();
+    const today = Scores.todayKey();
+    log[today] = log[today] || { waterCups: 0, caffeineMg: 0, caffeineLog: [] };
+    log[today].waterCups += cups;
+    Scores.saveWaterCaffeine(log);
+    Scores.renderWaterCaffeine();
+  },
+
+  resetWater() {
+    const log = Scores.loadWaterCaffeine();
+    const today = Scores.todayKey();
+    if (log[today]) log[today].waterCups = 0;
+    Scores.saveWaterCaffeine(log);
+    Scores.renderWaterCaffeine();
+  },
+
+  addCaffeine(mg, label) {
+    const log = Scores.loadWaterCaffeine();
+    const today = Scores.todayKey();
+    log[today] = log[today] || { waterCups: 0, caffeineMg: 0, caffeineLog: [] };
+    log[today].caffeineMg += mg;
+    log[today].caffeineLog.push({ label, mg, time: new Date().toISOString() });
+    Scores.saveWaterCaffeine(log);
+    Scores.renderWaterCaffeine();
+  },
+
+  resetCaffeine() {
+    const log = Scores.loadWaterCaffeine();
+    const today = Scores.todayKey();
+    if (log[today]) { log[today].caffeineMg = 0; log[today].caffeineLog = []; }
+    Scores.saveWaterCaffeine(log);
+    Scores.renderWaterCaffeine();
+  },
+
+  renderWaterCaffeine() {
+    const log = Scores.loadWaterCaffeine();
+    const today = log[Scores.todayKey()] || { waterCups: 0, caffeineMg: 0, caffeineLog: [] };
+    document.getElementById('water-count').textContent = today.waterCups + (today.waterCups === 1 ? ' cup today' : ' cups today');
+    document.getElementById('caffeine-count').textContent = today.caffeineMg + 'mg today';
+
+    const timingNote = document.getElementById('caffeine-timing-note');
+    if (today.caffeineLog.length) {
+      const last = today.caffeineLog[today.caffeineLog.length - 1];
+      const lastTime = new Date(last.time);
+      const hoursAgo = Math.round((Date.now() - lastTime.getTime()) / 3600000 * 10) / 10;
+      timingNote.textContent = `Last: ${last.label} \u2014 ${hoursAgo < 1 ? 'just now' : hoursAgo + 'h ago'}. Willow sees this real timing, not just the total.`;
+    } else {
+      timingNote.textContent = '';
+    }
+  },
+
+  // ── ACTIVITY STATUS ────────────────────────────────────────
+  // Manual override, not inferred \u2014 the person tells the team
+  // directly rather than the data trying to guess. Feeds the
+  // weekly report so a sick or traveling week gets real context
+  // instead of being judged against a normal one.
+  ACTIVITY_STATUS_KEY: 'sh_activity_status',
+
+  loadActivityStatus() {
+    try { return JSON.parse(localStorage.getItem(Scores.ACTIVITY_STATUS_KEY) || '{}'); }
+    catch (e) { return {}; }
+  },
+
+  saveActivityStatus(status) {
+    const log = Scores.loadActivityStatus();
+    log[Scores.todayKey()] = status;
+    try { localStorage.setItem(Scores.ACTIVITY_STATUS_KEY, JSON.stringify(log)); }
+    catch (e) { /* non-critical */ }
+    Scores.renderActivityStatus();
+  },
+
+  renderActivityStatus() {
+    const log = Scores.loadActivityStatus();
+    const today = log[Scores.todayKey()] || 'normal';
+    document.querySelectorAll('#activity-status-btns .wc-btn').forEach(btn => {
+      const active = btn.dataset.status === today;
+      btn.style.background = active ? 'rgba(143,181,150,0.16)' : 'rgba(243,239,230,0.04)';
+      btn.style.borderColor = active ? '#8FB596' : 'rgba(243,239,230,0.15)';
+      btn.style.color = active ? '#8FB596' : '#F3EFE6';
+    });
+  },
+
   // ── STATUS STATEMENTS ─────────────────────────────────────
   // Pure template formatting over already-computed numbers.
   // No AI call, no network — same trust level as the score
@@ -2287,6 +2389,23 @@ const Scores = {
       mealPlanStatus = daysOld === 0 ? 'built today' : `last built ${daysOld} day${daysOld === 1 ? '' : 's'} ago`;
     }
 
+    // Real days this week the person marked themselves sick or
+    // traveling \u2014 manual, not inferred, so the report can give
+    // honest context instead of judging a disrupted week against
+    // a normal one.
+    const statusLog = Scores.loadActivityStatus();
+    let sickDays = 0, travelDays = 0;
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      const key = d.toISOString().slice(0, 10);
+      if (statusLog[key] === 'sick') sickDays++;
+      if (statusLog[key] === 'traveling') travelDays++;
+    }
+    const activityStatusNote = (sickDays || travelDays)
+      ? `Real self-reported: ${sickDays ? sickDays + ' sick day(s)' : ''}${sickDays && travelDays ? ', ' : ''}${travelDays ? travelDays + ' traveling day(s)' : ''} this week \u2014 weigh the rest of the data with that in mind, don't judge a disrupted week like a normal one.`
+      : null;
+
     return {
       goal,
       recovery: recovery.ok ? recovery.score : null,
@@ -2298,6 +2417,7 @@ const Scores = {
       strikesThisWeek,
       regimenAdherence: regimenAdherence ? `${regimenAdherence.done}/${regimenAdherence.total} exercises done (${regimenAdherence.pct}%)` : 'no active regimen',
       mealPlanStatus,
+      activityStatusNote,
     };
   },
 
@@ -2364,6 +2484,7 @@ const Scores = {
     lines.push(`Calibration misses this week: ${data.strikesThisWeek}`);
     lines.push(`Exercise regimen: ${data.regimenAdherence}`);
     lines.push(`Meal plan: ${data.mealPlanStatus}`);
+    if (data.activityStatusNote) lines.push(data.activityStatusNote);
 
     const userMessage = `Here is this person's real week \u2014 both what they logged themselves and what the ring recorded:\n\n${lines.join('\n')}\n\nWrite their weekly report. Cover three things directly: (1) real progress toward their stated goal, or honestly say there isn't enough data to judge yet if that's true \u2014 never invent progress that isn't supported by the numbers above; (2) name any real deficiencies plainly, using the actual numbers given (e.g. "you logged 2 of 7 days"), stated as fact, never as a judgment of their character or effort; (3) one clear, direct focus for the coming week. Keep it to 5-6 sentences, spoken naturally \u2014 this will be read aloud. Respond with plain text only, no JSON, no markdown.`;
 
@@ -2489,6 +2610,23 @@ const Scores = {
     document.querySelectorAll('.journal-item').forEach(item => {
       item.addEventListener('click', () => Scores.toggleJournalItem(item.dataset.key));
     });
+
+    document.querySelectorAll('.wc-btn[data-cups]').forEach(btn => {
+      btn.addEventListener('click', () => Scores.addWater(Number(btn.dataset.cups)));
+    });
+    document.querySelectorAll('.wc-btn[data-mg]').forEach(btn => {
+      btn.addEventListener('click', () => Scores.addCaffeine(Number(btn.dataset.mg), btn.dataset.label));
+    });
+    const waterResetBtn = document.getElementById('water-reset-btn');
+    if (waterResetBtn) waterResetBtn.addEventListener('click', Scores.resetWater);
+    const caffeineResetBtn = document.getElementById('caffeine-reset-btn');
+    if (caffeineResetBtn) caffeineResetBtn.addEventListener('click', Scores.resetCaffeine);
+    Scores.renderWaterCaffeine();
+
+    document.querySelectorAll('#activity-status-btns .wc-btn').forEach(btn => {
+      btn.addEventListener('click', () => Scores.saveActivityStatus(btn.dataset.status));
+    });
+    Scores.renderActivityStatus();
 
     const trendBtns = [
       ['recovery-trend-btn', 'recovery', 'recovery-trend-response'],
