@@ -880,6 +880,7 @@ const Scores = {
     const sum = (key) => entries.reduce((s, e) => s + (e[key] || 0), 0);
     return {
       calories: sum('calories'), protein: sum('protein'), carbs: sum('carbs'), fat: sum('fat'),
+      fiber: sum('fiber'), sodium: sum('sodium'),
       count: entries.length,
       highlight: entries[entries.length - 1].highlight || '', // most recent real note, not a blended fabrication
     };
@@ -920,6 +921,8 @@ const Scores = {
         protein: Number(parsed.protein) || 0,
         carbs: Number(parsed.carbs) || 0,
         fat: Number(parsed.fat) || 0,
+        fiber: Number(parsed.fiber) || 0,
+        sodium: Number(parsed.sodium) || 0,
         highlight: String(parsed.highlight || '').slice(0, 200),
       };
     } catch (e) {
@@ -1040,7 +1043,7 @@ const Scores = {
           messages: [{
             role: 'user',
             content: [
-              { type: 'text', text: 'What is this meal, and what\u2019s your real nutrition estimate for it? Respond ONLY with valid JSON, no markdown: {"description": "what you actually see in the photo, specific dish/ingredients", "calories": 0, "protein": 0, "carbs": 0, "fat": 0, "highlight": "one short plain-language note about this meal"}' },
+              { type: 'text', text: 'What is this meal, and what\u2019s your real nutrition estimate for it? Respond ONLY with valid JSON, no markdown: {"description": "what you actually see in the photo, specific dish/ingredients", "calories": 0, "protein": 0, "carbs": 0, "fat": 0, "fiber": 0, "sodium": 0, "highlight": "one short plain-language note about this meal"}' },
               { type: 'image_url', image_url: { url: `data:${mimeType || 'image/jpeg'};base64,${base64Image}` } },
             ],
           }],
@@ -1070,6 +1073,8 @@ const Scores = {
         protein: Math.round(parsed.protein) || 0,
         carbs: Math.round(parsed.carbs) || 0,
         fat: Math.round(parsed.fat) || 0,
+        fiber: Math.round(parsed.fiber) || 0,
+        sodium: Math.round(parsed.sodium) || 0,
         highlight: String(parsed.highlight || '').slice(0, 200),
       };
     } catch (e) {
@@ -1086,7 +1091,7 @@ const Scores = {
     const today = Scores.todayKey();
     const log = Scores.loadNutritionLog();
     const entries = Scores.normalizeDayEntries(log[today]);
-    const saved = { mealsText: entry.description, calories: entry.calories, protein: entry.protein, carbs: entry.carbs, fat: entry.fat, highlight: entry.highlight, loggedAt: new Date().toISOString(), source: 'photo' };
+    const saved = { mealsText: entry.description, calories: entry.calories, protein: entry.protein, carbs: entry.carbs, fat: entry.fat, fiber: entry.fiber || 0, sodium: entry.sodium || 0, highlight: entry.highlight, loggedAt: new Date().toISOString(), source: 'photo' };
     entries.push(saved);
     log[today] = entries;
     Scores.saveNutritionLog(log);
@@ -1144,6 +1149,8 @@ const Scores = {
         document.getElementById('draft-protein').value = result.draft.protein;
         document.getElementById('draft-carbs').value = result.draft.carbs;
         document.getElementById('draft-fat').value = result.draft.fat;
+        document.getElementById('draft-fiber').value = result.draft.fiber;
+        document.getElementById('draft-sodium').value = result.draft.sodium;
         document.getElementById('nutrition-photo-draft').dataset.highlight = result.draft.highlight;
         document.getElementById('nutrition-photo-draft').style.display = 'block';
       });
@@ -1162,6 +1169,8 @@ const Scores = {
       protein: Number(document.getElementById('draft-protein').value) || 0,
       carbs: Number(document.getElementById('draft-carbs').value) || 0,
       fat: Number(document.getElementById('draft-fat').value) || 0,
+      fiber: Number(document.getElementById('draft-fiber').value) || 0,
+      sodium: Number(document.getElementById('draft-sodium').value) || 0,
       highlight: document.getElementById('nutrition-photo-draft').dataset.highlight || '',
     };
     Scores.saveConfirmedNutrition(entry);
@@ -1181,7 +1190,7 @@ const Scores = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           system: 'You are a nutrition analyst. Always respond with valid JSON only, no markdown.',
-          messages: [{ role: 'user', content: `Estimate the nutrition for this day\u2019s meals, as described by the person: ${mealsText.trim()}. Respond ONLY with valid JSON, no markdown: {"calories": 0, "protein": 0, "carbs": 0, "fat": 0, "highlight": "one short plain-language note about this day\u2019s nutrition"}` }],
+          messages: [{ role: 'user', content: `Estimate the nutrition for this day\u2019s meals, as described by the person: ${mealsText.trim()}. Respond ONLY with valid JSON, no markdown: {"calories": 0, "protein": 0, "carbs": 0, "fat": 0, "fiber": 0, "sodium": 0, "highlight": "one short plain-language note about this day\u2019s nutrition"}` }],
           max_tokens: 200,
         }),
       });
@@ -1260,7 +1269,7 @@ const Scores = {
           <span style="opacity:0.85;">${(e.mealsText || '').slice(0, 40)}${(e.mealsText || '').length > 40 ? '\u2026' : ''}</span>
           <span style="opacity:0.6; flex-shrink:0;">${e.calories} cal</span>
         </div>`).join('');
-      resultEl.innerHTML = `<strong>~${today.calories} cal today</strong> \u00b7 ${today.protein}g protein \u00b7 ${today.carbs}g carbs \u00b7 ${today.fat}g fat${today.highlight ? `<br><span style="opacity:0.8">${today.highlight}</span>` : ''}${trendLine}${entriesHtml}`;
+      resultEl.innerHTML = `<strong>~${today.calories} cal today</strong> \u00b7 ${today.protein}g protein \u00b7 ${today.carbs}g carbs \u00b7 ${today.fat}g fat \u00b7 ${today.fiber}g fiber \u00b7 ${today.sodium}mg sodium${today.highlight ? `<br><span style="opacity:0.8">${today.highlight}</span>` : ''}${trendLine}${entriesHtml}`;
       resultEl.style.display = 'block';
       if (subEl) subEl.textContent = `${today.entries.length} logged today \u2014 snap another anytime you eat.`;
     } else {
