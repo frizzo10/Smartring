@@ -230,6 +230,59 @@ const Regimen = {
   // onboarding promise \u2014 articulating it in your own words, voice
   // or typed, before diving into the actual week. Gates the day-
   // by-day list once per newly built regimen, not every visit.
+  currentRecognition: null,
+
+  // Same real fix as team.html: after several Speech Recognition
+  // uses in a row, Safari/WebKit can get the underlying audio
+  // session stuck \u2014 .start() succeeds (shows "Listening\u2026") but
+  // neither a result nor an error ever fires. Aborts any leftover
+  // previous instance before starting a new one, and a real
+  // 8-second timeout plus an onend backstop so it always recovers.
+  startListening(onResult, onError) {
+    const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRec) { onError('not_supported'); return null; }
+    if (Regimen.currentRecognition) {
+      try { Regimen.currentRecognition.abort(); } catch (e) { /* already stopped */ }
+      Regimen.currentRecognition = null;
+    }
+    const rec = new SpeechRec();
+    rec.continuous = false;
+    rec.interimResults = false;
+    rec.lang = 'en-US';
+    let settled = false;
+    const timeoutId = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      try { rec.abort(); } catch (e) { /* already stopped */ }
+      if (Regimen.currentRecognition === rec) Regimen.currentRecognition = null;
+      onError('timeout');
+    }, 8000);
+    rec.onresult = (e) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeoutId);
+      if (Regimen.currentRecognition === rec) Regimen.currentRecognition = null;
+      onResult(e.results[0][0].transcript);
+    };
+    rec.onerror = (e) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeoutId);
+      if (Regimen.currentRecognition === rec) Regimen.currentRecognition = null;
+      onError(e.error);
+    };
+    rec.onend = () => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeoutId);
+      if (Regimen.currentRecognition === rec) Regimen.currentRecognition = null;
+      onError('no_speech_detected');
+    };
+    Regimen.currentRecognition = rec;
+    rec.start();
+    return rec;
+  },
+
   wireCommitCapture() {
     const textArea = document.getElementById('commit-text');
     const submitBtn = document.getElementById('commit-submit-btn');
@@ -241,17 +294,17 @@ const Regimen = {
       document.getElementById('commit-mic-btn').addEventListener('click', () => {
         const status = document.getElementById('commit-status');
         status.textContent = 'Listening\u2026';
-        const rec = new SpeechRec();
-        rec.continuous = false; rec.interimResults = false; rec.lang = 'en-US';
-        rec.onresult = (e) => {
-          const transcript = e.results[0][0].transcript;
-          document.getElementById('commit-preview').textContent = transcript;
-          textArea.value = transcript;
-          submitBtn.disabled = false;
-          status.textContent = 'Got it';
-        };
-        rec.onerror = () => { status.textContent = 'Didn\u2019t catch that \u2014 try typing'; };
-        rec.start();
+        Regimen.startListening(
+          (transcript) => {
+            document.getElementById('commit-preview').textContent = transcript;
+            textArea.value = transcript;
+            submitBtn.disabled = false;
+            status.textContent = 'Got it';
+          },
+          (err) => {
+            status.textContent = err === 'timeout' || err === 'no_speech_detected' ? 'Didn\u2019t catch that \u2014 try again or type below' : 'Didn\u2019t catch that \u2014 try typing';
+          }
+        );
       });
     } else {
       document.getElementById('commit-mic-btn').disabled = true;
