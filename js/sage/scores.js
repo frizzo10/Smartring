@@ -1485,8 +1485,18 @@ const Scores = {
   // project. Blob + object URL handling is tested with a stubbed
   // fetch; the live round-trip to Azure itself is not verifiable
   // from this session.
+  currentAudio: null,
+
+  stopSpeaking() {
+    if (Scores.currentAudio) {
+      try { Scores.currentAudio.pause(); } catch (e) { /* already stopped */ }
+      Scores.currentAudio = null;
+    }
+  },
+
   async speakText(text, voiceKey, onDone) {
     if (!text || !text.trim()) { onDone({ error: 'Nothing to speak.' }); return; }
+    Scores.stopSpeaking(); // real fix for overlapping/double-speak audio \u2014 a new speak always cuts off whatever was still playing
     try {
       const res = await fetch('/.netlify/functions/tts', {
         method: 'POST',
@@ -1500,7 +1510,11 @@ const Scores = {
       const blob = await res.blob();
       const objectUrl = URL.createObjectURL(blob);
       const audio = new Audio(objectUrl);
-      audio.addEventListener('ended', () => URL.revokeObjectURL(objectUrl));
+      Scores.currentAudio = audio;
+      audio.addEventListener('ended', () => {
+        URL.revokeObjectURL(objectUrl);
+        if (Scores.currentAudio === audio) Scores.currentAudio = null;
+      });
       await audio.play();
       onDone({ ok: true, audio });
     } catch (e) {
